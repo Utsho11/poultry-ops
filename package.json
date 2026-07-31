@@ -1,0 +1,22 @@
+{
+  "name": "poultry-ops",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Multi-tenant Poultry Farm Management SaaS (Web + Mobile + API)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run build --workspace=@poultry-ops/types && npm run build --workspace=@poultry-ops/validation",
+    "build:api": "npm run build --workspace=@poultry-ops/api",
+    "build:web": "npm run build --workspace=@poultry-ops/web",
+    "build": "npm run build:packages && npm run build:api && npm run build:web",
+    "dev:api": "npm run dev --workspace=@poultry-ops/api",
+    "dev:web": "npm run dev --workspace=@poultry-ops/web",
+    "dev": "npm run dev:api"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "PoultryOps",
+    "slug": "poultry-ops",
+    "version": "1.0.0",
+    "sdkVersion": "57.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0f172a",
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.poultryops.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "package": "com.poultryops.app"
+    },
+    "platforms": ["ios", "android"]
+  }
+}

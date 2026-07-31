@@ -1,0 +1,135 @@
+import { StyleSheet } from 'react-native';
+
+export const colors = {
+  bg: '#0f172a',
+  surface: '#1e293b',
+  surfaceElevated: '#334155',
+  brand: '#10b981',
+  brandDark: '#059669',
+  amber: '#f59e0b',
+  rose: '#f43f5e',
+  blue: '#3b82f6',
+  purple: '#8b5cf6',
+  textMain: '#f8fafc',
+  textMuted: '#94a3b8',
+  border: 'rgba(255,255,255,0.1)',
+};
+
+export const common = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  label: {
+    color: colors.textMain,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: colors.surfaceElevated,
+    color: colors.textMain,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 14,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  btn: {
+    backgroundColor: colors.brand,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+  },
+  btnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  btnSecondary: {
+    backgroundColor: colors.surfaceElevated,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+  },
+  btnSecondaryText: {
+    color: colors.textMain,
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  sectionTitle: {
+    color: colors.textMain,
+    fontSize: 22,
+    fontWeight: '800' as const,
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 12,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    textAlign: 'center' as const,
+    marginTop: 40,
+    fontSize: 14,
+  },
+  statCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  statValue: {
+    color: colors.textMain,
+    fontSize: 24,
+    fontWeight: '800' as const,
+  },
+  statSub: {
+    color: colors.textMuted,
+    fontSize: 11,
+    marginTop: 3,
+  },
+});
