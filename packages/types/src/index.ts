@@ -111,6 +111,17 @@ export interface ISale {
   createdAt?: string | Date;
 }
 
+export interface IDeviceToken {
+  _id: string;
+  userId: string;
+  farmId: string;
+  expoPushToken: string;
+  platform: 'ios' | 'android';
+  deviceId: string;
+  createdAt?: string | Date;
+  lastSeenAt?: string | Date;
+}
+
 export interface IReminder {
   _id: string;
   farmId: string;
@@ -125,6 +136,9 @@ export interface IReminder {
   channel: ('push' | 'sms')[];
   active: boolean;
   createdBy: string;
+  lastFiredAt?: string;
+  lastFiredForDate?: string;
+  timezone?: string;
   createdAt?: string | Date;
 }
 

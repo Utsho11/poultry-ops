@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { registerForPushNotificationsAsync, unregisterDeviceToken } from '../notifications/setup';
 
 interface AuthUser {
   userId: string;
@@ -35,6 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (savedToken && savedUser) {
           setToken(savedToken);
           setUser(JSON.parse(savedUser));
+          // Register device push token for background notifications
+          registerForPushNotificationsAsync(savedToken);
         }
       } catch (e) {
         // ignore
@@ -50,9 +53,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newUser);
     await SecureStore.setItemAsync('poultry_token', newToken);
     await SecureStore.setItemAsync('poultry_user', JSON.stringify(newUser));
+    // Register device push token for background/killed-app notifications
+    registerForPushNotificationsAsync(newToken);
   };
 
   const logout = async () => {
+    if (token) {
+      await unregisterDeviceToken(token);
+    }
     setToken(null);
     setUser(null);
     await SecureStore.deleteItemAsync('poultry_token');
