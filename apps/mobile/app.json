@@ -12,6 +12,7 @@
       "bundleIdentifier": "com.poultryops.app"
     },
     "android": {
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#0f172a"
       },
