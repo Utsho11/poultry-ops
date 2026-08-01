@@ -34,6 +34,9 @@ function parse12HourTime(timeStr: string): { hours: number; minutes: number } {
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const reminders = await ReminderModel.find({ farmId: req.farmId }).sort({ createdAt: -1 });
+    // #region agent log
+    fetch('http://127.0.0.1:7898/ingest/8aab6805-612d-4a5e-86df-5176f3ce7ab6',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2dce91'},body:JSON.stringify({sessionId:'2dce91',location:'reminders.ts:GET',message:'Fetched reminders',data:{farmId:req.farmId,count:reminders.length,activeCount:reminders.filter(r=>r.active!==false).length},timestamp:Date.now(),runId:'pre-fix',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     return res.json(reminders);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -45,6 +48,9 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     const parseResult = reminderSchema.safeParse(req.body);
     if (!parseResult.success) {
+      // #region agent log
+      fetch('http://127.0.0.1:7898/ingest/8aab6805-612d-4a5e-86df-5176f3ce7ab6',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2dce91'},body:JSON.stringify({sessionId:'2dce91',location:'reminders.ts:POST:validation',message:'Reminder validation failed',data:{farmId:req.farmId,errors:parseResult.error.format()},timestamp:Date.now(),runId:'pre-fix',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       return res.status(400).json({ error: 'Validation failed', details: parseResult.error.format() });
     }
 
@@ -75,6 +81,9 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     });
 
     await reminder.save();
+    // #region agent log
+    fetch('http://127.0.0.1:7898/ingest/8aab6805-612d-4a5e-86df-5176f3ce7ab6',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2dce91'},body:JSON.stringify({sessionId:'2dce91',location:'reminders.ts:POST:save',message:'Reminder saved (no scheduler registered)',data:{farmId:req.farmId,reminderId:reminder._id,cronExpression:generatedCron,dueTime:timeStr,dueDate:dateStr,repeat:repeatStr,hasWorkerHook:false},timestamp:Date.now(),runId:'pre-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     return res.status(201).json(reminder);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
