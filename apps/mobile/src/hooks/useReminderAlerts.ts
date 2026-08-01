@@ -1,29 +1,34 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Platform, Vibration } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import { apiFetch } from '../config';
 
-const POLL_MS = 15_000;
-
-// Configure Notifications to play sound, show alert, and set badge
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
-
-// Configure Android Notification Channel for max importance, sound, and vibration
-if (Platform.OS === 'android') {
-  Notifications.setNotificationChannelAsync('default', {
-    name: 'Farm Alarms',
-    importance: Notifications.AndroidImportance.MAX,
-    vibrationPattern: [0, 500, 200, 500],
-    sound: 'default',
-    enableVibrate: true,
-  });
+// Safely require expo-notifications to prevent Expo Go SDK 53+ red screen crash
+let Notifications: typeof import('expo-notifications') | null = null;
+try {
+  Notifications = require('expo-notifications');
+  if (Notifications && Notifications.setNotificationHandler) {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  }
+  if (Platform.OS === 'android' && Notifications && Notifications.setNotificationChannelAsync) {
+    Notifications.setNotificationChannelAsync('default', {
+      name: 'Farm Alarms',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 200, 500],
+      sound: 'default',
+      enableVibrate: true,
+    }).catch(() => {});
+  }
+} catch (e) {
+  // Expo Go fallback
 }
+
+const POLL_MS = 15_000;
 
 export interface ActiveAlert {
   id: string;
@@ -73,9 +78,13 @@ export function useReminderAlerts(token: string | null) {
     setActiveAlerts(prev => prev.filter(a => a.id !== id));
   }, []);
 
-  // Request Notification Permissions on Mount
+  // Request Notification Permissions on Mount safely
   useEffect(() => {
-    Notifications.requestPermissionsAsync().catch(() => {});
+    try {
+      if (Notifications && Notifications.requestPermissionsAsync) {
+        Notifications.requestPermissionsAsync().catch(() => {});
+      }
+    } catch (e) {}
   }, []);
 
   useEffect(() => {
@@ -95,20 +104,22 @@ export function useReminderAlerts(token: string | null) {
           if (!firedKeysRef.current.has(key)) {
             firedKeysRef.current.add(key);
 
-            // 1. Schedule local push notification with sound and vibration
+            // 1. Try local notification schedule safely
             try {
-              await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: `🔔 Farm Alarm — ${rem.dueTime || '08:00 AM'}`,
-                  body: rem.message,
-                  sound: 'default',
-                  vibrate: [0, 500, 200, 500],
-                },
-                trigger: null, // Fire immediately
-              });
+              if (Notifications && Notifications.scheduleNotificationAsync) {
+                await Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: `🔔 Farm Alarm — ${rem.dueTime || '08:00 AM'}`,
+                    body: rem.message,
+                    sound: 'default',
+                    vibrate: [0, 500, 200, 500],
+                  },
+                  trigger: null,
+                });
+              }
             } catch (e) {}
 
-            // 2. Additional direct haptic vibration
+            // 2. Haptic vibration
             try {
               Vibration.vibrate([0, 500, 200, 500]);
             } catch (e) {}
