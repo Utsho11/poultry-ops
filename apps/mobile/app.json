@@ -12,12 +12,21 @@
       "bundleIdentifier": "com.poultryops.app"
     },
     "android": {
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#0f172a"
       },
       "package": "com.poultryops.app"
     },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
     "platforms": [
       "ios",
       "android"
