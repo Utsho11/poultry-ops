@@ -5,6 +5,7 @@ export type ExpenseCategory = 'feed' | 'medicine' | 'labor' | 'utility' | 'equip
 export type HealthRecordType = 'checkup' | 'vaccination' | 'injection' | 'treatment';
 export type ReminderType = 'feed' | 'water' | 'medicine' | 'vaccination' | 'checkup' | 'general' | 'custom';
 export type SubscriptionPlan = 'free' | 'pro';
+export type SaleItemType = 'egg' | 'chicken';
 
 export interface IFarm {
   _id: string;
@@ -95,6 +96,21 @@ export interface IExpense {
   createdAt?: string | Date;
 }
 
+export interface ISale {
+  _id: string;
+  farmId: string;
+  batchId?: string;
+  itemType: SaleItemType;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  date: string;
+  customerName?: string;
+  note?: string;
+  recordedBy: string;
+  createdAt?: string | Date;
+}
+
 export interface IReminder {
   _id: string;
   farmId: string;
@@ -124,6 +140,12 @@ export interface IReportMetrics {
   costPerEgg: number;
   costPerBird: number;
   feedConversionRatio?: number; // FCR (Feed kg per egg or bird weight)
+  // Income & Egg Inventory metrics
+  allTimeEggCount: number;
+  currentEggCount: number;
+  totalIncome: number;
+  totalEggsSold: number;
+  totalChickensSold: number;
 }
 
 export interface IAuthUser {

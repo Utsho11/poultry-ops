@@ -4,7 +4,7 @@ import { fetchWithAuth } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { IBatch, IDailyLog, IReportMetrics } from '@poultry-ops/types';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
-import { Bird, Egg, AlertTriangle, Scale, DollarSign, PlusCircle, ArrowUpRight, Bell, Clock, CheckCircle2, Zap } from 'lucide-react';
+import { Bird, Egg, AlertTriangle, Scale, DollarSign, PlusCircle, ArrowUpRight, Bell, Clock, CheckCircle2, Zap, ShoppingCart, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const DashboardPage: React.FC = () => {
@@ -25,6 +25,18 @@ export const DashboardPage: React.FC = () => {
   const [feedGivenKg, setFeedGivenKg] = useState('');
   const [waterGivenLiters, setWaterGivenLiters] = useState('');
   const [submittingLog, setSubmittingLog] = useState(false);
+
+  // Record Sale Modal State (OWNER ONLY)
+  const [saleModalOpen, setSaleModalOpen] = useState(false);
+  const [saleItemType, setSaleItemType] = useState<'egg' | 'chicken'>('egg');
+  const [saleBatchId, setSaleBatchId] = useState('');
+  const [saleQuantity, setSaleQuantity] = useState('');
+  const [saleUnitPrice, setSaleUnitPrice] = useState('');
+  const [saleCustomer, setSaleCustomer] = useState('');
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [submittingSale, setSubmittingSale] = useState(false);
+
+  const isOwner = user?.role === 'owner';
 
   const loadDashboardData = async () => {
     try {
@@ -81,6 +93,37 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const handleSubmitSale = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saleQuantity || !saleUnitPrice) {
+      alert('Quantity and Unit Price are required');
+      return;
+    }
+    setSubmittingSale(true);
+    try {
+      await fetchWithAuth('/sales', {
+        method: 'POST',
+        body: JSON.stringify({
+          itemType: saleItemType,
+          batchId: saleBatchId || undefined,
+          quantity: Number(saleQuantity),
+          unitPrice: Number(saleUnitPrice),
+          date: saleDate,
+          customerName: saleCustomer || undefined
+        })
+      });
+      setSaleModalOpen(false);
+      setSaleQuantity('');
+      setSaleUnitPrice('');
+      setSaleCustomer('');
+      loadDashboardData();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSubmittingSale(false);
+    }
+  };
+
   const totalActiveBirds = batches.reduce((acc, b) => acc + b.currentCount, 0);
 
   // Helper to format time into 12-hour AM/PM format
@@ -104,17 +147,25 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header with Quick Log Button */}
+      {/* Header with Quick Actions */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{t('dashboard')}</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Real-time overview of active batches, daily yields & financial metrics</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Real-time overview of active batches, daily yields, sales income & egg stock</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button onClick={() => setQuickLogOpen(true)} className="btn btn-primary" style={{ backgroundColor: '#10b981' }}>
             <Zap size={18} />
             ⚡ Quick Save Daily Log
           </button>
+
+          {isOwner && (
+            <button onClick={() => setSaleModalOpen(true)} className="btn btn-primary" style={{ backgroundColor: '#3b82f6' }}>
+              <ShoppingCart size={18} />
+              💰 Record Sale (Owner Only)
+            </button>
+          )}
+
           {user?.role !== 'worker' && (
             <Link to="/batches" className="btn btn-secondary">
               {t('addBatch')}
@@ -168,6 +219,49 @@ export const DashboardPage: React.FC = () => {
 
       {/* KPI Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+        {/* Current Available Unsold Egg Stock */}
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(16, 185, 129, 0.4)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(30, 41, 59, 1) 100%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 700 }}>Current Egg Stock</span>
+            <div style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Egg size={20} />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f8fafc' }}>{(summary?.currentEggCount || 0).toLocaleString()}</div>
+          <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px', fontWeight: 600 }}>
+            Available Unsold Eggs in Stock
+          </div>
+        </div>
+
+        {/* All Time Egg Count */}
+        <div className="glass-panel" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>All-Time Egg Count</span>
+            <div style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Egg size={20} />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{(summary?.allTimeEggCount || 0).toLocaleString()}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--accent-amber)', marginTop: '4px' }}>
+            Total Cumulative Eggs Logged
+          </div>
+        </div>
+
+        {/* Sales Income Revenue */}
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ color: '#3b82f6', fontSize: '0.85rem', fontWeight: 700 }}>Total Sales Income</span>
+            <div style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingUp size={20} />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#3b82f6' }}>৳{(summary?.totalIncome || 0).toLocaleString()}</div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
+            Eggs Sold: {summary?.totalEggsSold || 0} | Chickens Sold: {summary?.totalChickensSold || 0}
+          </div>
+        </div>
+
+        {/* Active Birds */}
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>{t('activeBirds')}</span>
@@ -181,19 +275,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>{t('dailyEggCount')}</span>
-            <div style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Egg size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{(summary?.totalEggs || 0).toLocaleString()}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--accent-amber)', marginTop: '4px' }}>
-            Broken Eggs: {summary?.totalBrokenEggs || 0}
-          </div>
-        </div>
-
+        {/* Mortality Rate */}
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>{t('mortalityRate')}</span>
@@ -207,22 +289,10 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Expenses */}
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>{t('fcr')}</span>
-            <div style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-blue)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Scale size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{summary?.feedConversionRatio || 0}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', marginTop: '4px' }}>
-            Feed: {summary?.totalFeedKg || 0} kg
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>{t('monthlyExpenses')}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>Total Expenses</span>
             <div style={{ background: 'rgba(139, 92, 246, 0.15)', color: 'var(--accent-purple)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <DollarSign size={20} />
             </div>
@@ -347,6 +417,97 @@ export const DashboardPage: React.FC = () => {
                 <button type="button" onClick={() => setQuickLogOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
                 <button type="submit" disabled={submittingLog} className="btn btn-primary" style={{ flex: 1, backgroundColor: '#10b981' }}>
                   {submittingLog ? 'Saving...' : '⚡ Save Log'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 💰 Record Sale Modal (OWNER ONLY) */}
+      {saleModalOpen && isOwner && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '460px', padding: '28px', backgroundColor: '#1e293b' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', padding: '8px', borderRadius: '10px', color: '#3b82f6' }}>
+                <ShoppingCart size={22} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>Record Sale (Income)</h2>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Sell Eggs or Chickens & track farm revenue</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmitSale} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Item Type *</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSaleItemType('egg')}
+                    style={{
+                      padding: '10px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer',
+                      border: `1px solid ${saleItemType === 'egg' ? '#10b981' : '#475569'}`,
+                      backgroundColor: saleItemType === 'egg' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                      color: saleItemType === 'egg' ? '#10b981' : '#94a3b8'
+                    }}
+                  >
+                    🥚 Eggs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSaleItemType('chicken')}
+                    style={{
+                      padding: '10px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer',
+                      border: `1px solid ${saleItemType === 'chicken' ? '#3b82f6' : '#475569'}`,
+                      backgroundColor: saleItemType === 'chicken' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                      color: saleItemType === 'chicken' ? '#3b82f6' : '#94a3b8'
+                    }}
+                  >
+                    🐔 Chicken / Birds
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Batch / Flock (Optional)</label>
+                <select value={saleBatchId} onChange={(e) => setSaleBatchId(e.target.value)} className="input-field">
+                  <option value="">Entire Farm</option>
+                  {batches.map(b => <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>)}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Quantity *</label>
+                  <input type="number" min="1" required placeholder={saleItemType === 'egg' ? 'e.g. 500' : 'e.g. 50'} value={saleQuantity} onChange={(e) => setSaleQuantity(e.target.value)} className="input-field" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Unit Price (৳) *</label>
+                  <input type="number" min="0" step="0.01" required placeholder={saleItemType === 'egg' ? 'e.g. 10.50' : 'e.g. 220'} value={saleUnitPrice} onChange={(e) => setSaleUnitPrice(e.target.value)} className="input-field" />
+                </div>
+              </div>
+
+              {saleQuantity && saleUnitPrice && (
+                <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', padding: '10px 14px', borderRadius: '8px', color: '#3b82f6', fontWeight: 800, fontSize: '0.95rem' }}>
+                  Total Income: ৳{(Number(saleQuantity) * Number(saleUnitPrice)).toLocaleString()}
+                </div>
+              )}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Buyer / Customer Name</label>
+                <input type="text" placeholder="e.g. Dhaka Wholesale Market" value={saleCustomer} onChange={(e) => setSaleCustomer(e.target.value)} className="input-field" />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Date</label>
+                <input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} className="input-field" />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                <button type="button" onClick={() => setSaleModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                <button type="submit" disabled={submittingSale} className="btn btn-primary" style={{ flex: 1, backgroundColor: '#3b82f6' }}>
+                  {submittingSale ? 'Recording...' : '💰 Record Income'}
                 </button>
               </div>
             </form>

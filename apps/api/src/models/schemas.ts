@@ -149,6 +149,38 @@ const expenseSchema = new Schema<IExpenseDoc>({
 expenseSchema.index({ farmId: 1, date: -1 });
 export const ExpenseModel = model<IExpenseDoc>('Expense', expenseSchema);
 
+// Sale Schema (Income & Sales Tracking for Eggs & Chickens)
+export interface ISaleDoc extends Document {
+  farmId: Schema.Types.ObjectId;
+  batchId?: Schema.Types.ObjectId;
+  itemType: 'egg' | 'chicken';
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  date: string;
+  customerName?: string;
+  note?: string;
+  recordedBy: Schema.Types.ObjectId;
+  createdAt: Date;
+}
+
+const saleSchema = new Schema<ISaleDoc>({
+  farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
+  batchId: { type: Schema.Types.ObjectId, ref: 'Batch' },
+  itemType: { type: String, enum: ['egg', 'chicken'], required: true },
+  quantity: { type: Number, required: true, min: 1 },
+  unitPrice: { type: Number, required: true, min: 0 },
+  totalAmount: { type: Number, required: true, min: 0 },
+  date: { type: String, required: true },
+  customerName: { type: String },
+  note: { type: String },
+  recordedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+saleSchema.index({ farmId: 1, date: -1 });
+export const SaleModel = model<ISaleDoc>('Sale', saleSchema);
+
 // HealthRecord Schema
 export interface IHealthRecordDoc extends Document {
   farmId: Schema.Types.ObjectId;

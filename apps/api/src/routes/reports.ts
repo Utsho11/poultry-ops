@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import mongoose from 'mongoose';
-import { DailyLogModel, ExpenseModel, BatchModel, HealthRecordModel } from '../models/schemas';
+import { DailyLogModel, ExpenseModel, BatchModel, HealthRecordModel, SaleModel } from '../models/schemas';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -45,6 +45,15 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
       totalWaterLiters: 0
     };
 
+    // Calculate ALL-TIME cumulative eggs logged for farm
+    const allTimeEggAgg = await DailyLogModel.aggregate([
+      { $match: { farmId: farmObjectId } },
+      { $group: { _id: null, sum: { $sum: '$eggCount' }, brokenSum: { $sum: '$brokenEggCount' } } }
+    ]);
+    const allTimeEggCount = allTimeEggAgg[0]?.sum || 0;
+    const allTimeBrokenCount = allTimeEggAgg[0]?.brokenSum || 0;
+
+    // Calculate Expenses
     const expenseMatch: any = { farmId: farmObjectId };
     if (batchId) expenseMatch.batchId = new mongoose.Types.ObjectId(batchId as string);
     if (from || to) {
@@ -72,6 +81,39 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
       costByCategory[item._id] = item.totalAmount;
       totalCost += item.totalAmount;
     });
+
+    // Calculate Sales & Revenue Income (Egg & Chicken)
+    const saleMatch: any = { farmId: farmObjectId };
+    if (batchId) saleMatch.batchId = new mongoose.Types.ObjectId(batchId as string);
+    if (from || to) {
+      saleMatch.date = {};
+      if (from) saleMatch.date.$gte = from;
+      if (to) saleMatch.date.$lte = to;
+    }
+
+    const salesAgg = await SaleModel.aggregate([
+      { $match: saleMatch },
+      {
+        $group: {
+          _id: '$itemType',
+          totalIncome: { $sum: '$totalAmount' },
+          totalQuantity: { $sum: '$quantity' }
+        }
+      }
+    ]);
+
+    let totalIncome = 0;
+    let totalEggsSold = 0;
+    let totalChickensSold = 0;
+
+    salesAgg.forEach((item) => {
+      totalIncome += item.totalIncome;
+      if (item._id === 'egg') totalEggsSold = item.totalQuantity;
+      if (item._id === 'chicken') totalChickensSold = item.totalQuantity;
+    });
+
+    // Current unsold egg inventory stock
+    const currentEggCount = Math.max(0, allTimeEggCount - allTimeBrokenCount - totalEggsSold);
 
     const batchQuery: any = { farmId: farmObjectId };
     if (batchId) batchQuery._id = new mongoose.Types.ObjectId(batchId as string);
@@ -108,14 +150,20 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
       costPerEgg,
       costPerBird,
       feedConversionRatio: FCR,
-      birdStats: { initialBirdCount, currentBirdCount }
+      birdStats: { initialBirdCount, currentBirdCount },
+      // New Egg Stock & Sales Metrics
+      allTimeEggCount,
+      currentEggCount,
+      totalIncome,
+      totalEggsSold,
+      totalChickensSold
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
 });
 
-// 2. Daily Field Report (Date-by-Date Breakdown of Feed, Meds, Yield, Expenses)
+// 2. Daily Field Report
 router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
   try {
     const { batchId, from, to } = req.query;
@@ -226,7 +274,7 @@ router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest,
   }
 });
 
-// 3. Batch-Based Report (Comparative performance per batch)
+// 3. Batch-Based Report
 router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
   try {
     const farmObjectId = new mongoose.Types.ObjectId(req.farmId as string);
@@ -258,6 +306,13 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
         ]);
 
         const totalExpenses = expAgg[0]?.total || 0;
+
+        const saleAgg = await SaleModel.aggregate([
+          { $match: { farmId: farmObjectId, batchId: batchObjId } },
+          { $group: { _id: null, totalIncome: { $sum: '$totalAmount' } } }
+        ]);
+        const totalIncome = saleAgg[0]?.totalIncome || 0;
+
         const healthCount = await HealthRecordModel.countDocuments({ farmId: farmObjectId, batchId: batchObjId });
 
         const mortalityCount = batch.initialCount - batch.currentCount;
@@ -283,6 +338,8 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
           totalFeedKg: logs.totalFeedKg,
           totalWaterLiters: logs.totalWaterLiters,
           totalExpenses,
+          totalIncome,
+          netProfit: totalIncome - totalExpenses,
           costPerBird,
           costPerEgg,
           feedConversionRatio: FCR,
@@ -297,7 +354,7 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
   }
 });
 
-// 4. Monthly Report (Aggregated trends by YYYY-MM)
+// 4. Monthly Report
 router.get('/monthly', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
   try {
     const { year } = req.query;
@@ -344,6 +401,22 @@ router.get('/monthly', requireRole(['owner', 'manager']), async (req: AuthReques
       }
     ]);
 
+    // Monthly Sales Income
+    const monthlySales = await SaleModel.aggregate([
+      {
+        $match: {
+          farmId: farmObjectId,
+          date: { $regex: `^${currentYear}` }
+        }
+      },
+      {
+        $group: {
+          _id: { $substr: ['$date', 0, 7] },
+          totalIncome: { $sum: '$totalAmount' }
+        }
+      }
+    ]);
+
     const resultMap: Record<string, any> = {};
 
     monthlyLogs.forEach((item) => {
@@ -356,6 +429,7 @@ router.get('/monthly', requireRole(['owner', 'manager']), async (req: AuthReques
         totalFeedKg: item.totalFeedKg,
         totalWaterLiters: item.totalWaterLiters,
         totalExpenses: 0,
+        totalIncome: 0,
         feedExpense: 0,
         medicineExpense: 0,
         laborExpense: 0,
@@ -381,6 +455,7 @@ router.get('/monthly', requireRole(['owner', 'manager']), async (req: AuthReques
           totalFeedKg: 0,
           totalWaterLiters: 0,
           totalExpenses: 0,
+          totalIncome: 0,
           feedExpense: 0,
           medicineExpense: 0,
           laborExpense: 0,
@@ -400,6 +475,13 @@ router.get('/monthly', requireRole(['owner', 'manager']), async (req: AuthReques
       else resultMap[m].otherExpense += amount;
 
       resultMap[m].totalExpenses += amount;
+    });
+
+    monthlySales.forEach((item) => {
+      const m = item._id;
+      if (resultMap[m]) {
+        resultMap[m].totalIncome = item.totalIncome;
+      }
     });
 
     // Compute derived metrics for each month

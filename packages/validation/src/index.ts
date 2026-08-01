@@ -49,6 +49,16 @@ export const expenseSchema = z.object({
   receiptUrl: z.string().optional()
 });
 
+export const saleSchema = z.object({
+  batchId: z.string().optional(),
+  itemType: z.enum(['egg', 'chicken']),
+  quantity: z.number().int().positive('Quantity must be greater than 0'),
+  unitPrice: z.number().min(0, 'Unit price cannot be negative'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  customerName: z.string().optional(),
+  note: z.string().optional()
+});
+
 export const healthRecordSchema = z.object({
   batchId: z.string().min(1, 'Batch ID is required'),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
@@ -85,6 +95,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateBatchInput = z.infer<typeof createBatchSchema>;
 export type DailyLogInput = z.infer<typeof dailyLogSchema>;
 export type ExpenseInput = z.infer<typeof expenseSchema>;
+export type SaleInput = z.infer<typeof saleSchema>;
 export type HealthRecordInput = z.infer<typeof healthRecordSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type ReminderInput = z.infer<typeof reminderSchema>;
