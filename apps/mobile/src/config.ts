@@ -1,8 +1,10 @@
 import { Alert, AlertButton, ToastAndroid, Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-// Your machine's Wi-Fi IP — change if your network IP changes
-// Your detected IP: 192.168.0.132
-export const API_BASE_URL = 'http://192.168.0.132:4000/api';
+// Live Cloud Server URL or local Wi-Fi IP fallback
+const CLOUD_API_URL = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
+
+export const API_BASE_URL = CLOUD_API_URL || 'http://192.168.0.132:4000/api';
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}, token?: string | null) {
   const headers: Record<string, string> = {
