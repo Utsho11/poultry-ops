@@ -8,8 +8,9 @@ import {
 } from 'recharts';
 import {
   Download, Calendar, Bell, Filter, Search,
-  Egg, AlertTriangle, DollarSign, Activity
+  Egg, AlertTriangle, DollarSign, Activity, TrendingUp, ShoppingBag, Bird
 } from 'lucide-react';
+import { formatEggCount } from '../utils/crates';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
 
@@ -21,6 +22,7 @@ export const ReportsPage: React.FC = () => {
   const [dailyData, setDailyData] = useState<any[]>([]);
   const [batchData, setBatchData] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [salesData, setSalesData] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,17 +49,19 @@ export const ReportsPage: React.FC = () => {
       if (fromDateStr) params.push(`from=${fromDateStr}`);
       const queryString = params.length > 0 ? `?${params.join('&')}` : '';
 
-      const [sum, daily, batch, monthly, activeBatches] = await Promise.all([
+      const [sum, daily, batch, monthly, sales, activeBatches] = await Promise.all([
         fetchWithAuth(`/reports/summary${queryString}`),
         fetchWithAuth(`/reports/daily${queryString}`),
         fetchWithAuth('/reports/batch-breakdown'),
         fetchWithAuth('/reports/monthly'),
+        fetchWithAuth('/sales'),
         fetchWithAuth('/batches'),
       ]);
       setSummary(sum);
       setDailyData(daily);
       setBatchData(batch);
       setMonthlyData(monthly);
+      setSalesData(sales);
       setBatches(activeBatches);
     } catch (err) {
       console.error(err);
@@ -100,18 +104,21 @@ export const ReportsPage: React.FC = () => {
       })).filter(d => d.value > 0)
     : [];
 
+  const totalIncome = summary?.totalIncome || 0;
+  const totalCost = summary?.totalCost || 0;
+  const netProfit = totalIncome - totalCost;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Top Controls Header Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f8fafc' }}>Reports</h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>Performance metrics and husbandry analytics.</p>
+          <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f8fafc' }}>Reports & Sales Income</h1>
+          <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>Production analytics, egg stock, sales revenue & profitability breakdown.</p>
         </div>
 
-        {/* Filter Controls (Daily, Last 7 Days, 15 Days, Last Month) */}
+        {/* Filter Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          {/* Days Range Select */}
           <select
             value={selectedDays}
             onChange={(e) => setSelectedDays(e.target.value)}
@@ -127,7 +134,6 @@ export const ReportsPage: React.FC = () => {
             <option value="all">All Time</option>
           </select>
 
-          {/* Batch Select */}
           <select
             value={selectedBatch}
             onChange={(e) => setSelectedBatch(e.target.value)}
@@ -142,51 +148,77 @@ export const ReportsPage: React.FC = () => {
             ))}
           </select>
 
-          {/* Monthly / Yearly Toggle */}
-          <div style={{ display: 'flex', backgroundColor: '#334155', borderRadius: '10px', padding: '3px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <button
-              onClick={() => setPeriod('monthly')}
-              style={{
-                padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '0.82rem', fontWeight: 700,
-                backgroundColor: period === 'monthly' ? '#10b981' : 'transparent',
-                color: period === 'monthly' ? '#ffffff' : '#94a3b8', cursor: 'pointer'
-              }}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setPeriod('yearly')}
-              style={{
-                padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '0.82rem', fontWeight: 700,
-                backgroundColor: period === 'yearly' ? '#10b981' : 'transparent',
-                color: period === 'yearly' ? '#ffffff' : '#94a3b8', cursor: 'pointer'
-              }}
-            >
-              Yearly
-            </button>
-          </div>
-
           <button onClick={handleExportCSV} className="btn btn-primary">
             <Download size={16} /> Export (CSV)
           </button>
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-        {/* Total Eggs */}
+      {/* KPI Cards Row (Income & Inventory Highlights) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        {/* Total Sales Income */}
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(59, 130, 246, 0.4)', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(30, 41, 59, 1) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div className="metric-label" style={{ color: '#3b82f6', fontWeight: 700 }}>Total Sales Income</div>
+              <div className="metric-value" style={{ color: '#3b82f6' }}>৳{totalIncome.toLocaleString()}</div>
+            </div>
+            <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', padding: '8px', borderRadius: '50%', color: '#3b82f6' }}>
+              <TrendingUp size={18} />
+            </div>
+          </div>
+          <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '6px' }}>
+            Eggs: {summary?.totalEggsSold || 0} ({formatEggCount(summary?.totalEggsSold || 0)}) | Birds: {summary?.totalChickensSold || 0}
+          </div>
+        </div>
+
+        {/* Net Profit / Loss */}
+        <div className="glass-panel" style={{ padding: '20px', border: `1px solid ${netProfit >= 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.4)'}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div className="metric-label">Net Profit / (Loss)</div>
+              <div className="metric-value" style={{ color: netProfit >= 0 ? '#10b981' : '#f43f5e' }}>
+                ৳{netProfit.toLocaleString()}
+              </div>
+            </div>
+            <div style={{ backgroundColor: netProfit >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)', padding: '8px', borderRadius: '50%', color: netProfit >= 0 ? '#10b981' : '#f43f5e' }}>
+              <DollarSign size={18} />
+            </div>
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+            Income ৳{totalIncome} - Cost ৳{totalCost}
+          </div>
+        </div>
+
+        {/* Current Egg Stock */}
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div className="metric-label">Total Eggs</div>
-              <div className="metric-value">{(summary?.totalEggs || 0).toLocaleString()}</div>
+              <div className="metric-label">Current Egg Stock</div>
+              <div className="metric-value" style={{ color: '#10b981' }}>{formatEggCount(summary?.currentEggCount || 0)}</div>
             </div>
             <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', padding: '8px', borderRadius: '50%', color: '#10b981' }}>
               <Egg size={18} />
             </div>
           </div>
-          <div className="metric-trend up">
-            ↑ +4.2% from last month
+          <div style={{ fontSize: '0.78rem', color: '#10b981', marginTop: '6px' }}>
+            {(summary?.currentEggCount || 0).toLocaleString()} eggs available unsold
+          </div>
+        </div>
+
+        {/* All Time Eggs */}
+        <div className="glass-panel" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div className="metric-label">All-Time Eggs</div>
+              <div className="metric-value">{(summary?.allTimeEggCount || 0).toLocaleString()}</div>
+            </div>
+            <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', padding: '8px', borderRadius: '50%', color: '#f59e0b' }}>
+              <Egg size={18} />
+            </div>
+          </div>
+          <div style={{ fontSize: '0.78rem', color: '#f59e0b', marginTop: '6px' }}>
+            {formatEggCount(summary?.allTimeEggCount || 0)} total logged
           </div>
         </div>
 
@@ -201,56 +233,8 @@ export const ReportsPage: React.FC = () => {
               <AlertTriangle size={18} />
             </div>
           </div>
-          <div className="metric-trend up">
-            ↓ -0.5% from last month
-          </div>
-        </div>
-
-        {/* Total Cost */}
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div className="metric-label">Total Cost</div>
-              <div className="metric-value">৳{(summary?.totalCost || 0).toLocaleString()}</div>
-            </div>
-            <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', padding: '8px', borderRadius: '50%', color: '#3b82f6' }}>
-              <DollarSign size={18} />
-            </div>
-          </div>
-          <div className="metric-trend down">
-            ↑ +2.1% from last month
-          </div>
-        </div>
-
-        {/* Cost per Egg */}
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div className="metric-label">Cost per Egg</div>
-              <div className="metric-value">৳{summary?.costPerEgg || 0}</div>
-            </div>
-            <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', padding: '8px', borderRadius: '50%', color: '#f59e0b' }}>
-              <Activity size={18} />
-            </div>
-          </div>
-          <div className="metric-trend neutral">
-            - Stable
-          </div>
-        </div>
-
-        {/* Cost per Bird */}
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div className="metric-label">Cost per Bird</div>
-              <div className="metric-value">৳{summary?.costPerBird || 0}</div>
-            </div>
-            <div style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', padding: '8px', borderRadius: '50%', color: '#8b5cf6' }}>
-              <Activity size={18} />
-            </div>
-          </div>
-          <div className="metric-trend down">
-            ↑ +1.2% from last month
+          <div style={{ fontSize: '0.78rem', color: '#f43f5e', marginTop: '6px' }}>
+            Total Dead: {summary?.totalDead || 0} Birds
           </div>
         </div>
       </div>
@@ -285,35 +269,44 @@ export const ReportsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Cost Breakdown Donut Chart */}
+        {/* Sales Records History List */}
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc' }}>Cost Breakdown</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc' }}>Recent Sales History</h3>
+            <span style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 600 }}>{salesData.length} Total Sales</span>
           </div>
-          {pieData.length > 0 ? (
-            <div style={{ width: '100%', height: 280 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={3}>
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(val: number) => `৳${val.toLocaleString()}`} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>No expense data logged.</div>
-          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '280px', overflowY: 'auto' }}>
+            {salesData.length > 0 ? (
+              salesData.map(sale => (
+                <div key={sale._id} style={{ background: '#334155', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.9rem' }}>
+                      {sale.itemType === 'egg' ? '🥚 Egg Sale' : '🐔 Chicken Sale'} — {sale.date}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
+                      Qty: {sale.itemType === 'egg' ? formatEggCount(sale.quantity) : `${sale.quantity} birds`} @ ৳{sale.unitPrice}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: '#3b82f6', fontWeight: 800, fontSize: '1rem' }}>+৳{sale.totalAmount.toLocaleString()}</div>
+                    {sale.customerName && <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{sale.customerName}</div>}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8', fontSize: '0.88rem' }}>
+                No sales recorded yet. Use "+ Record Sale" on Dashboard to track sales income.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Daily Records Table */}
       <div className="glass-panel" style={{ padding: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>Daily Records</h3>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>Daily Yield & Production Records</h3>
           {/* Search Box */}
           <div style={{ position: 'relative', width: '260px' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: '#94a3b8' }} />
@@ -333,7 +326,7 @@ export const ReportsPage: React.FC = () => {
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', textAlign: 'left' }}>
                 <th style={{ padding: '12px 10px', fontWeight: 700 }}>DATE ↓</th>
-                <th style={{ padding: '12px 10px', fontWeight: 700 }}>EGGS</th>
+                <th style={{ padding: '12px 10px', fontWeight: 700 }}>EGGS (CRATES + LOOSE)</th>
                 <th style={{ padding: '12px 10px', fontWeight: 700 }}>BROKEN</th>
                 <th style={{ padding: '12px 10px', fontWeight: 700 }}>DEAD</th>
                 <th style={{ padding: '12px 10px', fontWeight: 700 }}>FEED (KG)</th>
@@ -345,7 +338,9 @@ export const ReportsPage: React.FC = () => {
               {paginatedDaily.map((d, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <td style={{ padding: '12px 10px', fontWeight: 600, color: '#f8fafc' }}>{d.date}</td>
-                  <td style={{ padding: '12px 10px', color: '#10b981', fontWeight: 700 }}>{d.eggCount.toLocaleString()}</td>
+                  <td style={{ padding: '12px 10px', color: '#10b981', fontWeight: 700 }}>
+                    {formatEggCount(d.eggCount)} <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>({d.eggCount})</span>
+                  </td>
                   <td style={{ padding: '12px 10px', color: '#f59e0b' }}>{d.brokenEggCount}</td>
                   <td style={{ padding: '12px 10px', color: d.deadCount > 0 ? '#f43f5e' : '#f8fafc', fontWeight: d.deadCount > 0 ? 700 : 400 }}>
                     {d.deadCount}

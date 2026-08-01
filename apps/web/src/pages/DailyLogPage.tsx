@@ -3,6 +3,7 @@ import { useLang } from '../context/LangContext';
 import { fetchWithAuth } from '../services/api';
 import { IBatch, IDailyLog } from '@poultry-ops/types';
 import { ClipboardList, Plus, Egg, AlertTriangle, Scale, Droplet, FileText, CheckCircle2 } from 'lucide-react';
+import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
 
 export const DailyLogPage: React.FC = () => {
   const { t } = useLang();
@@ -15,7 +16,8 @@ export const DailyLogPage: React.FC = () => {
 
   // Form fields
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [eggCount, setEggCount] = useState<number>(0);
+  const [crates, setCrates] = useState<number>(0);
+  const [looseEggs, setLooseEggs] = useState<number>(0);
   const [brokenEggCount, setBrokenEggCount] = useState<number>(0);
   const [deadCount, setDeadCount] = useState<number>(0);
   const [feedGivenKg, setFeedGivenKg] = useState<number>(50);
@@ -41,6 +43,8 @@ export const DailyLogPage: React.FC = () => {
     loadData();
   }, []);
 
+  const totalCalculatedEggs = cratesAndLooseToTotal(crates, looseEggs);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBatchId) {
@@ -58,7 +62,7 @@ export const DailyLogPage: React.FC = () => {
         body: JSON.stringify({
           batchId: selectedBatchId,
           date,
-          eggCount: Number(eggCount),
+          eggCount: totalCalculatedEggs,
           brokenEggCount: Number(brokenEggCount),
           deadCount: Number(deadCount),
           feedGivenKg: Number(feedGivenKg),
@@ -67,8 +71,10 @@ export const DailyLogPage: React.FC = () => {
         })
       });
 
-      setSuccessMsg('Daily log saved successfully! Bird mortality updated.');
+      setSuccessMsg(`Daily log saved! Recorded ${formatEggCount(totalCalculatedEggs)}.`);
       setShowForm(false);
+      setCrates(0);
+      setLooseEggs(0);
       loadData();
     } catch (err: any) {
       setError(err.message || 'Failed to submit log entry');
@@ -82,7 +88,7 @@ export const DailyLogPage: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{t('dailyLog')}</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fast touch-friendly entry form for daily egg collection, feed, water & mortality</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fast touch-friendly entry form for daily egg collection (crates + eggs), feed, water & mortality</p>
         </div>
         <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
           <Plus size={18} />
@@ -119,15 +125,28 @@ export const DailyLogPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Egg Collection inputs (Crates + Loose) */}
+            <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '18px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Egg size={18} /> Egg Collection (1 Crate = 30 Eggs)
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Full Crates (30 eggs/crate)</label>
+                  <input type="number" min="0" placeholder="e.g. 10" value={crates} onChange={(e) => setCrates(Number(e.target.value))} className="input-field" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Loose Eggs</label>
+                  <input type="number" min="0" placeholder="e.g. 15" value={looseEggs} onChange={(e) => setLooseEggs(Number(e.target.value))} className="input-field" />
+                </div>
+              </div>
+              <div style={{ marginTop: '10px', fontSize: '0.88rem', fontWeight: 700, color: '#10b981' }}>
+                Total Yield: {formatEggCount(totalCalculatedEggs)} ({totalCalculatedEggs} eggs total)
+              </div>
+            </div>
+
             {/* Metrics inputs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
-              <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                  <Egg size={16} color="var(--brand-primary)" /> {t('eggCount')}
-                </label>
-                <input type="number" min="0" value={eggCount} onChange={(e) => setEggCount(Number(e.target.value))} className="input-field" />
-              </div>
-
               <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
                 <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                   <AlertTriangle size={16} color="var(--accent-amber)" /> {t('brokenEggs')}
@@ -177,7 +196,7 @@ export const DailyLogPage: React.FC = () => {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '12px' }}>Date</th>
-                <th style={{ padding: '12px' }}>Eggs</th>
+                <th style={{ padding: '12px' }}>Eggs (Crates + Loose)</th>
                 <th style={{ padding: '12px' }}>Broken</th>
                 <th style={{ padding: '12px' }}>Dead Birds</th>
                 <th style={{ padding: '12px' }}>Feed (kg)</th>
@@ -189,7 +208,9 @@ export const DailyLogPage: React.FC = () => {
               {logs.map((log) => (
                 <tr key={log._id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <td style={{ padding: '12px', fontWeight: 600 }}>{log.date}</td>
-                  <td style={{ padding: '12px', color: 'var(--brand-primary)', fontWeight: 700 }}>+{log.eggCount}</td>
+                  <td style={{ padding: '12px', color: 'var(--brand-primary)', fontWeight: 700 }}>
+                    +{formatEggCount(log.eggCount)} <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>({log.eggCount} total)</span>
+                  </td>
                   <td style={{ padding: '12px', color: 'var(--accent-amber)' }}>{log.brokenEggCount}</td>
                   <td style={{ padding: '12px', color: log.deadCount > 0 ? 'var(--accent-rose)' : 'var(--text-muted)' }}>{log.deadCount}</td>
                   <td style={{ padding: '12px' }}>{log.feedGivenKg} kg</td>

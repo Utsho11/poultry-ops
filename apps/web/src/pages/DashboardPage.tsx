@@ -6,6 +6,7 @@ import { IBatch, IDailyLog, IReportMetrics } from '@poultry-ops/types';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { Bird, Egg, AlertTriangle, Scale, DollarSign, PlusCircle, ArrowUpRight, Bell, Clock, CheckCircle2, Zap, ShoppingCart, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
 
 export const DashboardPage: React.FC = () => {
   const { t } = useLang();
@@ -16,21 +17,24 @@ export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<IReportMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Quick Daily Log Modal State
+  // Quick Daily Log Modal State (Crates + Loose Eggs)
   const [quickLogOpen, setQuickLogOpen] = useState(false);
   const [logBatchId, setLogBatchId] = useState('');
-  const [eggCount, setEggCount] = useState('');
+  const [crates, setCrates] = useState('');
+  const [looseEggs, setLooseEggs] = useState('');
   const [brokenEggCount, setBrokenEggCount] = useState('0');
   const [deadCount, setDeadCount] = useState('0');
   const [feedGivenKg, setFeedGivenKg] = useState('');
   const [waterGivenLiters, setWaterGivenLiters] = useState('');
   const [submittingLog, setSubmittingLog] = useState(false);
 
-  // Record Sale Modal State (OWNER ONLY)
+  // Record Sale Modal State (OWNER ONLY - Crates + Loose Eggs for Egg Sales)
   const [saleModalOpen, setSaleModalOpen] = useState(false);
   const [saleItemType, setSaleItemType] = useState<'egg' | 'chicken'>('egg');
   const [saleBatchId, setSaleBatchId] = useState('');
-  const [saleQuantity, setSaleQuantity] = useState('');
+  const [saleCrates, setSaleCrates] = useState('');
+  const [saleLooseEggs, setSaleLooseEggs] = useState('');
+  const [saleChickenQty, setSaleChickenQty] = useState('');
   const [saleUnitPrice, setSaleUnitPrice] = useState('');
   const [saleCustomer, setSaleCustomer] = useState('');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
@@ -60,10 +64,13 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => { loadDashboardData(); }, []);
 
+  const totalLogEggs = cratesAndLooseToTotal(crates, looseEggs);
+  const totalSaleEggQty = saleItemType === 'egg' ? cratesAndLooseToTotal(saleCrates, saleLooseEggs) : Number(saleChickenQty || 0);
+
   const handleSubmitQuickLog = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!logBatchId || !eggCount || !feedGivenKg || !waterGivenLiters) {
-      alert('Please fill out all required log fields');
+    if (!logBatchId || totalLogEggs <= 0 || !feedGivenKg || !waterGivenLiters) {
+      alert('Please enter Egg count (Crates/Loose), Feed, and Water values');
       return;
     }
     setSubmittingLog(true);
@@ -74,7 +81,7 @@ export const DashboardPage: React.FC = () => {
         body: JSON.stringify({
           batchId: logBatchId,
           date: today,
-          eggCount: Number(eggCount),
+          eggCount: totalLogEggs,
           brokenEggCount: Number(brokenEggCount || 0),
           deadCount: Number(deadCount || 0),
           feedGivenKg: Number(feedGivenKg),
@@ -82,7 +89,8 @@ export const DashboardPage: React.FC = () => {
         })
       });
       setQuickLogOpen(false);
-      setEggCount('');
+      setCrates('');
+      setLooseEggs('');
       setFeedGivenKg('');
       setWaterGivenLiters('');
       loadDashboardData();
@@ -95,7 +103,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleSubmitSale = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!saleQuantity || !saleUnitPrice) {
+    if (totalSaleEggQty <= 0 || !saleUnitPrice) {
       alert('Quantity and Unit Price are required');
       return;
     }
@@ -106,14 +114,16 @@ export const DashboardPage: React.FC = () => {
         body: JSON.stringify({
           itemType: saleItemType,
           batchId: saleBatchId || undefined,
-          quantity: Number(saleQuantity),
+          quantity: totalSaleEggQty,
           unitPrice: Number(saleUnitPrice),
           date: saleDate,
           customerName: saleCustomer || undefined
         })
       });
       setSaleModalOpen(false);
-      setSaleQuantity('');
+      setSaleCrates('');
+      setSaleLooseEggs('');
+      setSaleChickenQty('');
       setSaleUnitPrice('');
       setSaleCustomer('');
       loadDashboardData();
@@ -126,7 +136,6 @@ export const DashboardPage: React.FC = () => {
 
   const totalActiveBirds = batches.reduce((acc, b) => acc + b.currentCount, 0);
 
-  // Helper to format time into 12-hour AM/PM format
   const format12Hour = (timeStr?: string) => {
     if (!timeStr) return '08:00 AM';
     if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
@@ -147,11 +156,11 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header with Quick Actions */}
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{t('dashboard')}</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Real-time overview of active batches, daily yields, sales income & egg stock</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Real-time overview of active batches, daily yields (crates + eggs), sales income & stock</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button onClick={() => setQuickLogOpen(true)} className="btn btn-primary" style={{ backgroundColor: '#10b981' }}>
@@ -227,9 +236,9 @@ export const DashboardPage: React.FC = () => {
               <Egg size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f8fafc' }}>{(summary?.currentEggCount || 0).toLocaleString()}</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f8fafc' }}>{formatEggCount(summary?.currentEggCount || 0)}</div>
           <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px', fontWeight: 600 }}>
-            Available Unsold Eggs in Stock
+            {(summary?.currentEggCount || 0).toLocaleString()} unsold eggs in stock
           </div>
         </div>
 
@@ -241,9 +250,9 @@ export const DashboardPage: React.FC = () => {
               <Egg size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{(summary?.allTimeEggCount || 0).toLocaleString()}</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatEggCount(summary?.allTimeEggCount || 0)}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--accent-amber)', marginTop: '4px' }}>
-            Total Cumulative Eggs Logged
+            {(summary?.allTimeEggCount || 0).toLocaleString()} cumulative eggs logged
           </div>
         </div>
 
@@ -257,7 +266,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#3b82f6' }}>৳{(summary?.totalIncome || 0).toLocaleString()}</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-            Eggs Sold: {summary?.totalEggsSold || 0} | Chickens Sold: {summary?.totalChickensSold || 0}
+            Eggs: {formatEggCount(summary?.totalEggsSold || 0)} | Birds: {summary?.totalChickensSold || 0}
           </div>
         </div>
 
@@ -272,34 +281,6 @@ export const DashboardPage: React.FC = () => {
           <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{totalActiveBirds.toLocaleString()}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--brand-primary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <ArrowUpRight size={14} /> {batches.length} Active Batches
-          </div>
-        </div>
-
-        {/* Mortality Rate */}
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>{t('mortalityRate')}</span>
-            <div style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <AlertTriangle size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{summary?.mortalityRate || 0}%</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--accent-rose)', marginTop: '4px' }}>
-            Total Dead: {summary?.totalDead || 0} Birds
-          </div>
-        </div>
-
-        {/* Expenses */}
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>Total Expenses</span>
-            <div style={{ background: 'rgba(139, 92, 246, 0.15)', color: 'var(--accent-purple)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>৳{(summary?.totalCost || 0).toLocaleString()}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Cost / Egg: ৳{summary?.costPerEgg || 0}
           </div>
         </div>
       </div>
@@ -349,7 +330,7 @@ export const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span className="badge badge-emerald">+{log.eggCount} Eggs</span>
+                    <span className="badge badge-emerald">+{formatEggCount(log.eggCount)}</span>
                     {log.deadCount > 0 && (
                       <div style={{ fontSize: '0.75rem', color: 'var(--accent-rose)', marginTop: '2px' }}>-{log.deadCount} Dead</div>
                     )}
@@ -365,7 +346,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ⚡ Quick Save Daily Log Modal */}
+      {/* ⚡ Quick Save Daily Log Modal (Crates + Loose Eggs) */}
       {quickLogOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: '460px', padding: '28px', backgroundColor: '#1e293b' }}>
@@ -375,7 +356,7 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>Quick Save Daily Log</h2>
-                <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Log today's yield & feed in 1 click</p>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Log today's yield in Crates + Loose Eggs</p>
               </div>
             </div>
 
@@ -387,18 +368,36 @@ export const DashboardPage: React.FC = () => {
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Total Eggs *</label>
-                  <input type="number" required placeholder="e.g. 450" value={eggCount} onChange={(e) => setEggCount(e.target.value)} className="input-field" />
+              {/* Crates + Loose Eggs Input */}
+              <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>🥚 Eggs Collected (1 Crate = 30 Eggs)</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '4px' }}>Full Crates</label>
+                    <input type="number" min="0" placeholder="0" value={crates} onChange={(e) => setCrates(e.target.value)} className="input-field" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '4px' }}>Loose Eggs</label>
+                    <input type="number" min="0" placeholder="0" value={looseEggs} onChange={(e) => setLooseEggs(e.target.value)} className="input-field" />
+                  </div>
                 </div>
+                <div style={{ marginTop: '8px', color: '#10b981', fontWeight: 800, fontSize: '0.88rem' }}>
+                  Total: {formatEggCount(totalLogEggs)} ({totalLogEggs} eggs)
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Broken Eggs</label>
                   <input type="number" placeholder="0" value={brokenEggCount} onChange={(e) => setBrokenEggCount(e.target.value)} className="input-field" />
                 </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Dead Birds</label>
+                  <input type="number" placeholder="0" value={deadCount} onChange={(e) => setDeadCount(e.target.value)} className="input-field" />
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Feed (kg) *</label>
                   <input type="number" required placeholder="50" value={feedGivenKg} onChange={(e) => setFeedGivenKg(e.target.value)} className="input-field" />
@@ -406,10 +405,6 @@ export const DashboardPage: React.FC = () => {
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Water (L) *</label>
                   <input type="number" required placeholder="120" value={waterGivenLiters} onChange={(e) => setWaterGivenLiters(e.target.value)} className="input-field" />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Dead Birds</label>
-                  <input type="number" placeholder="0" value={deadCount} onChange={(e) => setDeadCount(e.target.value)} className="input-field" />
                 </div>
               </div>
 
@@ -477,26 +472,47 @@ export const DashboardPage: React.FC = () => {
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Quantity *</label>
-                  <input type="number" min="1" required placeholder={saleItemType === 'egg' ? 'e.g. 500' : 'e.g. 50'} value={saleQuantity} onChange={(e) => setSaleQuantity(e.target.value)} className="input-field" />
+              {/* Egg Quantity Inputs: Crates + Loose */}
+              {saleItemType === 'egg' ? (
+                <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>Egg Quantity (1 Crate = 30 Eggs)</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '4px' }}>Full Crates</label>
+                      <input type="number" min="0" placeholder="e.g. 1" value={saleCrates} onChange={(e) => setSaleCrates(e.target.value)} className="input-field" />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '4px' }}>Loose Eggs</label>
+                      <input type="number" min="0" placeholder="e.g. 10" value={saleLooseEggs} onChange={(e) => setSaleLooseEggs(e.target.value)} className="input-field" />
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '8px', color: '#10b981', fontWeight: 800, fontSize: '0.88rem' }}>
+                    Total Selling: {formatEggCount(totalSaleEggQty)} ({totalSaleEggQty} eggs)
+                  </div>
                 </div>
+              ) : (
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Unit Price (৳) *</label>
-                  <input type="number" min="0" step="0.01" required placeholder={saleItemType === 'egg' ? 'e.g. 10.50' : 'e.g. 220'} value={saleUnitPrice} onChange={(e) => setSaleUnitPrice(e.target.value)} className="input-field" />
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Number of Chickens / Birds *</label>
+                  <input type="number" min="1" required placeholder="e.g. 50" value={saleChickenQty} onChange={(e) => setSaleChickenQty(e.target.value)} className="input-field" />
                 </div>
+              )}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>
+                  {saleItemType === 'egg' ? 'Price per Egg (৳) *' : 'Price per Chicken (৳) *'}
+                </label>
+                <input type="number" min="0" step="0.01" required placeholder={saleItemType === 'egg' ? 'e.g. 10.50' : 'e.g. 220'} value={saleUnitPrice} onChange={(e) => setSaleUnitPrice(e.target.value)} className="input-field" />
               </div>
 
-              {saleQuantity && saleUnitPrice && (
+              {totalSaleEggQty > 0 && saleUnitPrice && (
                 <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', padding: '10px 14px', borderRadius: '8px', color: '#3b82f6', fontWeight: 800, fontSize: '0.95rem' }}>
-                  Total Income: ৳{(Number(saleQuantity) * Number(saleUnitPrice)).toLocaleString()}
+                  Total Revenue: ৳{(totalSaleEggQty * Number(saleUnitPrice)).toLocaleString()}
                 </div>
               )}
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>Buyer / Customer Name</label>
-                <input type="text" placeholder="e.g. Dhaka Wholesale Market" value={saleCustomer} onChange={(e) => setSaleCustomer(e.target.value)} className="input-field" />
+                <input type="text" placeholder="e.g. Wholesale Buyer" value={saleCustomer} onChange={(e) => setSaleCustomer(e.target.value)} className="input-field" />
               </div>
 
               <div>
