@@ -6,6 +6,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
+import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
 
 export const DashboardScreen: React.FC = () => {
   const { user, token, logout } = useAuth();
@@ -17,21 +18,24 @@ export const DashboardScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Quick Daily Log Form State
+  // Quick Daily Log Form State (Crates + Loose Eggs)
   const [quickLogModal, setQuickLogModal] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState('');
-  const [eggCount, setEggCount] = useState('');
+  const [crates, setCrates] = useState('0');
+  const [looseEggs, setLooseEggs] = useState('0');
   const [brokenCount, setBrokenCount] = useState('0');
   const [deadCount, setDeadCount] = useState('0');
   const [feedKg, setFeedKg] = useState('');
   const [waterL, setWaterL] = useState('');
   const [submittingLog, setSubmittingLog] = useState(false);
 
-  // Record Sale Modal State (OWNER ONLY)
+  // Record Sale Modal State (OWNER ONLY - Crates + Loose Eggs)
   const [saleModalOpen, setSaleModalOpen] = useState(false);
   const [saleItemType, setSaleItemType] = useState<'egg' | 'chicken'>('egg');
   const [saleBatchId, setSaleBatchId] = useState('');
-  const [saleQuantity, setSaleQuantity] = useState('');
+  const [saleCrates, setSaleCrates] = useState('0');
+  const [saleLooseEggs, setSaleLooseEggs] = useState('0');
+  const [saleChickenQty, setSaleChickenQty] = useState('');
   const [saleUnitPrice, setSaleUnitPrice] = useState('');
   const [saleCustomer, setSaleCustomer] = useState('');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
@@ -60,9 +64,12 @@ export const DashboardScreen: React.FC = () => {
 
   const onRefresh = () => { setRefreshing(true); load(); };
 
+  const totalLogEggs = cratesAndLooseToTotal(crates, looseEggs);
+  const totalSaleQty = saleItemType === 'egg' ? cratesAndLooseToTotal(saleCrates, saleLooseEggs) : Number(saleChickenQty || 0);
+
   const handleQuickLogSave = async () => {
-    if (!selectedBatchId || !eggCount || !feedKg || !waterL) {
-      showAlert('Error', 'Please enter Eggs, Feed, and Water values');
+    if (!selectedBatchId || totalLogEggs <= 0 || !feedKg || !waterL) {
+      showAlert('Error', 'Please enter Eggs (Crates/Loose), Feed, and Water values');
       return;
     }
     setSubmittingLog(true);
@@ -73,16 +80,17 @@ export const DashboardScreen: React.FC = () => {
         body: JSON.stringify({
           batchId: selectedBatchId,
           date: todayStr,
-          eggCount: Number(eggCount),
+          eggCount: totalLogEggs,
           brokenEggCount: Number(brokenCount || 0),
           deadCount: Number(deadCount || 0),
           feedGivenKg: Number(feedKg),
           waterGivenLiters: Number(waterL),
         })
       }, token);
-      showAlert('Success', 'Daily Log saved successfully!');
+      showAlert('Success', `Daily Log saved! (${formatEggCount(totalLogEggs)})`);
       setQuickLogModal(false);
-      setEggCount('');
+      setCrates('0');
+      setLooseEggs('0');
       setFeedKg('');
       setWaterL('');
       load();
@@ -92,7 +100,7 @@ export const DashboardScreen: React.FC = () => {
   };
 
   const handleSaveSale = async () => {
-    if (!saleQuantity || !saleUnitPrice) {
+    if (totalSaleQty <= 0 || !saleUnitPrice) {
       showAlert('Error', 'Quantity and Unit Price are required');
       return;
     }
@@ -103,7 +111,7 @@ export const DashboardScreen: React.FC = () => {
         body: JSON.stringify({
           itemType: saleItemType,
           batchId: saleBatchId || undefined,
-          quantity: Number(saleQuantity),
+          quantity: totalSaleQty,
           unitPrice: Number(saleUnitPrice),
           date: saleDate,
           customerName: saleCustomer || undefined
@@ -111,7 +119,9 @@ export const DashboardScreen: React.FC = () => {
       }, token);
       showAlert('Success', `${saleItemType === 'egg' ? 'Egg' : 'Chicken'} sale recorded!`);
       setSaleModalOpen(false);
-      setSaleQuantity('');
+      setSaleCrates('0');
+      setSaleLooseEggs('0');
+      setSaleChickenQty('');
       setSaleUnitPrice('');
       setSaleCustomer('');
       load();
@@ -228,19 +238,19 @@ export const DashboardScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Egg Stock & Sales Highlights */}
+        {/* Egg Stock & Sales Highlights (Formatted in Crates) */}
         <Text style={[s.titleHeader, { marginTop: 24, marginBottom: 12 }]}>Egg Stock & Revenue</Text>
         <View style={s.statRow}>
           <View style={[common.statCard, { borderColor: colors.brand, borderWidth: 1 }]}>
             <Text style={common.statLabel}>Current Egg Stock</Text>
-            <Text style={[common.statValue, { color: colors.brand }]}>{(summary?.currentEggCount || 0).toLocaleString()}</Text>
-            <Text style={common.statSub}>Unsold available eggs</Text>
+            <Text style={[common.statValue, { color: colors.brand, fontSize: 15 }]}>{formatEggCount(summary?.currentEggCount || 0)}</Text>
+            <Text style={common.statSub}>{(summary?.currentEggCount || 0).toLocaleString()} unsold eggs</Text>
           </View>
           <View style={{ width: 10 }} />
           <View style={common.statCard}>
             <Text style={common.statLabel}>All-Time Eggs</Text>
-            <Text style={[common.statValue, { color: colors.amber }]}>{(summary?.allTimeEggCount || 0).toLocaleString()}</Text>
-            <Text style={common.statSub}>Total cumulative</Text>
+            <Text style={[common.statValue, { color: colors.amber, fontSize: 15 }]}>{formatEggCount(summary?.allTimeEggCount || 0)}</Text>
+            <Text style={common.statSub}>{(summary?.allTimeEggCount || 0).toLocaleString()} total</Text>
           </View>
         </View>
 
@@ -248,7 +258,7 @@ export const DashboardScreen: React.FC = () => {
           <View style={[common.statCard, { flex: 1, borderColor: colors.blue, borderWidth: 1 }]}>
             <Text style={common.statLabel}>Total Sales Income</Text>
             <Text style={[common.statValue, { color: colors.blue }]}>৳{(summary?.totalIncome || 0).toLocaleString()}</Text>
-            <Text style={common.statSub}>Sold: {summary?.totalEggsSold || 0} eggs | {summary?.totalChickensSold || 0} birds</Text>
+            <Text style={common.statSub}>Sold: {formatEggCount(summary?.totalEggsSold || 0)} | {summary?.totalChickensSold || 0} birds</Text>
           </View>
         </View>
 
@@ -274,7 +284,7 @@ export const DashboardScreen: React.FC = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* ⚡ Quick Save Daily Log Modal */}
+      {/* ⚡ Quick Save Daily Log Modal (Crates + Loose Eggs) */}
       <Modal visible={quickLogModal} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalCard}>
@@ -294,14 +304,32 @@ export const DashboardScreen: React.FC = () => {
               ))}
             </ScrollView>
 
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={common.label}>Total Eggs *</Text>
-                <TextInput style={common.input} keyboardType="numeric" placeholder="e.g. 450" placeholderTextColor="#64748b" value={eggCount} onChangeText={setEggCount} />
+            {/* Crates + Loose Eggs Inputs */}
+            <View style={s.crateBox}>
+              <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 13, marginBottom: 6 }}>🥚 Eggs Collected (1 Crate = 30 Eggs)</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={common.label}>Full Crates</Text>
+                  <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={crates} onChangeText={setCrates} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={common.label}>Loose Eggs</Text>
+                  <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={looseEggs} onChangeText={setLooseEggs} />
+                </View>
               </View>
+              <Text style={{ color: colors.brand, fontWeight: '700', fontSize: 12, marginTop: 4 }}>
+                Total: {formatEggCount(totalLogEggs)} ({totalLogEggs} eggs)
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
                 <Text style={common.label}>Broken Eggs</Text>
                 <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={brokenCount} onChangeText={setBrokenCount} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={common.label}>Dead Birds</Text>
+                <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={deadCount} onChangeText={setDeadCount} />
               </View>
             </View>
 
@@ -316,9 +344,6 @@ export const DashboardScreen: React.FC = () => {
               </View>
             </View>
 
-            <Text style={common.label}>Dead Birds</Text>
-            <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={deadCount} onChangeText={setDeadCount} />
-
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 30 }}>
               <TouchableOpacity style={[common.btnSecondary, { flex: 1 }]} onPress={() => setQuickLogModal(false)}>
                 <Text style={common.btnSecondaryText}>Cancel</Text>
@@ -331,7 +356,7 @@ export const DashboardScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* 💰 Record Sale Modal (OWNER ONLY) */}
+      {/* 💰 Record Sale Modal (OWNER ONLY - Crates + Loose Eggs) */}
       <Modal visible={saleModalOpen && isOwner} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalCard}>
@@ -353,21 +378,37 @@ export const DashboardScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={common.label}>Quantity *</Text>
-                <TextInput style={common.input} keyboardType="numeric" placeholder={saleItemType === 'egg' ? '500' : '50'} placeholderTextColor="#64748b" value={saleQuantity} onChangeText={setSaleQuantity} />
+            {saleItemType === 'egg' ? (
+              <View style={s.crateBox}>
+                <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 13, marginBottom: 6 }}>🥚 Egg Sale Qty (1 Crate = 30 Eggs)</Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={common.label}>Full Crates</Text>
+                    <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={saleCrates} onChangeText={setSaleCrates} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={common.label}>Loose Eggs</Text>
+                    <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={saleLooseEggs} onChangeText={setSaleLooseEggs} />
+                  </View>
+                </View>
+                <Text style={{ color: colors.brand, fontWeight: '700', fontSize: 12, marginTop: 4 }}>
+                  Selling: {formatEggCount(totalSaleQty)} ({totalSaleQty} eggs)
+                </Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={common.label}>Unit Price (৳) *</Text>
-                <TextInput style={common.input} keyboardType="numeric" placeholder={saleItemType === 'egg' ? '10.5' : '220'} placeholderTextColor="#64748b" value={saleUnitPrice} onChangeText={setSaleUnitPrice} />
+            ) : (
+              <View>
+                <Text style={common.label}>Number of Chickens / Birds *</Text>
+                <TextInput style={common.input} keyboardType="numeric" placeholder="e.g. 50" placeholderTextColor="#64748b" value={saleChickenQty} onChangeText={setSaleChickenQty} />
               </View>
-            </View>
+            )}
 
-            {saleQuantity && saleUnitPrice ? (
+            <Text style={common.label}>Unit Price (৳) *</Text>
+            <TextInput style={common.input} keyboardType="numeric" placeholder={saleItemType === 'egg' ? '10.50 per egg' : '220 per bird'} placeholderTextColor="#64748b" value={saleUnitPrice} onChangeText={setSaleUnitPrice} />
+
+            {totalSaleQty > 0 && saleUnitPrice ? (
               <View style={s.totalBanner}>
                 <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 15 }}>
-                  Total Revenue: ৳{(Number(saleQuantity) * Number(saleUnitPrice)).toLocaleString()}
+                  Total Revenue: ৳{(totalSaleQty * Number(saleUnitPrice)).toLocaleString()}
                 </Text>
               </View>
             ) : null}
@@ -410,6 +451,7 @@ const s = StyleSheet.create({
   typeChip: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border },
   typeChipActiveEgg: { backgroundColor: colors.brand, borderColor: colors.brand },
   typeChipActiveChicken: { backgroundColor: colors.blue, borderColor: colors.blue },
+  crateBox: { backgroundColor: 'rgba(16,185,129,0.1)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', marginBottom: 14 },
   totalBanner: { backgroundColor: 'rgba(59,130,246,0.15)', padding: 12, borderRadius: 10, marginBottom: 14, alignItems: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
   modalCard: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '90%' },
