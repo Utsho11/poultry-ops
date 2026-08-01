@@ -3,7 +3,7 @@ export type BatchType = 'layer' | 'broiler';
 export type BatchStatus = 'active' | 'closed';
 export type ExpenseCategory = 'feed' | 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
 export type HealthRecordType = 'checkup' | 'vaccination' | 'injection' | 'treatment';
-export type ReminderType = 'feed' | 'water' | 'medicine' | 'custom';
+export type ReminderType = 'feed' | 'water' | 'medicine' | 'vaccination' | 'checkup' | 'general' | 'custom';
 export type SubscriptionPlan = 'free' | 'pro';
 
 export interface IFarm {
@@ -101,6 +101,9 @@ export interface IReminder {
   batchId?: string;
   type: ReminderType;
   message: string;
+  dueDate?: string;
+  dueTime?: string;
+  repeat?: 'none' | 'daily' | 'weekly';
   cronExpression: string;
   assignedTo: string[];
   channel: ('push' | 'sms')[];

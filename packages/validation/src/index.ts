@@ -70,7 +70,7 @@ export const createUserSchema = z.object({
 
 export const reminderSchema = z.object({
   batchId: z.string().optional(),
-  type: z.string().default('feed'),
+  type: z.enum(['feed', 'water', 'medicine', 'vaccination', 'checkup', 'general', 'custom']).default('feed'),
   message: z.string().min(2, 'Message is required'),
   dueDate: z.string().optional(),
   dueTime: z.string().optional(),
