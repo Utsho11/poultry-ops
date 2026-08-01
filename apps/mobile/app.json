@@ -7,9 +7,6 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0f172a",
-    "splash": {
-      "backgroundColor": "#0f172a"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.poultryops.app"
@@ -20,6 +17,14 @@
       },
       "package": "com.poultryops.app"
     },
-    "platforms": ["ios", "android"]
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1837ea47-9a02-4f33-92fd-001e40408cc4"
+      }
+    }
   }
 }
