@@ -1,8 +1,29 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Vibration } from 'react-native';
-import { apiFetch, showAlert } from '../config';
+import { Platform, Vibration } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { apiFetch } from '../config';
 
 const POLL_MS = 15_000;
+
+// Configure Notifications to play sound, show alert, and set badge
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+// Configure Android Notification Channel for max importance, sound, and vibration
+if (Platform.OS === 'android') {
+  Notifications.setNotificationChannelAsync('default', {
+    name: 'Farm Alarms',
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 500, 200, 500],
+    sound: 'default',
+    enableVibrate: true,
+  });
+}
 
 export interface ActiveAlert {
   id: string;
@@ -52,6 +73,11 @@ export function useReminderAlerts(token: string | null) {
     setActiveAlerts(prev => prev.filter(a => a.id !== id));
   }, []);
 
+  // Request Notification Permissions on Mount
+  useEffect(() => {
+    Notifications.requestPermissionsAsync().catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (!token) return;
 
@@ -69,8 +95,23 @@ export function useReminderAlerts(token: string | null) {
           if (!firedKeysRef.current.has(key)) {
             firedKeysRef.current.add(key);
 
-            // Vibrate mobile device for alarm alert
-            try { Vibration.vibrate([0, 500, 200, 500]); } catch (e) {}
+            // 1. Schedule local push notification with sound and vibration
+            try {
+              await Notifications.scheduleNotificationAsync({
+                content: {
+                  title: `🔔 Farm Alarm — ${rem.dueTime || '08:00 AM'}`,
+                  body: rem.message,
+                  sound: 'default',
+                  vibrate: [0, 500, 200, 500],
+                },
+                trigger: null, // Fire immediately
+              });
+            } catch (e) {}
+
+            // 2. Additional direct haptic vibration
+            try {
+              Vibration.vibrate([0, 500, 200, 500]);
+            } catch (e) {}
 
             newlyFired.push({
               id: rem._id,

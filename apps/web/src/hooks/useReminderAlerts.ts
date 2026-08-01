@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchWithAuth } from '../services/api';
 
-const DEBUG_ENDPOINT = 'http://127.0.0.1:7898/ingest/8aab6805-612d-4a5e-86df-5176f3ce7ab6';
-const SESSION_ID = '2dce91';
 const POLL_MS = 15_000;
 const FIRED_STORAGE_KEY = 'poultryops-fired-alarms';
 
@@ -13,22 +11,40 @@ export interface ActiveAlert {
   dueTime: string;
 }
 
-function debugLog(location: string, message: string, data: Record<string, unknown>, hypothesisId: string, runId = 'post-fix') {
-  // #region agent log
-  fetch(DEBUG_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': SESSION_ID },
-    body: JSON.stringify({
-      sessionId: SESSION_ID,
-      location,
-      message,
-      data,
-      timestamp: Date.now(),
-      runId,
-      hypothesisId,
-    }),
-  }).catch(() => {});
-  // #endregion
+// Web Audio API Synthesizer to play pleasant alarm chime sound
+function playWebAlarmSound() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.type = 'sine';
+    osc2.type = 'triangle';
+
+    osc1.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+    osc1.frequency.setValueAtTime(1046.5, ctx.currentTime + 0.15); // C6 note
+
+    osc2.frequency.setValueAtTime(440, ctx.currentTime);
+    osc2.frequency.setValueAtTime(523.25, ctx.currentTime + 0.15);
+
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.start(ctx.currentTime);
+    osc2.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.6);
+    osc2.stop(ctx.currentTime + 0.6);
+  } catch (e) {
+    /* ignore audio context restrictions */
+  }
 }
 
 function parse12HourTime(timeStr: string): { hours: number; minutes: number } {
@@ -88,9 +104,13 @@ function dispatchAlert(rem: any, now: Date, firedKeys: Set<string>): boolean {
   firedKeys.add(key);
   persistFiredKeys(firedKeys);
 
+  // 1. Play audio alarm chime sound
+  playWebAlarmSound();
+
+  // 2. Browser native notification
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
     try {
-      new Notification('🔔 Farm Alarm', {
+      new Notification('🔔 Farm Alarm — ' + (rem.dueTime || '08:00 AM'), {
         body: rem.message,
         tag: key,
         icon: '/favicon.ico',
@@ -99,19 +119,6 @@ function dispatchAlert(rem: any, now: Date, firedKeys: Set<string>): boolean {
       /* Notification constructor may fail in some contexts */
     }
   }
-
-  debugLog(
-    'useReminderAlerts.ts:dispatch',
-    'Alert fired for due reminder',
-    {
-      reminderId: rem._id,
-      message: rem.message,
-      dueTime: rem.dueTime,
-      hasAlertDispatcher: true,
-      notificationPermission: typeof Notification !== 'undefined' ? Notification.permission : 'unsupported',
-    },
-    'B'
-  );
 
   return true;
 }
@@ -155,27 +162,8 @@ export function useReminderAlerts() {
             return [...prev.filter(a => !ids.has(a.id)), ...newlyFired];
           });
         }
-
-        debugLog(
-          'useReminderAlerts.ts:check',
-          'Client alarm poll tick',
-          {
-            reminderCount: reminders.length,
-            dueNowCount: dueNow.length,
-            newlyFiredCount: newlyFired.length,
-            currentTime: now.toISOString(),
-            hasAlertDispatcher: true,
-            notificationPermission: typeof Notification !== 'undefined' ? Notification.permission : 'unsupported',
-          },
-          'B'
-        );
       } catch (err: any) {
-        debugLog(
-          'useReminderAlerts.ts:error',
-          'Failed to poll reminders for alerts',
-          { error: err?.message || String(err) },
-          'D'
-        );
+        /* ignore poll errors */
       }
     };
 
