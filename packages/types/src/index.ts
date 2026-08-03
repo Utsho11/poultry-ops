@@ -160,6 +160,10 @@ export interface IReportMetrics {
   totalIncome: number;
   totalEggsSold: number;
   totalChickensSold: number;
+  // Laying & Feed Performance Metrics per Chicken
+  eggLayingRate: number;              // Percentage of laid eggs per chicken (e.g. 85.5%)
+  feedPerChickenGrams: number;        // Feed consumed in grams per chicken per day (e.g. 115g)
+  feedPerChickenPercentage: number;   // Percentage of daily feed intake relative to standard 110g target (e.g. 104.5%)
 }
 
 export interface IAuthUser {

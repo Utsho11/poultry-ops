@@ -115,6 +115,14 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
     // Current unsold egg inventory stock
     const currentEggCount = Math.max(0, allTimeEggCount - allTimeBrokenCount - totalEggsSold);
 
+    // Count distinct logged days to compute average daily performance
+    const distinctDaysAgg = await DailyLogModel.aggregate([
+      { $match: logMatch },
+      { $group: { _id: '$date' } },
+      { $count: 'totalDays' }
+    ]);
+    const distinctLogDays = distinctDaysAgg[0]?.totalDays || 1;
+
     const batchQuery: any = { farmId: farmObjectId };
     if (batchId) batchQuery._id = new mongoose.Types.ObjectId(batchId as string);
 
@@ -138,6 +146,20 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
       ? Number((logMetrics.totalFeedKg / (logMetrics.totalEggs / 12)).toFixed(3))
       : 0;
 
+    // 1. Percentage of Laid Eggs per Chicken (%)
+    const avgDailyEggs = logMetrics.totalEggs / distinctLogDays;
+    const eggLayingRate = currentBirdCount > 0
+      ? Number(((avgDailyEggs / currentBirdCount) * 100).toFixed(1))
+      : 0;
+
+    // 2. Feed per Chicken (grams/bird/day) & percentage relative to standard 110g intake target
+    const avgDailyFeedKg = logMetrics.totalFeedKg / distinctLogDays;
+    const feedPerChickenGrams = currentBirdCount > 0
+      ? Number(((avgDailyFeedKg * 1000) / currentBirdCount).toFixed(1))
+      : 0;
+
+    const feedPerChickenPercentage = Number(((feedPerChickenGrams / 110) * 100).toFixed(1));
+
     return res.json({
       totalEggs: logMetrics.totalEggs,
       totalBrokenEggs: logMetrics.totalBrokenEggs,
@@ -156,7 +178,11 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
       currentEggCount,
       totalIncome,
       totalEggsSold,
-      totalChickensSold
+      totalChickensSold,
+      // Laying & Feed Performance Metrics per Chicken
+      eggLayingRate,
+      feedPerChickenGrams,
+      feedPerChickenPercentage
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -321,6 +347,26 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
         const costPerEgg = logs.totalEggs > 0 ? Number((totalExpenses / logs.totalEggs).toFixed(2)) : 0;
         const FCR = logs.totalEggs > 0 ? Number((logs.totalFeedKg / (logs.totalEggs / 12)).toFixed(3)) : 0;
 
+        const distinctDaysAgg = await DailyLogModel.aggregate([
+          { $match: { farmId: farmObjectId, batchId: batchObjId } },
+          { $group: { _id: '$date' } },
+          { $count: 'totalDays' }
+        ]);
+        const distinctLogDays = distinctDaysAgg[0]?.totalDays || 1;
+
+        const avgDailyEggs = logs.totalEggs / distinctLogDays;
+        const avgDailyFeedKg = logs.totalFeedKg / distinctLogDays;
+
+        const eggLayingRate = batch.currentCount > 0
+          ? Number(((avgDailyEggs / batch.currentCount) * 100).toFixed(1))
+          : 0;
+
+        const feedPerChickenGrams = batch.currentCount > 0
+          ? Number(((avgDailyFeedKg * 1000) / batch.currentCount).toFixed(1))
+          : 0;
+
+        const feedPerChickenPercentage = Number(((feedPerChickenGrams / 110) * 100).toFixed(1));
+
         return {
           batchId: batch._id,
           batchName: batch.name,
@@ -343,6 +389,9 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
           costPerBird,
           costPerEgg,
           feedConversionRatio: FCR,
+          eggLayingRate,
+          feedPerChickenGrams,
+          feedPerChickenPercentage,
           healthRecordCount: healthCount
         };
       })

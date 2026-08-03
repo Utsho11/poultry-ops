@@ -222,6 +222,38 @@ export const ReportsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Egg Laying Rate per Chicken */}
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(16, 185, 129, 0.3)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(30, 41, 59, 1) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div className="metric-label" style={{ color: '#10b981', fontWeight: 700 }}>Egg Laying Rate %</div>
+              <div className="metric-value" style={{ color: '#10b981' }}>{summary?.eggLayingRate || 0}%</div>
+            </div>
+            <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', padding: '8px', borderRadius: '50%', color: '#10b981' }}>
+              <Egg size={18} />
+            </div>
+          </div>
+          <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '6px' }}>
+            Laid egg percentage per active chicken
+          </div>
+        </div>
+
+        {/* Feed per Chicken */}
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(245, 158, 11, 0.3)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(30, 41, 59, 1) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div className="metric-label" style={{ color: '#f59e0b', fontWeight: 700 }}>Daily Feed / Chicken</div>
+              <div className="metric-value" style={{ color: '#f59e0b' }}>{summary?.feedPerChickenGrams || 0}g <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>/ bird</span></div>
+            </div>
+            <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', padding: '8px', borderRadius: '50%', color: '#f59e0b' }}>
+              <Bird size={18} />
+            </div>
+          </div>
+          <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '6px' }}>
+            {summary?.feedPerChickenPercentage || 0}% of target feed (110g/bird)
+          </div>
+        </div>
+
         {/* Mortality Rate */}
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

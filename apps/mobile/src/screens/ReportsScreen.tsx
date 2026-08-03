@@ -155,6 +155,21 @@ export const ReportsScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Performance Stats per Chicken (Laying % and Feed per Bird) */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+          <View style={[s.highlightCard, { borderColor: colors.brand }]}>
+            <Text style={s.metricLabel}>EGG LAYING RATE %</Text>
+            <Text style={[s.metricValue, { color: colors.brand }]}>{summary?.eggLayingRate || 0}%</Text>
+            <Text style={s.trendText}>Laid eggs per active hen</Text>
+          </View>
+
+          <View style={[s.highlightCard, { borderColor: colors.amber }]}>
+            <Text style={s.metricLabel}>FEED / CHICKEN</Text>
+            <Text style={[s.metricValue, { color: colors.amber }]}>{summary?.feedPerChickenGrams || 0}g</Text>
+            <Text style={s.trendText}>{summary?.feedPerChickenPercentage || 0}% of target intake (110g)</Text>
+          </View>
+        </View>
+
         {/* 2x2 Metric Grid */}
         <View style={s.metricGrid}>
           {/* Tile 1: Current Egg Stock */}
