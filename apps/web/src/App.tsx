@@ -10,9 +10,10 @@ import { DashboardPage } from './pages/DashboardPage';
 import { BatchesPage } from './pages/BatchesPage';
 import { DailyLogPage } from './pages/DailyLogPage';
 import { ExpensesHealthPage } from './pages/ExpensesHealthPage';
-import { RemindersPage } from './pages/RemindersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { TeamSettingsPage } from './pages/TeamSettingsPage';
+import { BatchDashboardPage } from './pages/BatchDashboardPage';
+import { DailyReportPage } from './pages/DailyReportPage';
 
 const ProtectedLayout: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -29,8 +30,9 @@ const ProtectedLayout: React.FC = () => {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/batches" element={<BatchesPage />} />
+            <Route path="/batch-dashboard/:batchId" element={<BatchDashboardPage />} />
+            <Route path="/daily-report" element={<DailyReportPage />} />
             <Route path="/logs" element={<DailyLogPage />} />
-            <Route path="/reminders" element={<RemindersPage />} />
             {!isWorker && <Route path="/expenses-health" element={<ExpensesHealthPage />} />}
             {!isWorker && <Route path="/reports" element={<ReportsPage />} />}
             {!isWorker && <Route path="/team-settings" element={<TeamSettingsPage />} />}

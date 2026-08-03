@@ -10,9 +10,6 @@ import salesRoutes from './routes/sales';
 import healthRoutes from './routes/health';
 import reportRoutes from './routes/reports';
 import userRoutes from './routes/users';
-import reminderRoutes from './routes/reminders';
-import deviceTokenRoutes from './routes/deviceTokens';
-import { startReminderDispatcher } from './jobs/reminderDispatcher';
 
 dotenv.config();
 
@@ -38,8 +35,6 @@ app.use('/api/health-records', healthRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/team', userRoutes); // Alias for team management
-app.use('/api/reminders', reminderRoutes);
-app.use('/api/device-tokens', deviceTokenRoutes);
 
 // Error Handler
 app.use((err: any, req: Request, res: Response, next: any) => {
@@ -51,7 +46,6 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`PoultryOps API Server v1.1.0 running on port ${PORT} (0.0.0.0)`);
   connectDB();
-  startReminderDispatcher();
 });
 
 export default app;

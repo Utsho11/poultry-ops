@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Layers, ClipboardList, DollarSign, BarChart3, Users, Plus, HelpCircle, LogOut, Bell } from 'lucide-react';
+import { LayoutDashboard, Layers, ClipboardList, DollarSign, BarChart3, Users, Plus, HelpCircle, LogOut } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const { t } = useLang();
@@ -15,7 +15,6 @@ export const Sidebar: React.FC = () => {
     { path: '/', label: 'Overview', icon: LayoutDashboard, roles: ['owner', 'manager', 'worker'] },
     { path: '/batches', label: 'Flocks', icon: Layers, roles: ['owner', 'manager', 'worker'] },
     { path: '/logs', label: 'Daily Log', icon: ClipboardList, roles: ['owner', 'manager', 'worker'] },
-    { path: '/reminders', label: 'Reminders', icon: Bell, roles: ['owner', 'manager', 'worker'] },
     { path: '/expenses-health', label: 'Health & Finance', icon: DollarSign, roles: ['owner', 'manager'] },
     { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['owner', 'manager'] },
     { path: '/team-settings', label: 'Team', icon: Users, roles: ['owner', 'manager'] }
@@ -26,8 +25,8 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="sidebar" style={{
       width: '260px',
-      backgroundColor: '#1e293b',
-      borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+      backgroundColor: '#FFFFFF',
+      borderRight: '1px solid #E8E2D8',
       padding: '24px 18px',
       display: 'flex',
       flexDirection: 'column',
@@ -37,11 +36,11 @@ export const Sidebar: React.FC = () => {
       <div>
         {/* Logo Brand Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#10b981', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/logo.jpg" alt="PoultryOps" style={{ width: '34px', height: '34px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(16, 185, 129, 0.4)' }} />
+          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#C7511F', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/logo.jpg" alt="PoultryOps" style={{ width: '34px', height: '34px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(199, 81, 31, 0.4)' }} />
             PoultryOps
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500, marginTop: '2px', letterSpacing: '0.04em' }}>
+          <div style={{ fontSize: '0.75rem', color: '#6B655C', fontWeight: 500, marginTop: '2px', letterSpacing: '0.04em' }}>
             {isWorker ? 'Worker Hub' : 'Precision Husbandry'}
           </div>
         </div>
@@ -51,7 +50,7 @@ export const Sidebar: React.FC = () => {
           onClick={() => navigate('/logs')}
           style={{
             width: '100%',
-            backgroundColor: '#10b981',
+            backgroundColor: '#C7511F',
             color: '#ffffff',
             border: 'none',
             borderRadius: '12px',
@@ -64,7 +63,7 @@ export const Sidebar: React.FC = () => {
             gap: '8px',
             cursor: 'pointer',
             marginBottom: '24px',
-            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+            boxShadow: '0 4px 14px rgba(199, 81, 31, 0.25)'
           }}
         >
           <Plus size={18} /> {isWorker ? 'Submit Daily Log' : 'Add New Batch'}
@@ -87,8 +86,8 @@ export const Sidebar: React.FC = () => {
                   fontSize: '0.92rem',
                   fontWeight: isActive ? 700 : 500,
                   textDecoration: 'none',
-                  backgroundColor: isActive ? '#10b981' : 'transparent',
-                  color: isActive ? '#ffffff' : '#94a3b8',
+                  backgroundColor: isActive ? '#C7511F' : 'transparent',
+                  color: isActive ? '#ffffff' : '#6B655C',
                   transition: 'all 0.15s ease'
                 })}
               >
@@ -101,11 +100,11 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Sidebar Footer */}
-      <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <button style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.88rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', cursor: 'pointer' }}>
+      <div style={{ borderTop: '1px solid #E8E2D8', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <button style={{ background: 'none', border: 'none', color: '#6B655C', fontSize: '0.88rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', cursor: 'pointer' }}>
           <HelpCircle size={18} /> Help
         </button>
-        <button onClick={logout} style={{ background: 'none', border: 'none', color: '#f43f5e', fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', cursor: 'pointer' }}>
+        <button onClick={logout} style={{ background: 'none', border: 'none', color: '#B23A2F', fontSize: '0.88rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', cursor: 'pointer' }}>
           <LogOut size={18} /> Logout ({user?.name || user?.role})
         </button>
       </div>

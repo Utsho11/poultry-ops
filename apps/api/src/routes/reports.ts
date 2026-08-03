@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import mongoose from 'mongoose';
 import { DailyLogModel, ExpenseModel, BatchModel, HealthRecordModel, SaleModel } from '../models/schemas';
-import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
 const router = Router();
@@ -9,14 +9,26 @@ const router = Router();
 router.use(authenticate);
 router.use(resolveTenant);
 
-// 1. Aggregated Summary Report
-router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
+// Helper to construct ObjectId or fallback
+function toObjectId(id: string) {
+  try {
+    return new mongoose.Types.ObjectId(id);
+  } catch (e) {
+    return id;
+  }
+}
+
+// 1. Aggregated Summary Report (All Farm Roles)
+router.get('/summary', async (req: AuthRequest, res: Response) => {
   try {
     const { batchId, from, to } = req.query;
-    const farmObjectId = new mongoose.Types.ObjectId(req.farmId as string);
+    const farmObjectId = toObjectId(req.farmId as string);
 
-    const logMatch: any = { farmId: farmObjectId };
-    if (batchId) logMatch.batchId = new mongoose.Types.ObjectId(batchId as string);
+    const logMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+    if (batchId) {
+      const bObjId = toObjectId(batchId as string);
+      logMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(batchId) }] }];
+    }
     if (from || to) {
       logMatch.date = {};
       if (from) logMatch.date.$gte = from;
@@ -47,15 +59,18 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
 
     // Calculate ALL-TIME cumulative eggs logged for farm
     const allTimeEggAgg = await DailyLogModel.aggregate([
-      { $match: { farmId: farmObjectId } },
+      { $match: { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] } },
       { $group: { _id: null, sum: { $sum: '$eggCount' }, brokenSum: { $sum: '$brokenEggCount' } } }
     ]);
     const allTimeEggCount = allTimeEggAgg[0]?.sum || 0;
     const allTimeBrokenCount = allTimeEggAgg[0]?.brokenSum || 0;
 
     // Calculate Expenses
-    const expenseMatch: any = { farmId: farmObjectId };
-    if (batchId) expenseMatch.batchId = new mongoose.Types.ObjectId(batchId as string);
+    const expenseMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+    if (batchId) {
+      const bObjId = toObjectId(batchId as string);
+      expenseMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(batchId) }] }];
+    }
     if (from || to) {
       expenseMatch.date = {};
       if (from) expenseMatch.date.$gte = from;
@@ -83,8 +98,11 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
     });
 
     // Calculate Sales & Revenue Income (Egg & Chicken)
-    const saleMatch: any = { farmId: farmObjectId };
-    if (batchId) saleMatch.batchId = new mongoose.Types.ObjectId(batchId as string);
+    const saleMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+    if (batchId) {
+      const bObjId = toObjectId(batchId as string);
+      saleMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(batchId) }] }];
+    }
     if (from || to) {
       saleMatch.date = {};
       if (from) saleMatch.date.$gte = from;
@@ -112,8 +130,8 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
       if (item._id === 'chicken') totalChickensSold = item.totalQuantity;
     });
 
-    // Current unsold egg inventory stock
-    const currentEggCount = Math.max(0, allTimeEggCount - allTimeBrokenCount - totalEggsSold);
+    // Current unsold egg inventory stock (Good eggs ONLY - excludes broken eggs)
+    const currentEggCount = Math.max(0, (allTimeEggCount - allTimeBrokenCount) - totalEggsSold);
 
     // Count distinct logged days to compute average daily performance
     const distinctDaysAgg = await DailyLogModel.aggregate([
@@ -123,8 +141,11 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
     ]);
     const distinctLogDays = distinctDaysAgg[0]?.totalDays || 1;
 
-    const batchQuery: any = { farmId: farmObjectId };
-    if (batchId) batchQuery._id = new mongoose.Types.ObjectId(batchId as string);
+    const batchQuery: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+    if (batchId) {
+      const bObjId = toObjectId(batchId as string);
+      batchQuery._id = bObjId;
+    }
 
     const batches = await BatchModel.find(batchQuery);
     const initialBirdCount = batches.reduce((acc, b) => acc + b.initialCount, 0);
@@ -146,13 +167,12 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
       ? Number((logMetrics.totalFeedKg / (logMetrics.totalEggs / 12)).toFixed(3))
       : 0;
 
-    // 1. Percentage of Laid Eggs per Chicken (%)
+    // Laying rate includes ALL produced eggs (good + broken)
     const avgDailyEggs = logMetrics.totalEggs / distinctLogDays;
     const eggLayingRate = currentBirdCount > 0
       ? Number(((avgDailyEggs / currentBirdCount) * 100).toFixed(1))
       : 0;
 
-    // 2. Feed per Chicken (grams/bird/day) & percentage relative to standard 110g intake target
     const avgDailyFeedKg = logMetrics.totalFeedKg / distinctLogDays;
     const feedPerChickenGrams = currentBirdCount > 0
       ? Number(((avgDailyFeedKg * 1000) / currentBirdCount).toFixed(1))
@@ -173,13 +193,11 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
       costPerBird,
       feedConversionRatio: FCR,
       birdStats: { initialBirdCount, currentBirdCount },
-      // New Egg Stock & Sales Metrics
       allTimeEggCount,
       currentEggCount,
       totalIncome,
       totalEggsSold,
       totalChickensSold,
-      // Laying & Feed Performance Metrics per Chicken
       eggLayingRate,
       feedPerChickenGrams,
       feedPerChickenPercentage
@@ -189,21 +207,23 @@ router.get('/summary', requireRole(['owner', 'manager']), async (req: AuthReques
   }
 });
 
-// 2. Daily Field Report
-router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
+// 2. Daily Field Report (Includes Day Count & Laying Rate)
+router.get('/daily', async (req: AuthRequest, res: Response) => {
   try {
     const { batchId, from, to } = req.query;
-    const farmObjectId = new mongoose.Types.ObjectId(req.farmId as string);
+    const farmObjectId = toObjectId(req.farmId as string);
 
-    const logMatch: any = { farmId: farmObjectId };
-    if (batchId) logMatch.batchId = new mongoose.Types.ObjectId(batchId as string);
+    const logMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+    if (batchId) {
+      const bObjId = toObjectId(batchId as string);
+      logMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(batchId) }] }];
+    }
     if (from || to) {
       logMatch.date = {};
       if (from) logMatch.date.$gte = from;
       if (to) logMatch.date.$lte = to;
     }
 
-    // Daily Logs by Date
     const dailyLogs = await DailyLogModel.aggregate([
       { $match: logMatch },
       {
@@ -219,9 +239,11 @@ router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest,
       { $sort: { _id: 1 } }
     ]);
 
-    // Daily Expenses by Date & Category
-    const expenseMatch: any = { farmId: farmObjectId };
-    if (batchId) expenseMatch.batchId = new mongoose.Types.ObjectId(batchId as string);
+    const expenseMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+    if (batchId) {
+      const bObjId = toObjectId(batchId as string);
+      expenseMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(batchId) }] }];
+    }
     if (from || to) {
       expenseMatch.date = {};
       if (from) expenseMatch.date.$gte = from;
@@ -233,12 +255,11 @@ router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest,
       {
         $group: {
           _id: { date: '$date', category: '$category' },
-          totalAmount: { $sum: '$amount' }
+          amount: { $sum: '$amount' }
         }
       }
     ]);
 
-    // Map daily data
     const resultMap: Record<string, any> = {};
 
     dailyLogs.forEach((item) => {
@@ -250,20 +271,20 @@ router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest,
         deadCount: item.deadCount,
         feedGivenKg: item.feedGivenKg,
         waterGivenLiters: item.waterGivenLiters,
+        totalExpenses: 0,
         feedExpense: 0,
         medicineExpense: 0,
         laborExpense: 0,
         utilityExpense: 0,
         equipmentExpense: 0,
-        otherExpense: 0,
-        totalExpense: 0
+        otherExpense: 0
       };
     });
 
     dailyExpenses.forEach((item) => {
       const d = item._id.date;
       const cat = item._id.category;
-      const amount = item.totalAmount;
+      const amount = item.amount;
 
       if (!resultMap[d]) {
         resultMap[d] = {
@@ -273,13 +294,13 @@ router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest,
           deadCount: 0,
           feedGivenKg: 0,
           waterGivenLiters: 0,
+          totalExpenses: 0,
           feedExpense: 0,
           medicineExpense: 0,
           laborExpense: 0,
           utilityExpense: 0,
           equipmentExpense: 0,
-          otherExpense: 0,
-          totalExpense: 0
+          otherExpense: 0
         };
       }
 
@@ -290,10 +311,70 @@ router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest,
       else if (cat === 'equipment') resultMap[d].equipmentExpense += amount;
       else resultMap[d].otherExpense += amount;
 
-      resultMap[d].totalExpense += amount;
+      resultMap[d].totalExpenses += amount;
     });
 
-    const report = Object.values(resultMap).sort((a, b) => a.date.localeCompare(b.date));
+    // Calculate active birds & batch start date for Day Count & Laying Rate %
+    let activeBirds = 0;
+    let batchStartDate: Date | string | null = null;
+
+    if (batchId) {
+      const bObjId = toObjectId(batchId as string);
+      const b = await BatchModel.findOne({ _id: bObjId });
+      if (b) {
+        activeBirds = b.currentCount || b.initialCount;
+        batchStartDate = b.startDate;
+      }
+    } else {
+      const batches = await BatchModel.find({ $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] });
+      activeBirds = batches.reduce((acc, b) => acc + (b.currentCount || b.initialCount), 0);
+    }
+
+    // Sort items by date ascending first to compute rateDiff & trends
+    const sortedAsc = Object.values(resultMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
+
+    let prevRate: number | null = null;
+    const reportWithMetrics = sortedAsc.map((item: any) => {
+      // Laying rate includes ALL produced eggs (good + broken)
+      const layingRate = activeBirds > 0 ? Number(((item.eggCount / activeBirds) * 100).toFixed(1)) : 0;
+      
+      let dayNumber = null;
+      let formattedAge = null;
+
+      if (batchStartDate) {
+        const start = new Date(batchStartDate);
+        const logDate = new Date(item.date);
+        start.setHours(0, 0, 0, 0);
+        logDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.max(0, Math.floor((logDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+        dayNumber = diffDays + 1;
+        const w = Math.floor(diffDays / 7);
+        const d = diffDays % 7;
+        formattedAge = w === 0 ? `${d}d` : d === 0 ? `${w}w` : `${w}w ${d}d`;
+      }
+
+      // Calculate shift in laying percentage compared to previous day
+      let rateDiff = 0;
+      let rateTrend: 'up' | 'down' | 'same' = 'same';
+      if (prevRate !== null) {
+        rateDiff = Number((layingRate - prevRate).toFixed(1));
+        if (rateDiff > 0) rateTrend = 'up';
+        else if (rateDiff < 0) rateTrend = 'down';
+      }
+      prevRate = layingRate;
+
+      return {
+        ...item,
+        eggLayingRate: layingRate,
+        rateDiff,
+        rateTrend,
+        dayNumber,
+        formattedAge
+      };
+    });
+
+    // Re-sort descending (newest date first) for presentation
+    const report = reportWithMetrics.sort((a, b) => b.date.localeCompare(a.date));
     return res.json(report);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -301,17 +382,18 @@ router.get('/daily', requireRole(['owner', 'manager']), async (req: AuthRequest,
 });
 
 // 3. Batch-Based Report
-router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
+router.get('/batch-breakdown', async (req: AuthRequest, res: Response) => {
   try {
-    const farmObjectId = new mongoose.Types.ObjectId(req.farmId as string);
-    const batches = await BatchModel.find({ farmId: farmObjectId }).sort({ createdAt: -1 });
+    const farmObjectId = toObjectId(req.farmId as string);
+    const batches = await BatchModel.find({ $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] }).sort({ createdAt: -1 });
 
     const batchReports = await Promise.all(
       batches.map(async (batch) => {
-        const batchObjId = batch._id;
+        const bObjId = batch._id;
+        const bMatch = { $or: [{ batchId: bObjId }, { batchId: String(bObjId) }] };
 
         const logAgg = await DailyLogModel.aggregate([
-          { $match: { farmId: farmObjectId, batchId: batchObjId } },
+          { $match: bMatch },
           {
             $group: {
               _id: null,
@@ -327,19 +409,18 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
         const logs = logAgg[0] || { totalEggs: 0, totalBrokenEggs: 0, totalDead: 0, totalFeedKg: 0, totalWaterLiters: 0 };
 
         const expAgg = await ExpenseModel.aggregate([
-          { $match: { farmId: farmObjectId, batchId: batchObjId } },
+          { $match: bMatch },
           { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
-
         const totalExpenses = expAgg[0]?.total || 0;
 
         const saleAgg = await SaleModel.aggregate([
-          { $match: { farmId: farmObjectId, batchId: batchObjId } },
+          { $match: bMatch },
           { $group: { _id: null, totalIncome: { $sum: '$totalAmount' } } }
         ]);
         const totalIncome = saleAgg[0]?.totalIncome || 0;
 
-        const healthCount = await HealthRecordModel.countDocuments({ farmId: farmObjectId, batchId: batchObjId });
+        const healthCount = await HealthRecordModel.countDocuments(bMatch);
 
         const mortalityCount = batch.initialCount - batch.currentCount;
         const mortalityRate = batch.initialCount > 0 ? Number(((mortalityCount / batch.initialCount) * 100).toFixed(2)) : 0;
@@ -348,7 +429,7 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
         const FCR = logs.totalEggs > 0 ? Number((logs.totalFeedKg / (logs.totalEggs / 12)).toFixed(3)) : 0;
 
         const distinctDaysAgg = await DailyLogModel.aggregate([
-          { $match: { farmId: farmObjectId, batchId: batchObjId } },
+          { $match: bMatch },
           { $group: { _id: '$date' } },
           { $count: 'totalDays' }
         ]);
@@ -367,6 +448,17 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
 
         const feedPerChickenPercentage = Number(((feedPerChickenGrams / 110) * 100).toFixed(1));
 
+        // Batch Age calculation in Weeks and Days
+        const start = new Date(batch.startDate);
+        const now = new Date();
+        start.setHours(0, 0, 0, 0);
+        now.setHours(0, 0, 0, 0);
+        const diffDays = Math.max(0, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+        const ageWeeks = Math.floor(diffDays / 7);
+        const ageDays = diffDays % 7;
+        const dayNumber = diffDays + 1;
+        const formattedAge = ageWeeks === 0 ? `${ageDays} days` : ageDays === 0 ? `${ageWeeks} weeks` : `${ageWeeks} weeks, ${ageDays} days`;
+
         return {
           batchId: batch._id,
           batchName: batch.name,
@@ -375,6 +467,10 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
           shed: batch.shed || 'Main Shed',
           status: batch.status,
           startDate: batch.startDate,
+          ageWeeks,
+          ageDays,
+          dayNumber,
+          formattedAge,
           initialCount: batch.initialCount,
           currentCount: batch.currentCount,
           mortalityCount,
@@ -403,144 +499,184 @@ router.get('/batch-breakdown', requireRole(['owner', 'manager']), async (req: Au
   }
 });
 
-// 4. Monthly Report
-router.get('/monthly', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
+// 4. Dedicated Batch-Wise Dashboard Endpoint (6 Sections)
+router.get('/batch-dashboard/:batchId', async (req: AuthRequest, res: Response) => {
   try {
-    const { year } = req.query;
-    const currentYear = year ? String(year) : new Date().getFullYear().toString();
-    const farmObjectId = new mongoose.Types.ObjectId(req.farmId as string);
+    const farmObjectId = toObjectId(req.farmId as string);
+    const batchObjectId = toObjectId(req.params.batchId);
 
-    // Monthly Logs
-    const monthlyLogs = await DailyLogModel.aggregate([
-      {
-        $match: {
-          farmId: farmObjectId,
-          date: { $regex: `^${currentYear}` }
-        }
-      },
+    const batch = await BatchModel.findOne({
+      _id: batchObjectId,
+      $or: [{ farmId: farmObjectId }, { farmId: req.farmId }]
+    });
+
+    if (!batch) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+
+    const bMatch = {
+      $and: [
+        { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] },
+        { $or: [{ batchId: batchObjectId }, { batchId: String(req.params.batchId) }] }
+      ]
+    };
+
+    // Calculate Batch Age in Weeks and Days
+    const start = new Date(batch.startDate);
+    const now = new Date();
+    start.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
+    const diffDays = Math.max(0, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    const ageWeeks = Math.floor(diffDays / 7);
+    const ageDays = diffDays % 7;
+    const dayNumber = diffDays + 1;
+    const formattedAge = ageWeeks === 0 ? `${ageDays} days` : ageDays === 0 ? `${ageWeeks} weeks` : `${ageWeeks} weeks, ${ageDays} days`;
+
+    const batchWithAge = {
+      ...batch.toObject(),
+      ageWeeks,
+      ageDays,
+      dayNumber,
+      formattedAge
+    };
+
+    // Daily Logs aggregation for batch
+    const logAgg = await DailyLogModel.aggregate([
+      { $match: bMatch },
       {
         $group: {
-          _id: { $substr: ['$date', 0, 7] }, // YYYY-MM
+          _id: null,
           totalEggs: { $sum: '$eggCount' },
           totalBrokenEggs: { $sum: '$brokenEggCount' },
           totalDead: { $sum: '$deadCount' },
           totalFeedKg: { $sum: '$feedGivenKg' },
           totalWaterLiters: { $sum: '$waterGivenLiters' }
         }
-      },
-      { $sort: { _id: 1 } }
+      }
     ]);
 
-    // Monthly Expenses
-    const monthlyExpenses = await ExpenseModel.aggregate([
-      {
-        $match: {
-          farmId: farmObjectId,
-          date: { $regex: `^${currentYear}` }
-        }
-      },
+    const logs = logAgg[0] || { totalEggs: 0, totalBrokenEggs: 0, totalDead: 0, totalFeedKg: 0, totalWaterLiters: 0 };
+
+    // Expenses aggregation by category for batch
+    const expenseAgg = await ExpenseModel.aggregate([
+      { $match: bMatch },
+      { $group: { _id: '$category', totalAmount: { $sum: '$amount' } } }
+    ]);
+
+    const costByCategory: Record<string, number> = {
+      feed: 0, medicine: 0, labor: 0, utility: 0, equipment: 0, other: 0
+    };
+    let totalExpenses = 0;
+    expenseAgg.forEach((item) => {
+      costByCategory[item._id] = item.totalAmount;
+      totalExpenses += item.totalAmount;
+    });
+
+    // Sales aggregation for batch
+    const salesAgg = await SaleModel.aggregate([
+      { $match: bMatch },
       {
         $group: {
-          _id: {
-            month: { $substr: ['$date', 0, 7] },
-            category: '$category'
-          },
-          totalAmount: { $sum: '$amount' }
+          _id: '$itemType',
+          totalIncome: { $sum: '$totalAmount' },
+          totalQuantity: { $sum: '$quantity' }
         }
       }
     ]);
 
-    // Monthly Sales Income
-    const monthlySales = await SaleModel.aggregate([
-      {
-        $match: {
-          farmId: farmObjectId,
-          date: { $regex: `^${currentYear}` }
-        }
+    let totalIncome = 0;
+    let totalEggsSold = 0;
+    let totalChickensSold = 0;
+
+    salesAgg.forEach((item) => {
+      totalIncome += item.totalIncome;
+      if (item._id === 'egg') totalEggsSold = item.totalQuantity;
+      if (item._id === 'chicken') totalChickensSold = item.totalQuantity;
+    });
+
+    // Distinct logging days for averages
+    const distinctDaysAgg = await DailyLogModel.aggregate([
+      { $match: bMatch },
+      { $group: { _id: '$date' } },
+      { $count: 'totalDays' }
+    ]);
+    const distinctLogDays = distinctDaysAgg[0]?.totalDays || 1;
+
+    const mortalityCount = batch.initialCount - batch.currentCount;
+    const mortalityRate = batch.initialCount > 0 ? Number(((mortalityCount / batch.initialCount) * 100).toFixed(2)) : 0;
+    const costPerBird = batch.currentCount > 0 ? Number((totalExpenses / batch.currentCount).toFixed(2)) : 0;
+    const costPerEgg = logs.totalEggs > 0 ? Number((totalExpenses / logs.totalEggs).toFixed(2)) : 0;
+    const FCR = logs.totalEggs > 0 ? Number((logs.totalFeedKg / (logs.totalEggs / 12)).toFixed(3)) : 0;
+
+    // Laying rate includes ALL produced eggs (good + broken)
+    const avgDailyEggs = logs.totalEggs / distinctLogDays;
+    const avgDailyFeedKg = logs.totalFeedKg / distinctLogDays;
+
+    const eggLayingRate = batch.currentCount > 0
+      ? Number(((avgDailyEggs / batch.currentCount) * 100).toFixed(1))
+      : 0;
+
+    const feedPerChickenGrams = batch.currentCount > 0
+      ? Number(((avgDailyFeedKg * 1000) / batch.currentCount).toFixed(1))
+      : 0;
+
+    const feedPerChickenPercentage = Number(((feedPerChickenGrams / 110) * 100).toFixed(1));
+
+    // Daily trend history for this batch
+    const dailyLogs = await DailyLogModel.find(bMatch)
+      .sort({ date: -1 })
+      .limit(14);
+
+    const recentSales = await SaleModel.find(bMatch)
+      .sort({ date: -1 })
+      .limit(5);
+
+    const recentExpenses = await ExpenseModel.find(bMatch)
+      .sort({ date: -1 })
+      .limit(5);
+
+    return res.json({
+      batch: batchWithAge,
+      eggSection: {
+        totalEggs: logs.totalEggs,
+        totalBrokenEggs: logs.totalBrokenEggs,
+        goodEggs: Math.max(0, logs.totalEggs - logs.totalBrokenEggs),
+        eggLayingRate
       },
-      {
-        $group: {
-          _id: { $substr: ['$date', 0, 7] },
-          totalIncome: { $sum: '$totalAmount' }
-        }
-      }
-    ]);
-
-    const resultMap: Record<string, any> = {};
-
-    monthlyLogs.forEach((item) => {
-      const m = item._id;
-      resultMap[m] = {
-        month: m,
-        totalEggs: item.totalEggs,
-        totalBrokenEggs: item.totalBrokenEggs,
-        totalDead: item.totalDead,
-        totalFeedKg: item.totalFeedKg,
-        totalWaterLiters: item.totalWaterLiters,
-        totalExpenses: 0,
-        totalIncome: 0,
-        feedExpense: 0,
-        medicineExpense: 0,
-        laborExpense: 0,
-        utilityExpense: 0,
-        equipmentExpense: 0,
-        otherExpense: 0,
-        costPerEgg: 0,
-        feedConversionRatio: 0
-      };
+      mortalitySection: {
+        totalDead: logs.totalDead,
+        mortalityCount,
+        mortalityRate,
+        initialCount: batch.initialCount,
+        currentCount: batch.currentCount
+      },
+      expenseSection: {
+        totalExpenses,
+        costByCategory,
+        costPerBird,
+        costPerEgg,
+        recentExpenses
+      },
+      sellSection: {
+        totalEggsSold,
+        totalChickensSold,
+        recentSales
+      },
+      incomeSection: {
+        totalIncome,
+        totalExpenses,
+        netProfit: totalIncome - totalExpenses,
+        profitMargin: totalIncome > 0 ? Number((((totalIncome - totalExpenses) / totalIncome) * 100).toFixed(1)) : 0
+      },
+      foodSection: {
+        totalFeedKg: logs.totalFeedKg,
+        totalWaterLiters: logs.totalWaterLiters,
+        feedPerChickenGrams,
+        feedPerChickenPercentage,
+        feedConversionRatio: FCR
+      },
+      dailyLogs
     });
-
-    monthlyExpenses.forEach((item) => {
-      const m = item._id.month;
-      const cat = item._id.category;
-      const amount = item.totalAmount;
-
-      if (!resultMap[m]) {
-        resultMap[m] = {
-          month: m,
-          totalEggs: 0,
-          totalBrokenEggs: 0,
-          totalDead: 0,
-          totalFeedKg: 0,
-          totalWaterLiters: 0,
-          totalExpenses: 0,
-          totalIncome: 0,
-          feedExpense: 0,
-          medicineExpense: 0,
-          laborExpense: 0,
-          utilityExpense: 0,
-          equipmentExpense: 0,
-          otherExpense: 0,
-          costPerEgg: 0,
-          feedConversionRatio: 0
-        };
-      }
-
-      if (cat === 'feed') resultMap[m].feedExpense += amount;
-      else if (cat === 'medicine') resultMap[m].medicineExpense += amount;
-      else if (cat === 'labor') resultMap[m].laborExpense += amount;
-      else if (cat === 'utility') resultMap[m].utilityExpense += amount;
-      else if (cat === 'equipment') resultMap[m].equipmentExpense += amount;
-      else resultMap[m].otherExpense += amount;
-
-      resultMap[m].totalExpenses += amount;
-    });
-
-    monthlySales.forEach((item) => {
-      const m = item._id;
-      if (resultMap[m]) {
-        resultMap[m].totalIncome = item.totalIncome;
-      }
-    });
-
-    // Compute derived metrics for each month
-    const months = Object.values(resultMap).sort((a, b) => a.month.localeCompare(b.month));
-    months.forEach((m) => {
-      m.costPerEgg = m.totalEggs > 0 ? Number((m.totalExpenses / m.totalEggs).toFixed(2)) : 0;
-      m.feedConversionRatio = m.totalEggs > 0 ? Number((m.totalFeedKg / (m.totalEggs / 12)).toFixed(3)) : 0;
-    });
-
-    return res.json(months);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

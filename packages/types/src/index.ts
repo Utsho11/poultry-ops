@@ -3,7 +3,6 @@ export type BatchType = 'layer' | 'broiler';
 export type BatchStatus = 'active' | 'closed';
 export type ExpenseCategory = 'feed' | 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
 export type HealthRecordType = 'checkup' | 'vaccination' | 'injection' | 'treatment';
-export type ReminderType = 'feed' | 'water' | 'medicine' | 'vaccination' | 'checkup' | 'general' | 'custom';
 export type SubscriptionPlan = 'free' | 'pro';
 export type SaleItemType = 'egg' | 'chicken';
 
@@ -108,37 +107,6 @@ export interface ISale {
   customerName?: string;
   note?: string;
   recordedBy: string;
-  createdAt?: string | Date;
-}
-
-export interface IDeviceToken {
-  _id: string;
-  userId: string;
-  farmId: string;
-  expoPushToken: string;
-  platform: 'ios' | 'android';
-  deviceId: string;
-  createdAt?: string | Date;
-  lastSeenAt?: string | Date;
-}
-
-export interface IReminder {
-  _id: string;
-  farmId: string;
-  batchId?: string;
-  type: ReminderType;
-  message: string;
-  dueDate?: string;
-  dueTime?: string;
-  repeat?: 'none' | 'daily' | 'weekly';
-  cronExpression: string;
-  assignedTo: string[];
-  channel: ('push' | 'sms')[];
-  active: boolean;
-  createdBy: string;
-  lastFiredAt?: string;
-  lastFiredForDate?: string;
-  timezone?: string;
   createdAt?: string | Date;
 }
 

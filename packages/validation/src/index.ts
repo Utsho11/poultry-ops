@@ -78,18 +78,6 @@ export const createUserSchema = z.object({
   phone: z.string().optional()
 });
 
-export const reminderSchema = z.object({
-  batchId: z.string().optional(),
-  type: z.enum(['feed', 'water', 'medicine', 'vaccination', 'checkup', 'general', 'custom']).default('feed'),
-  message: z.string().min(2, 'Message is required'),
-  dueDate: z.string().optional(),
-  dueTime: z.string().optional(),
-  repeat: z.enum(['none', 'daily', 'weekly']).default('none'),
-  cronExpression: z.string().optional(),
-  assignedTo: z.array(z.string()).default([]),
-  channel: z.array(z.enum(['push', 'sms'])).default(['push'])
-});
-
 export type RegisterFarmInput = z.infer<typeof registerFarmSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateBatchInput = z.infer<typeof createBatchSchema>;
@@ -98,4 +86,3 @@ export type ExpenseInput = z.infer<typeof expenseSchema>;
 export type SaleInput = z.infer<typeof saleSchema>;
 export type HealthRecordInput = z.infer<typeof healthRecordSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
-export type ReminderInput = z.infer<typeof reminderSchema>;

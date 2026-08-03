@@ -1,4 +1,4 @@
-const API_BASE = (import.meta.env.VITE_API_URL as string) || 'https://poultry-ops-qdb3.onrender.com/api';
+const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:4000/api';
 
 export const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('poultry_ops_token');

@@ -47,30 +47,6 @@ const userSchema = new Schema<IUserDoc>({
 userSchema.index({ farmId: 1, email: 1 }, { unique: true });
 export const UserModel = model<IUserDoc>('User', userSchema);
 
-// Device Token Schema (Push Notification Tokens)
-export interface IDeviceTokenDoc extends Document {
-  userId: Schema.Types.ObjectId;
-  farmId: Schema.Types.ObjectId;
-  expoPushToken: string;
-  platform: 'ios' | 'android';
-  deviceId: string;
-  createdAt: Date;
-  lastSeenAt: Date;
-}
-
-const deviceTokenSchema = new Schema<IDeviceTokenDoc>({
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
-  expoPushToken: { type: String, required: true },
-  platform: { type: String, enum: ['ios', 'android'], required: true },
-  deviceId: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  lastSeenAt: { type: Date, default: Date.now }
-});
-
-deviceTokenSchema.index({ userId: 1, deviceId: 1 }, { unique: true });
-export const DeviceTokenModel = model<IDeviceTokenDoc>('DeviceToken', deviceTokenSchema);
-
 // Batch Schema
 export interface IBatchDoc extends Document {
   farmId: Schema.Types.ObjectId;
@@ -236,44 +212,3 @@ const healthRecordSchema = new Schema<IHealthRecordDoc>({
 
 healthRecordSchema.index({ farmId: 1, batchId: 1, date: -1 });
 export const HealthRecordModel = model<IHealthRecordDoc>('HealthRecord', healthRecordSchema);
-
-// Reminder Schema
-export interface IReminderDoc extends Document {
-  farmId: Schema.Types.ObjectId;
-  batchId?: Schema.Types.ObjectId;
-  type: 'feed' | 'water' | 'medicine' | 'vaccination' | 'checkup' | 'custom' | 'general';
-  message: string;
-  dueDate?: string;
-  dueTime?: string;
-  repeat?: 'none' | 'daily' | 'weekly';
-  cronExpression?: string;
-  assignedTo: Schema.Types.ObjectId[];
-  channel: ('push' | 'sms')[];
-  active: boolean;
-  createdBy: Schema.Types.ObjectId;
-  lastFiredAt?: string;
-  lastFiredForDate?: string;
-  timezone?: string;
-  createdAt: Date;
-}
-
-const reminderSchema = new Schema<IReminderDoc>({
-  farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
-  batchId: { type: Schema.Types.ObjectId, ref: 'Batch' },
-  type: { type: String, default: 'feed' },
-  message: { type: String, required: true },
-  dueDate: { type: String },
-  dueTime: { type: String },
-  repeat: { type: String, enum: ['none', 'daily', 'weekly'], default: 'none' },
-  cronExpression: { type: String },
-  assignedTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-  channel: [{ type: String, enum: ['push', 'sms'] }],
-  active: { type: Boolean, default: true },
-  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  lastFiredAt: { type: String },
-  lastFiredForDate: { type: String },
-  timezone: { type: String, default: 'Asia/Dhaka' },
-  createdAt: { type: Date, default: Date.now }
-});
-
-export const ReminderModel = model<IReminderDoc>('Reminder', reminderSchema);

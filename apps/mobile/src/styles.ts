@@ -3,18 +3,20 @@ import { StyleSheet, Platform, StatusBar } from 'react-native';
 const STATUS_BAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0;
 
 export const colors = {
-  bg: '#0f172a',
-  surface: '#1e293b',
-  surfaceElevated: '#334155',
-  brand: '#10b981',
-  brandDark: '#059669',
-  amber: '#f59e0b',
-  rose: '#f43f5e',
-  blue: '#3b82f6',
-  purple: '#8b5cf6',
-  textMain: '#f8fafc',
-  textMuted: '#94a3b8',
-  border: 'rgba(255,255,255,0.1)',
+  bg: '#FAF7F2',               // Warm off-white background
+  surface: '#FFFFFF',          // Clean white cards
+  surfaceElevated: '#F4EFE6',  // Warm soft beige surface
+  brand: '#C7511F',            // Rustic terracotta/rust orange
+  brandDark: '#8B3A0E',        // Darker rust
+  secondary: '#4A7C59',        // Muted sage/forest green (growth/health)
+  amber: '#D9A441',            // Mustard/amber (feed, grain)
+  rose: '#B23A2F',             // Muted brick red (dead count/alerts)
+  blue: '#3D6B8C',             // Dusty blue (info)
+  purple: '#C7511F',
+  textMain: '#2D2A26',         // Near-black warm charcoal
+  textMuted: '#6B655C',        // Muted brown-gray
+  border: '#E8E2D8',           // Warm light beige border
+  text: '#2D2A26',
 };
 
 export const common = StyleSheet.create({
@@ -35,11 +37,46 @@ export const common = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#2D2A26',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#2D2A26',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  statLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+    marginBottom: 4,
+  },
+  statValue: {
+    color: colors.textMain,
+    fontSize: 20,
+    fontWeight: '800' as const,
+  },
+  statSub: {
+    color: colors.textMuted,
+    fontSize: 11,
+    marginTop: 4,
   },
   label: {
     color: colors.textMain,
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     marginBottom: 6,
   },
   input: {
@@ -99,41 +136,5 @@ export const common = StyleSheet.create({
     borderRadius: 20,
     fontSize: 11,
     fontWeight: '700' as const,
-    textTransform: 'uppercase' as const,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 12,
-  },
-  emptyText: {
-    color: colors.textMuted,
-    textAlign: 'center' as const,
-    marginTop: 40,
-    fontSize: 14,
-  },
-  statCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600' as const,
-    marginBottom: 6,
-  },
-  statValue: {
-    color: colors.textMain,
-    fontSize: 24,
-    fontWeight: '800' as const,
-  },
-  statSub: {
-    color: colors.textMuted,
-    fontSize: 11,
-    marginTop: 3,
   },
 });

@@ -1,10 +1,11 @@
 import { Alert, AlertButton, ToastAndroid, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Live Production API Server on Render
-const CLOUD_API_URL = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl;
+// Local Machine Development API
+const debuggerHost = Constants.expoConfig?.hostUri;
+const localhostIp = debuggerHost ? debuggerHost.split(':')[0] : 'localhost';
 
-export const API_BASE_URL = CLOUD_API_URL || 'https://poultry-ops-qdb3.onrender.com/api';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${localhostIp}:4000/api`;
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}, token?: string | null) {
   const headers: Record<string, string> = {
