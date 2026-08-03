@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ActivityIndicator, StyleSheet, ScrollView
+  ActivityIndicator, StyleSheet, ScrollView, Image
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
@@ -60,7 +60,7 @@ export const LoginScreen: React.FC = () => {
     <ScrollView style={s.screen} contentContainerStyle={s.content}>
       {/* Logo */}
       <View style={s.logoBox}>
-        <Text style={s.logo}>🐔</Text>
+        <Image source={require('../../assets/icon.png')} style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 8, borderWidth: 1, borderColor: colors.brand }} />
         <Text style={s.appName}>PoultryOps</Text>
         <Text style={s.tagline}>Poultry Farm Management</Text>
       </View>

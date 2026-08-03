@@ -37,8 +37,9 @@ export const Sidebar: React.FC = () => {
       <div>
         {/* Logo Brand Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#10b981', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>🐔</span> PoultryOps
+          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#10b981', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/logo.jpg" alt="PoultryOps" style={{ width: '34px', height: '34px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(16, 185, 129, 0.4)' }} />
+            PoultryOps
           </div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500, marginTop: '2px', letterSpacing: '0.04em' }}>
             {isWorker ? 'Worker Hub' : 'Precision Husbandry'}
