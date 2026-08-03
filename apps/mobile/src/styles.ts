@@ -1,4 +1,6 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform, StatusBar } from 'react-native';
+
+const STATUS_BAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0;
 
 export const colors = {
   bg: '#0f172a',
@@ -19,9 +21,11 @@ export const common = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
+    paddingTop: STATUS_BAR_HEIGHT + 12,
   },
   scrollContent: {
     padding: 20,
+    paddingTop: 10,
     paddingBottom: 40,
   },
   card: {

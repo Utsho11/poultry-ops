@@ -13,19 +13,15 @@ import { ExpensesHealthPage } from './pages/ExpensesHealthPage';
 import { RemindersPage } from './pages/RemindersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { TeamSettingsPage } from './pages/TeamSettingsPage';
-import { useReminderAlerts } from './hooks/useReminderAlerts';
-import { ReminderAlertToasts } from './components/ReminderAlertToasts';
 
 const ProtectedLayout: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
-  const { activeAlerts, dismissAlert } = useReminderAlerts();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   const isWorker = user?.role === 'worker';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <ReminderAlertToasts alerts={activeAlerts} onDismiss={dismissAlert} />
       <Navbar />
       <div className="app-container">
         <Sidebar />
