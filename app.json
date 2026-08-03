@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "1837ea47-9a02-4f33-92fd-001e40408cc4"
+      }
+    },
+    "android": {
+      "package": "com.utshoroy.poultryops"
+    }
+  }
+}
