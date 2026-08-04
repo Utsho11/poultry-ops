@@ -19,6 +19,8 @@ export const SalesPage: React.FC = () => {
 
   // Filters & Search
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedBatchFilter, setSelectedBatchFilter] = useState<string>('all');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modals state
@@ -74,6 +76,9 @@ export const SalesPage: React.FC = () => {
       setCustomers(customersData);
       setPayments(paymentsData);
       setBatches(batchesData);
+      if (batchesData.length > 0 && !selectedBatchId) {
+        setSelectedBatchId(batchesData[0]._id);
+      }
       setDuesSummary(duesData);
     } catch (err: any) {
       console.error('Failed to load sales data:', err);
@@ -270,11 +275,13 @@ export const SalesPage: React.FC = () => {
 
   // Filtered sales list
   const filteredSales = sales.filter(s => {
+    const matchesBatch = selectedBatchFilter === 'all' || s.batchId === selectedBatchFilter;
+    const matchesDate = !selectedDateFilter || s.date === selectedDateFilter;
     const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
     const matchesSearch = !searchQuery ||
       (s.customerName && s.customerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (s.customerPhone && s.customerPhone.includes(searchQuery));
-    return matchesStatus && matchesSearch;
+    return matchesBatch && matchesDate && matchesStatus && matchesSearch;
   });
 
   // Filtered customers list
@@ -444,28 +451,67 @@ export const SalesPage: React.FC = () => {
           {/* TAB 1: SALES LEDGER */}
           {activeTab === 'sales' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Filter Pills */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6B655C' }}>Status Filter:</span>
-                {['all', 'due', 'partial', 'paid'].map(st => (
-                  <button
-                    key={st}
-                    onClick={() => setStatusFilter(st)}
-                    style={{
-                      padding: '4px 12px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      fontSize: '0.78rem',
-                      fontWeight: statusFilter === st ? 800 : 600,
-                      backgroundColor: statusFilter === st ? '#2D2A26' : '#F4EFE6',
-                      color: statusFilter === st ? '#FFFFFF' : '#6B655C',
-                      cursor: 'pointer',
-                      textTransform: 'capitalize'
-                    }}
+              {/* Batch & Date Filter Bar */}
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: '#F4EFE6', padding: '12px 16px', borderRadius: '12px' }}>
+                {/* Batch Selector Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2D2A26' }}>🐔 Flock:</span>
+                  <select
+                    value={selectedBatchFilter}
+                    onChange={(e) => setSelectedBatchFilter(e.target.value)}
+                    className="input-field"
+                    style={{ padding: '4px 8px', fontSize: '0.82rem', fontWeight: 700 }}
                   >
-                    {st}
-                  </button>
-                ))}
+                    <option value="all">All Flocks / Batches</option>
+                    {batches.map(b => (
+                      <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date Picker Calendar Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2D2A26' }}>📅 Filter Date:</span>
+                  <input
+                    type="date"
+                    value={selectedDateFilter}
+                    onChange={(e) => setSelectedDateFilter(e.target.value)}
+                    className="input-field"
+                    style={{ padding: '4px 8px', fontSize: '0.82rem', fontWeight: 700 }}
+                  />
+                  {selectedDateFilter && (
+                    <button
+                      onClick={() => setSelectedDateFilter('')}
+                      style={{ padding: '4px 8px', fontSize: '0.75rem', borderRadius: '6px', border: 'none', backgroundColor: '#E8E2D8', cursor: 'pointer', fontWeight: 700 }}
+                    >
+                      Clear Date
+                    </button>
+                  )}
+                </div>
+
+                {/* Status Pills */}
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginLeft: 'auto' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6B655C' }}>Status:</span>
+                  {['all', 'due', 'partial', 'paid'].map(st => (
+                    <button
+                      key={st}
+                      onClick={() => setStatusFilter(st)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        fontSize: '0.78rem',
+                        fontWeight: statusFilter === st ? 800 : 600,
+                        backgroundColor: statusFilter === st ? '#2D2A26' : '#FFFFFF',
+                        color: statusFilter === st ? '#FFFFFF' : '#6B655C',
+                        cursor: 'pointer',
+                        textTransform: 'capitalize'
+                      }}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {filteredSales.length > 0 ? (
@@ -474,6 +520,7 @@ export const SalesPage: React.FC = () => {
                     <thead>
                       <tr style={{ backgroundColor: '#F4EFE6', textAlign: 'left', borderBottom: '1px solid #E8E2D8' }}>
                         <th style={{ padding: '12px 16px' }}>Date</th>
+                        <th style={{ padding: '12px 16px' }}>Flock / Batch</th>
                         <th style={{ padding: '12px 16px' }}>Customer</th>
                         <th style={{ padding: '12px 16px' }}>Line Items</th>
                         <th style={{ padding: '12px 16px' }}>Total Amount</th>
@@ -486,9 +533,13 @@ export const SalesPage: React.FC = () => {
                     <tbody>
                       {filteredSales.map(sale => {
                         const cust = customers.find(c => c._id === sale.customerId);
+                        const batchObj = batches.find(b => b._id === sale.batchId);
                         return (
                           <tr key={sale._id} style={{ borderBottom: '1px solid #E8E2D8' }}>
                             <td style={{ padding: '12px 16px', fontWeight: 600 }}>{sale.date}</td>
+                            <td style={{ padding: '12px 16px', fontWeight: 700, color: '#3D6B8C' }}>
+                              {batchObj ? batchObj.name : 'General Flock'}
+                            </td>
                             <td style={{ padding: '12px 16px' }}>
                               <div style={{ fontWeight: 800, color: '#2D2A26' }}>{sale.customerName || 'Walk-in Customer'}</div>
                               {sale.customerPhone && (
@@ -692,13 +743,14 @@ export const SalesPage: React.FC = () => {
               {/* Batch & Date */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label className="label">Select Flock / Batch</label>
+                  <label className="label">Select Flock / Batch *</label>
                   <select
                     value={selectedBatchId}
                     onChange={(e) => setSelectedBatchId(e.target.value)}
                     className="input-field"
+                    required
                   >
-                    <option value="">General Farm Sale (All Flocks)</option>
+                    <option value="" disabled>-- Select Target Flock (Required) --</option>
                     {batches.map(b => (
                       <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>
                     ))}

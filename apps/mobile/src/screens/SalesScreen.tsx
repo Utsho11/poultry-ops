@@ -58,13 +58,16 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
       setCustomers(cData);
       setPayments(pData);
       setBatches(bData);
+      if (bData.length > 0 && !selectedBatchId) {
+        setSelectedBatchId(bData[0]._id);
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token]);
+  }, [token, selectedBatchId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -125,6 +128,10 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
   };
 
   const handleCreateSale = async () => {
+    if (!selectedBatchId) {
+      Alert.alert('Validation Error', 'Please select a target Flock / Batch.');
+      return;
+    }
     if (totalInvoice <= 0) {
       Alert.alert('Validation Error', 'Please enter valid quantities and unit price.');
       return;
@@ -330,6 +337,22 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
           <View style={s.modalContent}>
             <Text style={s.modalTitle}>🛒 Record New Sale Invoice</Text>
             <ScrollView>
+              {/* Batch Selector (Required) */}
+              <Text style={s.inputLabel}>Select Flock / Batch *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                {batches.map(b => (
+                  <TouchableOpacity
+                    key={b._id}
+                    style={[s.custChip, selectedBatchId === b._id && s.custChipActive]}
+                    onPress={() => setSelectedBatchId(b._id)}
+                  >
+                    <Text style={[s.chipText, selectedBatchId === b._id && { color: '#FFFFFF' }]}>
+                      🐔 {b.name} ({b.breed})
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
               {/* Customer Selector */}
               <Text style={s.inputLabel}>Select Customer</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>

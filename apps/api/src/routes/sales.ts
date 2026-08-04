@@ -13,12 +13,20 @@ router.use(resolveTenant);
 // GET /api/sales - List sales for current farm
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { batchId, customerId, status, itemType, limit } = req.query;
+    const { batchId, customerId, status, itemType, date, startDate, endDate, limit } = req.query;
     const filter: any = { farmId: req.farmId };
     if (batchId) filter.batchId = batchId;
     if (customerId) filter.customerId = customerId;
     if (status) filter.status = status;
     if (itemType) filter.itemType = itemType;
+    if (date) filter.date = date;
+    if (startDate && endDate) {
+      filter.date = { $gte: startDate, $lte: endDate };
+    } else if (startDate) {
+      filter.date = { $gte: startDate };
+    } else if (endDate) {
+      filter.date = { $lte: endDate };
+    }
 
     const query = SaleModel.find(filter).sort({ date: -1, createdAt: -1 });
     if (limit) query.limit(Number(limit));

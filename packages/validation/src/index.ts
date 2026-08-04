@@ -67,7 +67,7 @@ export const saleItemSchema = z.object({
 });
 
 export const saleSchema = z.object({
-  batchId: z.string().optional(),
+  batchId: z.string().min(1, 'Batch selection is required'),
   itemType: z.enum(['egg', 'chicken']).optional(),
   quantity: z.number().positive().optional(),
   unitPrice: z.number().min(0).optional(),
