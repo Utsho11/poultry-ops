@@ -42,7 +42,7 @@ router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res
 
     const expense = new ExpenseModel({
       farmId: req.farmId,
-      batchId: batchId || undefined,
+      batchId,
       category,
       amount,
       currency: currency || 'BDT',

@@ -40,7 +40,7 @@ export const dailyLogSchema = z.object({
 });
 
 export const expenseSchema = z.object({
-  batchId: z.string().optional(),
+  batchId: z.string().min(1, 'Batch ID is required'),
   category: z.enum(['feed', 'medicine', 'labor', 'utility', 'equipment', 'other']),
   amount: z.number().positive('Expense amount must be positive'),
   currency: z.string().default('BDT'),
