@@ -260,6 +260,28 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       }
     ]);
 
+    const saleMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+    if (batchId) {
+      const bObjId = toObjectId(batchId as string);
+      saleMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(batchId) }] }];
+    }
+    if (from || to) {
+      saleMatch.date = {};
+      if (from) saleMatch.date.$gte = from;
+      if (to) saleMatch.date.$lte = to;
+    }
+
+    const dailySales = await SaleModel.aggregate([
+      { $match: saleMatch },
+      {
+        $group: {
+          _id: { date: '$date', itemType: '$itemType' },
+          totalAmount: { $sum: '$totalAmount' },
+          totalQuantity: { $sum: '$quantity' }
+        }
+      }
+    ]);
+
     const resultMap: Record<string, any> = {};
 
     dailyLogs.forEach((item) => {
@@ -277,7 +299,13 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         laborExpense: 0,
         utilityExpense: 0,
         equipmentExpense: 0,
-        otherExpense: 0
+        otherExpense: 0,
+        totalIncome: 0,
+        eggSalesRevenue: 0,
+        chickenSalesRevenue: 0,
+        eggsSold: 0,
+        chickensSold: 0,
+        netProfit: 0
       };
     });
 
@@ -300,7 +328,13 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
           laborExpense: 0,
           utilityExpense: 0,
           equipmentExpense: 0,
-          otherExpense: 0
+          otherExpense: 0,
+          totalIncome: 0,
+          eggSalesRevenue: 0,
+          chickenSalesRevenue: 0,
+          eggsSold: 0,
+          chickensSold: 0,
+          netProfit: 0
         };
       }
 
@@ -312,6 +346,52 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       else resultMap[d].otherExpense += amount;
 
       resultMap[d].totalExpenses += amount;
+    });
+
+    dailySales.forEach((item) => {
+      const d = item._id.date;
+      const itemType = item._id.itemType;
+      const amount = item.totalAmount;
+      const qty = item.totalQuantity;
+
+      if (!resultMap[d]) {
+        resultMap[d] = {
+          date: d,
+          eggCount: 0,
+          brokenEggCount: 0,
+          deadCount: 0,
+          feedGivenKg: 0,
+          waterGivenLiters: 0,
+          totalExpenses: 0,
+          feedExpense: 0,
+          medicineExpense: 0,
+          laborExpense: 0,
+          utilityExpense: 0,
+          equipmentExpense: 0,
+          otherExpense: 0,
+          totalIncome: 0,
+          eggSalesRevenue: 0,
+          chickenSalesRevenue: 0,
+          eggsSold: 0,
+          chickensSold: 0,
+          netProfit: 0
+        };
+      }
+
+      if (itemType === 'egg') {
+        resultMap[d].eggSalesRevenue += amount;
+        resultMap[d].eggsSold += qty;
+      } else if (itemType === 'chicken') {
+        resultMap[d].chickenSalesRevenue += amount;
+        resultMap[d].chickensSold += qty;
+      }
+
+      resultMap[d].totalIncome += amount;
+    });
+
+    // Calculate net profit for each day
+    Object.values(resultMap).forEach((item: any) => {
+      item.netProfit = item.totalIncome - item.totalExpenses;
     });
 
     // Calculate active birds & batch start date for Day Count & Laying Rate %

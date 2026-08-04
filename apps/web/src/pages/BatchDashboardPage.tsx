@@ -196,10 +196,9 @@ export const BatchDashboardPage: React.FC = () => {
 
       {/* 6 STRUCTURED BATCH SECTIONS GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-        
-        {/* SECTION 1: 🥚 EGG */}
+         {/* SECTION 1: 🥚 EGG */}
         <div
-          onClick={() => navigate(`/daily-report?batchId=${batchId}`)}
+          onClick={() => navigate(`/daily-report?batchId=${batchId}&tab=egg`)}
           className="glass-panel"
           style={{ padding: '22px', borderTop: '5px solid #4A7C59', backgroundColor: '#FFFFFF', cursor: 'pointer', transition: 'transform 0.2s' }}
         >
@@ -230,13 +229,17 @@ export const BatchDashboardPage: React.FC = () => {
               <strong style={{ color: '#B23A2F' }}>{eggSection.totalBrokenEggs.toLocaleString()} eggs</strong>
             </div>
             <div style={{ padding: '8px', backgroundColor: 'rgba(74, 124, 89, 0.12)', borderRadius: '8px', textAlign: 'center', color: '#4A7C59', fontWeight: 800, fontSize: '0.82rem' }}>
-              📅 View Date-wise Daily Accordion Report →
+              📅 View Date-wise Daily Egg Report →
             </div>
           </div>
         </div>
 
         {/* SECTION 2: 💀 MORTALITY RATE */}
-        <div className="glass-panel" style={{ padding: '22px', borderTop: '5px solid #B23A2F', backgroundColor: '#FFFFFF' }}>
+        <div
+          onClick={() => navigate(`/daily-report?batchId=${batchId}&tab=mortality`)}
+          className="glass-panel"
+          style={{ padding: '22px', borderTop: '5px solid #B23A2F', backgroundColor: '#FFFFFF', cursor: 'pointer', transition: 'transform 0.2s' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ backgroundColor: 'rgba(178, 58, 47, 0.15)', padding: '8px', borderRadius: '10px', color: '#B23A2F' }}>
@@ -263,11 +266,18 @@ export const BatchDashboardPage: React.FC = () => {
               <span style={{ fontSize: '0.85rem', color: '#6B655C', fontWeight: 600 }}>Initial Bird Population</span>
               <strong>{mortalitySection.initialCount.toLocaleString()} birds</strong>
             </div>
+            <div style={{ padding: '8px', backgroundColor: 'rgba(178, 58, 47, 0.12)', borderRadius: '8px', textAlign: 'center', color: '#B23A2F', fontWeight: 800, fontSize: '0.82rem' }}>
+              📅 View Date-wise Daily Mortality Report →
+            </div>
           </div>
         </div>
 
         {/* SECTION 3: 💸 EXPENSE */}
-        <div className="glass-panel" style={{ padding: '22px', borderTop: '5px solid #D9A441', backgroundColor: '#FFFFFF' }}>
+        <div
+          onClick={() => navigate(`/daily-report?batchId=${batchId}&tab=expense`)}
+          className="glass-panel"
+          style={{ padding: '22px', borderTop: '5px solid #D9A441', backgroundColor: '#FFFFFF', cursor: 'pointer', transition: 'transform 0.2s' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ backgroundColor: 'rgba(217, 164, 65, 0.15)', padding: '8px', borderRadius: '10px', color: '#D9A441' }}>
@@ -293,11 +303,18 @@ export const BatchDashboardPage: React.FC = () => {
               <span>Cost / Bird: <strong>৳{expenseSection.costPerBird}</strong></span>
               <span>Cost / Egg: <strong>৳{expenseSection.costPerEgg}</strong></span>
             </div>
+            <div style={{ padding: '8px', backgroundColor: 'rgba(217, 164, 65, 0.12)', borderRadius: '8px', textAlign: 'center', color: '#D9A441', fontWeight: 800, fontSize: '0.82rem' }}>
+              📅 View Date-wise Daily Expense Report →
+            </div>
           </div>
         </div>
 
         {/* SECTION 4: 🏷️ SELL */}
-        <div className="glass-panel" style={{ padding: '22px', borderTop: '5px solid #3D6B8C', backgroundColor: '#FFFFFF' }}>
+        <div
+          onClick={() => navigate(`/daily-report?batchId=${batchId}&tab=sell`)}
+          className="glass-panel"
+          style={{ padding: '22px', borderTop: '5px solid #3D6B8C', backgroundColor: '#FFFFFF', cursor: 'pointer', transition: 'transform 0.2s' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ backgroundColor: 'rgba(61, 107, 140, 0.15)', padding: '8px', borderRadius: '10px', color: '#3D6B8C' }}>
@@ -319,11 +336,18 @@ export const BatchDashboardPage: React.FC = () => {
               <span style={{ fontSize: '0.85rem', color: '#6B655C', fontWeight: 600 }}>Chickens / Birds Sold</span>
               <strong>{sellSection.totalChickensSold.toLocaleString()} birds</strong>
             </div>
+            <div style={{ padding: '8px', backgroundColor: 'rgba(61, 107, 140, 0.12)', borderRadius: '8px', textAlign: 'center', color: '#3D6B8C', fontWeight: 800, fontSize: '0.82rem' }}>
+              📅 View Date-wise Daily Sales Report →
+            </div>
           </div>
         </div>
 
         {/* SECTION 5: 📈 INCOME & NET PROFIT */}
-        <div className="glass-panel" style={{ padding: '22px', borderTop: '5px solid #C7511F', backgroundColor: '#FFFFFF' }}>
+        <div
+          onClick={() => navigate(`/daily-report?batchId=${batchId}&tab=income`)}
+          className="glass-panel"
+          style={{ padding: '22px', borderTop: '5px solid #C7511F', backgroundColor: '#FFFFFF', cursor: 'pointer', transition: 'transform 0.2s' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ backgroundColor: 'rgba(199, 81, 31, 0.15)', padding: '8px', borderRadius: '10px', color: '#C7511F' }}>
@@ -350,11 +374,18 @@ export const BatchDashboardPage: React.FC = () => {
                 ৳{incomeSection.netProfit.toLocaleString()}
               </strong>
             </div>
+            <div style={{ padding: '8px', backgroundColor: 'rgba(199, 81, 31, 0.12)', borderRadius: '8px', textAlign: 'center', color: '#C7511F', fontWeight: 800, fontSize: '0.82rem' }}>
+              📅 View Date-wise Daily Income Report →
+            </div>
           </div>
         </div>
 
         {/* SECTION 6: 🌾 FOOD INFO */}
-        <div className="glass-panel" style={{ padding: '22px', borderTop: '5px solid #4A7C59', backgroundColor: '#FFFFFF' }}>
+        <div
+          onClick={() => navigate(`/daily-report?batchId=${batchId}&tab=food`)}
+          className="glass-panel"
+          style={{ padding: '22px', borderTop: '5px solid #4A7C59', backgroundColor: '#FFFFFF', cursor: 'pointer', transition: 'transform 0.2s' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ backgroundColor: 'rgba(74, 124, 89, 0.15)', padding: '8px', borderRadius: '10px', color: '#4A7C59' }}>
@@ -380,6 +411,9 @@ export const BatchDashboardPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', backgroundColor: '#F4EFE6', borderRadius: '10px' }}>
               <span style={{ fontSize: '0.85rem', color: '#6B655C', fontWeight: 600 }}>Total Water Provided</span>
               <strong>{foodSection.totalWaterLiters.toLocaleString()} Liters</strong>
+            </div>
+            <div style={{ padding: '8px', backgroundColor: 'rgba(74, 124, 89, 0.12)', borderRadius: '8px', textAlign: 'center', color: '#4A7C59', fontWeight: 800, fontSize: '0.82rem' }}>
+              📅 View Date-wise Daily Food Report →
             </div>
           </div>
         </div>

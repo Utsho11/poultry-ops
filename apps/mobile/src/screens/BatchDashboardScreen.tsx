@@ -183,7 +183,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
 
         {/* 1. EGG SECTION */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('DailyReport', { batchId })}
+          onPress={() => navigation.navigate('DailyReport', { batchId, initialTab: 'egg' })}
           activeOpacity={0.8}
         >
           <View style={[s.dashCard, { borderColor: colors.secondary }]}>
@@ -206,105 +206,145 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
               <Text style={[s.dashVal, { color: colors.rose }]}>{eggSection.totalBrokenEggs} eggs</Text>
             </View>
             <View style={{ marginTop: 8, padding: 8, backgroundColor: 'rgba(74, 124, 89, 0.12)', borderRadius: 6, alignItems: 'center' }}>
-              <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: 11 }}>📅 View Date-wise Daily Accordion Report →</Text>
+              <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: 11 }}>📅 View Date-wise Daily Egg Report →</Text>
             </View>
           </View>
         </TouchableOpacity>
 
         {/* 2. MORTALITY RATE SECTION */}
-        <View style={[s.dashCard, { borderColor: colors.rose }]}>
-          <View style={common.row}>
-            <Text style={[s.sectionHeader, { color: colors.rose }]}>💀 2. Mortality Rate</Text>
-            <View style={[s.rateBadge, { backgroundColor: 'rgba(178, 58, 47, 0.15)' }]}>
-              <Text style={[s.rateBadgeText, { color: colors.rose }]}>{mortalitySection.mortalityRate}% Mortality</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DailyReport', { batchId, initialTab: 'mortality' })}
+          activeOpacity={0.8}
+        >
+          <View style={[s.dashCard, { borderColor: colors.rose }]}>
+            <View style={common.row}>
+              <Text style={[s.sectionHeader, { color: colors.rose }]}>💀 2. Mortality Rate</Text>
+              <View style={[s.rateBadge, { backgroundColor: 'rgba(178, 58, 47, 0.15)' }]}>
+                <Text style={[s.rateBadgeText, { color: colors.rose }]}>{mortalitySection.mortalityRate}% Mortality</Text>
+              </View>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Total Dead Birds:</Text>
+              <Text style={[s.dashVal, { color: colors.rose, fontSize: 15 }]}>{mortalitySection.totalDead} birds</Text>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Current Active Birds:</Text>
+              <Text style={[s.dashVal, { color: colors.secondary }]}>{mortalitySection.currentCount.toLocaleString()} birds</Text>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Initial Birds Population:</Text>
+              <Text style={s.dashVal}>{mortalitySection.initialCount.toLocaleString()} birds</Text>
+            </View>
+            <View style={{ marginTop: 8, padding: 8, backgroundColor: 'rgba(178, 58, 47, 0.12)', borderRadius: 6, alignItems: 'center' }}>
+              <Text style={{ color: colors.rose, fontWeight: '800', fontSize: 11 }}>📅 View Date-wise Daily Mortality Report →</Text>
             </View>
           </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Total Dead Birds:</Text>
-            <Text style={[s.dashVal, { color: colors.rose, fontSize: 15 }]}>{mortalitySection.totalDead} birds</Text>
-          </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Current Active Birds:</Text>
-            <Text style={[s.dashVal, { color: colors.secondary }]}>{mortalitySection.currentCount.toLocaleString()} birds</Text>
-          </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Initial Birds Population:</Text>
-            <Text style={s.dashVal}>{mortalitySection.initialCount.toLocaleString()} birds</Text>
-          </View>
-        </View>
+        </TouchableOpacity>
 
         {/* 3. EXPENSE SECTION */}
-        <View style={[s.dashCard, { borderColor: colors.amber }]}>
-          <View style={common.row}>
-            <Text style={[s.sectionHeader, { color: colors.amber }]}>💸 3. Expenses</Text>
-            <Text style={[s.dashVal, { color: colors.amber, fontSize: 15 }]}>৳{expenseSection.totalExpenses.toLocaleString()}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DailyReport', { batchId, initialTab: 'expense' })}
+          activeOpacity={0.8}
+        >
+          <View style={[s.dashCard, { borderColor: colors.amber }]}>
+            <View style={common.row}>
+              <Text style={[s.sectionHeader, { color: colors.amber }]}>💸 3. Expenses</Text>
+              <Text style={[s.dashVal, { color: colors.amber, fontSize: 15 }]}>৳{expenseSection.totalExpenses.toLocaleString()}</Text>
+            </View>
+            <View style={s.gridBox}>
+              <Text style={s.gridItem}>🌾 Feed: ৳{expenseSection.costByCategory.feed.toLocaleString()}</Text>
+              <Text style={s.gridItem}>💊 Meds: ৳{expenseSection.costByCategory.medicine.toLocaleString()}</Text>
+              <Text style={s.gridItem}>👷 Labor: ৳{expenseSection.costByCategory.labor.toLocaleString()}</Text>
+              <Text style={s.gridItem}>💡 Utility: ৳{expenseSection.costByCategory.utility.toLocaleString()}</Text>
+            </View>
+            <View style={[s.dashRow, { marginTop: 6 }]}>
+              <Text style={s.dashLabel}>Cost / Bird: ৳{expenseSection.costPerBird}</Text>
+              <Text style={s.dashLabel}>Cost / Egg: ৳{expenseSection.costPerEgg}</Text>
+            </View>
+            <View style={{ marginTop: 8, padding: 8, backgroundColor: 'rgba(217, 164, 65, 0.12)', borderRadius: 6, alignItems: 'center' }}>
+              <Text style={{ color: colors.amber, fontWeight: '800', fontSize: 11 }}>📅 View Date-wise Daily Expense Report →</Text>
+            </View>
           </View>
-          <View style={s.gridBox}>
-            <Text style={s.gridItem}>🌾 Feed: ৳{expenseSection.costByCategory.feed.toLocaleString()}</Text>
-            <Text style={s.gridItem}>💊 Meds: ৳{expenseSection.costByCategory.medicine.toLocaleString()}</Text>
-            <Text style={s.gridItem}>👷 Labor: ৳{expenseSection.costByCategory.labor.toLocaleString()}</Text>
-            <Text style={s.gridItem}>💡 Utility: ৳{expenseSection.costByCategory.utility.toLocaleString()}</Text>
-          </View>
-          <View style={[s.dashRow, { marginTop: 6 }]}>
-            <Text style={s.dashLabel}>Cost / Bird: ৳{expenseSection.costPerBird}</Text>
-            <Text style={s.dashLabel}>Cost / Egg: ৳{expenseSection.costPerEgg}</Text>
-          </View>
-        </View>
+        </TouchableOpacity>
 
         {/* 4. SELL SECTION */}
-        <View style={[s.dashCard, { borderColor: colors.blue }]}>
-          <Text style={[s.sectionHeader, { color: colors.blue }]}>🏷️ 4. Sales Volume</Text>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Eggs Sold:</Text>
-            <Text style={[s.dashVal, { color: colors.blue, fontSize: 15 }]}>{formatEggCount(sellSection.totalEggsSold)}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DailyReport', { batchId, initialTab: 'sell' })}
+          activeOpacity={0.8}
+        >
+          <View style={[s.dashCard, { borderColor: colors.blue }]}>
+            <Text style={[s.sectionHeader, { color: colors.blue }]}>🏷️ 4. Sales Volume</Text>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Eggs Sold:</Text>
+              <Text style={[s.dashVal, { color: colors.blue, fontSize: 15 }]}>{formatEggCount(sellSection.totalEggsSold)}</Text>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Chickens Sold:</Text>
+              <Text style={s.dashVal}>{sellSection.totalChickensSold.toLocaleString()} birds</Text>
+            </View>
+            <View style={{ marginTop: 8, padding: 8, backgroundColor: 'rgba(61, 107, 140, 0.12)', borderRadius: 6, alignItems: 'center' }}>
+              <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 11 }}>📅 View Date-wise Daily Sales Report →</Text>
+            </View>
           </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Chickens Sold:</Text>
-            <Text style={s.dashVal}>{sellSection.totalChickensSold.toLocaleString()} birds</Text>
-          </View>
-        </View>
+        </TouchableOpacity>
 
         {/* 5. INCOME SECTION */}
-        <View style={[s.dashCard, { borderColor: colors.brand }]}>
-          <View style={common.row}>
-            <Text style={[s.sectionHeader, { color: colors.brand }]}>📈 5. Income & Net Profit</Text>
-            <View style={[s.rateBadge, { backgroundColor: incomeSection.netProfit >= 0 ? 'rgba(74, 124, 89, 0.15)' : 'rgba(178, 58, 47, 0.15)' }]}>
-              <Text style={[s.rateBadgeText, { color: incomeSection.netProfit >= 0 ? colors.secondary : colors.rose }]}>{incomeSection.profitMargin}% Margin</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DailyReport', { batchId, initialTab: 'income' })}
+          activeOpacity={0.8}
+        >
+          <View style={[s.dashCard, { borderColor: colors.brand }]}>
+            <View style={common.row}>
+              <Text style={[s.sectionHeader, { color: colors.brand }]}>📈 5. Income & Net Profit</Text>
+              <View style={[s.rateBadge, { backgroundColor: incomeSection.netProfit >= 0 ? 'rgba(74, 124, 89, 0.15)' : 'rgba(178, 58, 47, 0.15)' }]}>
+                <Text style={[s.rateBadgeText, { color: incomeSection.netProfit >= 0 ? colors.secondary : colors.rose }]}>{incomeSection.profitMargin}% Margin</Text>
+              </View>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Total Sales Revenue:</Text>
+              <Text style={[s.dashVal, { color: colors.blue, fontSize: 15 }]}>৳{incomeSection.totalIncome.toLocaleString()}</Text>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Net Batch Profit:</Text>
+              <Text style={[s.dashVal, { color: incomeSection.netProfit >= 0 ? colors.secondary : colors.rose, fontSize: 16 }]}>
+                ৳{incomeSection.netProfit.toLocaleString()}
+              </Text>
+            </View>
+            <View style={{ marginTop: 8, padding: 8, backgroundColor: 'rgba(199, 81, 31, 0.12)', borderRadius: 6, alignItems: 'center' }}>
+              <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 11 }}>📅 View Date-wise Daily Income Report →</Text>
             </View>
           </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Total Sales Revenue:</Text>
-            <Text style={[s.dashVal, { color: colors.blue, fontSize: 15 }]}>৳{incomeSection.totalIncome.toLocaleString()}</Text>
-          </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Net Batch Profit:</Text>
-            <Text style={[s.dashVal, { color: incomeSection.netProfit >= 0 ? colors.secondary : colors.rose, fontSize: 16 }]}>
-              ৳{incomeSection.netProfit.toLocaleString()}
-            </Text>
-          </View>
-        </View>
+        </TouchableOpacity>
 
         {/* 6. FOOD INFO SECTION */}
-        <View style={[s.dashCard, { borderColor: colors.secondary }]}>
-          <View style={common.row}>
-            <Text style={[s.sectionHeader, { color: colors.secondary }]}>🌾 6. Food Info</Text>
-            <View style={s.rateBadge}>
-              <Text style={s.rateBadgeText}>{foodSection.feedPerChickenPercentage}% Target</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DailyReport', { batchId, initialTab: 'food' })}
+          activeOpacity={0.8}
+        >
+          <View style={[s.dashCard, { borderColor: colors.secondary }]}>
+            <View style={common.row}>
+              <Text style={[s.sectionHeader, { color: colors.secondary }]}>🌾 6. Food Info</Text>
+              <View style={s.rateBadge}>
+                <Text style={s.rateBadgeText}>{foodSection.feedPerChickenPercentage}% Target</Text>
+              </View>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Total Feed Consumed:</Text>
+              <Text style={[s.dashVal, { color: colors.secondary }]}>{foodSection.totalFeedKg} kg ({Math.round(foodSection.totalFeedKg / 50)} bags)</Text>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Daily Feed / Chicken:</Text>
+              <Text style={s.dashVal}>{foodSection.feedPerChickenGrams} g/bird/day</Text>
+            </View>
+            <View style={s.dashRow}>
+              <Text style={s.dashLabel}>Total Water Provided:</Text>
+              <Text style={s.dashVal}>{foodSection.totalWaterLiters} Liters</Text>
+            </View>
+            <View style={{ marginTop: 8, padding: 8, backgroundColor: 'rgba(74, 124, 89, 0.12)', borderRadius: 6, alignItems: 'center' }}>
+              <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: 11 }}>📅 View Date-wise Daily Food Report →</Text>
             </View>
           </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Total Feed Consumed:</Text>
-            <Text style={[s.dashVal, { color: colors.secondary }]}>{foodSection.totalFeedKg} kg ({Math.round(foodSection.totalFeedKg / 50)} bags)</Text>
-          </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Daily Feed / Chicken:</Text>
-            <Text style={s.dashVal}>{foodSection.feedPerChickenGrams} g/bird/day</Text>
-          </View>
-          <View style={s.dashRow}>
-            <Text style={s.dashLabel}>Total Water Provided:</Text>
-            <Text style={s.dashVal}>{foodSection.totalWaterLiters} Liters</Text>
-          </View>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* QUICK LOG MODAL */}
