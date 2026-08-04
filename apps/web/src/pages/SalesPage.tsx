@@ -36,9 +36,17 @@ export const SalesPage: React.FC = () => {
   const [amountPaidInput, setAmountPaidInput] = useState<number>(0);
   const [saleNotesInput, setSaleNotesInput] = useState<string>('');
 
-  // Line items for multi-item sale form
-  const [lineItems, setLineItems] = useState<Array<{ type: 'egg' | 'chicken'; quantity: number; unit: 'piece' | 'tray' | 'kg'; unitPrice: number }>>([
-    { type: 'egg', quantity: 300, unit: 'piece', unitPrice: 12 }
+  // Line items for multi-item sale form (Crates + Loose Eggs for Layer, Birds + Weight for Poultry)
+  const [lineItems, setLineItems] = useState<Array<{
+    type: 'egg' | 'chicken';
+    crates: number;
+    looseEggs: number;
+    birdCount: number;
+    weightKg: number;
+    unit: 'piece' | 'tray' | 'kg' | 'bird';
+    unitPrice: number;
+  }>>([
+    { type: 'egg', crates: 10, looseEggs: 0, birdCount: 0, weightKg: 0, unit: 'tray', unitPrice: 360 }
   ]);
 
   // Payment Settlement form state
@@ -83,7 +91,7 @@ export const SalesPage: React.FC = () => {
 
   // Line item helpers
   const handleAddLineItem = () => {
-    setLineItems(prev => [...prev, { type: 'egg', quantity: 100, unit: 'piece', unitPrice: 12 }]);
+    setLineItems(prev => [...prev, { type: 'egg', crates: 5, looseEggs: 0, birdCount: 0, weightKg: 0, unit: 'tray', unitPrice: 360 }]);
   };
 
   const handleRemoveLineItem = (index: number) => {
@@ -100,9 +108,30 @@ export const SalesPage: React.FC = () => {
 
   // Live money calculations for New Sale form
   const computedLineItemsSubtotals = lineItems.map(item => {
-    const qty = item.unit === 'tray' ? item.quantity * 30 : item.quantity;
-    const subtotal = Number((qty * item.unitPrice).toFixed(2));
-    return { ...item, actualQty: qty, subtotal };
+    let actualQty = 0;
+    let subtotal = 0;
+
+    if (item.type === 'egg') {
+      const crates = item.crates || 0;
+      const loose = item.looseEggs || 0;
+      actualQty = (crates * 30) + loose;
+
+      if (item.unit === 'tray') {
+        const totalTrays = crates + (loose / 30);
+        subtotal = Number((totalTrays * item.unitPrice).toFixed(2));
+      } else {
+        subtotal = Number((actualQty * item.unitPrice).toFixed(2));
+      }
+    } else {
+      actualQty = item.birdCount || 0;
+      if (item.unit === 'kg' && item.weightKg > 0) {
+        subtotal = Number((item.weightKg * item.unitPrice).toFixed(2));
+      } else {
+        subtotal = Number((actualQty * item.unitPrice).toFixed(2));
+      }
+    }
+
+    return { ...item, actualQty, subtotal };
   });
 
   const calculatedTotalAmount = Number(computedLineItemsSubtotals.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2));
@@ -152,6 +181,10 @@ export const SalesPage: React.FC = () => {
       const itemsPayload = computedLineItemsSubtotals.map(i => ({
         type: i.type,
         quantity: i.actualQty,
+        crates: i.type === 'egg' ? i.crates : undefined,
+        looseEggs: i.type === 'egg' ? i.looseEggs : undefined,
+        birdCount: i.type === 'chicken' ? i.birdCount : undefined,
+        weightKg: i.type === 'chicken' ? i.weightKg : undefined,
         unit: i.unit,
         unitPrice: i.unitPrice
       }));
@@ -746,70 +779,150 @@ export const SalesPage: React.FC = () => {
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {lineItems.map((item, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'center', backgroundColor: '#F4EFE6', padding: '10px', borderRadius: '8px' }}>
-                      <select
-                        value={item.type}
-                        onChange={(e) => handleLineItemChange(idx, 'type', e.target.value)}
-                        className="input-field"
-                        style={{ padding: '6px 8px' }}
-                      >
-                        <option value="egg">🥚 Eggs</option>
-                        <option value="chicken">🐔 Chickens / Birds</option>
-                      </select>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {lineItems.map((item, idx) => {
+                    const computed = computedLineItemsSubtotals[idx] || { actualQty: 0, subtotal: 0 };
+                    return (
+                      <div key={idx} style={{ backgroundColor: '#F4EFE6', padding: '12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <select
+                            value={item.type}
+                            onChange={(e) => handleLineItemChange(idx, 'type', e.target.value)}
+                            className="input-field"
+                            style={{ padding: '6px 10px', fontWeight: 800, width: '180px' }}
+                          >
+                            <option value="egg">🥚 Layer Eggs</option>
+                            <option value="chicken">🐔 Poultry / Birds</option>
+                          </select>
 
-                      <div>
-                        <input
-                          type="number"
-                          placeholder="Qty"
-                          value={item.quantity}
-                          onChange={(e) => handleLineItemChange(idx, 'quantity', Number(e.target.value))}
-                          className="input-field"
-                          style={{ padding: '6px 8px' }}
-                          min="1"
-                        />
-                      </div>
+                          {lineItems.length > 1 && (
+                            <button type="button" onClick={() => handleRemoveLineItem(idx)} style={{ background: 'none', border: 'none', color: '#B23A2F', cursor: 'pointer' }}>
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                        </div>
 
-                      <select
-                        value={item.unit}
-                        onChange={(e) => handleLineItemChange(idx, 'unit', e.target.value)}
-                        className="input-field"
-                        style={{ padding: '6px 8px' }}
-                      >
+                        {/* INPUTS FOR EGG (LAYER) */}
                         {item.type === 'egg' ? (
-                          <>
-                            <option value="piece">Piece (Eggs)</option>
-                            <option value="tray">Tray/Crate (30)</option>
-                          </>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', alignItems: 'center' }}>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6B655C' }}>Crates (30 eggs)</label>
+                              <input
+                                type="number"
+                                placeholder="Crates"
+                                value={item.crates}
+                                onChange={(e) => handleLineItemChange(idx, 'crates', Number(e.target.value))}
+                                className="input-field"
+                                style={{ padding: '6px 8px' }}
+                                min="0"
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6B655C' }}>Loose Eggs</label>
+                              <input
+                                type="number"
+                                placeholder="Loose"
+                                value={item.looseEggs}
+                                onChange={(e) => handleLineItemChange(idx, 'looseEggs', Number(e.target.value))}
+                                className="input-field"
+                                style={{ padding: '6px 8px' }}
+                                min="0"
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6B655C' }}>Pricing Unit</label>
+                              <select
+                                value={item.unit}
+                                onChange={(e) => handleLineItemChange(idx, 'unit', e.target.value)}
+                                className="input-field"
+                                style={{ padding: '6px 8px' }}
+                              >
+                                <option value="tray">Per Crate ৳</option>
+                                <option value="piece">Per Piece ৳</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6B655C' }}>Unit Price ৳</label>
+                              <input
+                                type="number"
+                                placeholder="Price"
+                                value={item.unitPrice}
+                                onChange={(e) => handleLineItemChange(idx, 'unitPrice', Number(e.target.value))}
+                                className="input-field"
+                                style={{ padding: '6px 8px' }}
+                                min="0"
+                                step="0.01"
+                              />
+                            </div>
+                          </div>
                         ) : (
-                          <>
-                            <option value="piece">Birds (Count)</option>
-                            <option value="kg">Weight (kg)</option>
-                          </>
+                          /* INPUTS FOR POULTRY / CHICKEN */
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', alignItems: 'center' }}>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6B655C' }}>Bird Count</label>
+                              <input
+                                type="number"
+                                placeholder="Birds"
+                                value={item.birdCount}
+                                onChange={(e) => handleLineItemChange(idx, 'birdCount', Number(e.target.value))}
+                                className="input-field"
+                                style={{ padding: '6px 8px' }}
+                                min="0"
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6B655C' }}>Total Weight (kg)</label>
+                              <input
+                                type="number"
+                                placeholder="Weight kg"
+                                value={item.weightKg}
+                                onChange={(e) => handleLineItemChange(idx, 'weightKg', Number(e.target.value))}
+                                className="input-field"
+                                style={{ padding: '6px 8px' }}
+                                min="0"
+                                step="0.1"
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6B655C' }}>Pricing Unit</label>
+                              <select
+                                value={item.unit}
+                                onChange={(e) => handleLineItemChange(idx, 'unit', e.target.value)}
+                                className="input-field"
+                                style={{ padding: '6px 8px' }}
+                              >
+                                <option value="kg">Per kg ৳</option>
+                                <option value="bird">Per Bird ৳</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6B655C' }}>Unit Price ৳</label>
+                              <input
+                                type="number"
+                                placeholder="Price"
+                                value={item.unitPrice}
+                                onChange={(e) => handleLineItemChange(idx, 'unitPrice', Number(e.target.value))}
+                                className="input-field"
+                                style={{ padding: '6px 8px' }}
+                                min="0"
+                                step="0.01"
+                              />
+                            </div>
+                          </div>
                         )}
-                      </select>
 
-                      <div>
-                        <input
-                          type="number"
-                          placeholder="Unit Price ৳"
-                          value={item.unitPrice}
-                          onChange={(e) => handleLineItemChange(idx, 'unitPrice', Number(e.target.value))}
-                          className="input-field"
-                          style={{ padding: '6px 8px' }}
-                          min="0"
-                          step="0.01"
-                        />
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#3D6B8C', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', padding: '6px 10px', borderRadius: '6px' }}>
+                          <span>
+                            {item.type === 'egg'
+                              ? `🥚 Total Eggs: ${computed.actualQty} eggs (${item.crates || 0} Crates + ${item.looseEggs || 0} Loose)`
+                              : `🐔 Total Poultry: ${item.birdCount || 0} birds (${item.weightKg || 0} kg)`
+                            }
+                          </span>
+                          <strong style={{ color: '#4A7C59', fontSize: '0.95rem' }}>Subtotal: ৳{computed.subtotal.toLocaleString()}</strong>
+                        </div>
                       </div>
-
-                      {lineItems.length > 1 && (
-                        <button type="button" onClick={() => handleRemoveLineItem(idx)} style={{ background: 'none', border: 'none', color: '#B23A2F', cursor: 'pointer' }}>
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

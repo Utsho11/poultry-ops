@@ -57,17 +57,61 @@ router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res
       date, amountPaid = 0, note, notes
     } = parseResult.data;
 
-    // Build line items array
-    let itemsToProcess: Array<{ type: 'egg' | 'chicken'; quantity: number; unit: 'piece' | 'tray' | 'kg'; unitPrice: number; subtotal: number }> = [];
+    // Build line items array with Crates + Loose Eggs and Bird Count + Weight (kg)
+    let itemsToProcess: Array<{
+      type: 'egg' | 'chicken';
+      quantity: number;
+      crates?: number;
+      looseEggs?: number;
+      birdCount?: number;
+      weightKg?: number;
+      unit: 'piece' | 'tray' | 'kg' | 'bird';
+      unitPrice: number;
+      subtotal: number;
+    }> = [];
 
     if (rawItems && rawItems.length > 0) {
-      itemsToProcess = rawItems.map(i => ({
-        type: i.type,
-        quantity: i.quantity,
-        unit: i.unit || 'piece',
-        unitPrice: i.unitPrice,
-        subtotal: Number((i.quantity * i.unitPrice).toFixed(2))
-      }));
+      itemsToProcess = rawItems.map(i => {
+        let qty = i.quantity || 0;
+        let subtotal = 0;
+
+        if (i.type === 'egg') {
+          const crates = i.crates || 0;
+          const loose = i.looseEggs || 0;
+          if (crates > 0 || loose > 0) {
+            qty = (crates * 30) + loose;
+          }
+          if (i.unit === 'tray') {
+            const totalTrays = crates + (loose / 30);
+            subtotal = Number((totalTrays * i.unitPrice).toFixed(2));
+          } else {
+            subtotal = Number((qty * i.unitPrice).toFixed(2));
+          }
+        } else {
+          // Chicken sale: count birds and weight in kg
+          const birds = i.birdCount || i.quantity || 0;
+          const weight = i.weightKg || 0;
+          qty = birds; // quantity = bird count for batch deduction
+
+          if (i.unit === 'kg' && weight > 0) {
+            subtotal = Number((weight * i.unitPrice).toFixed(2));
+          } else {
+            subtotal = Number((birds * i.unitPrice).toFixed(2));
+          }
+        }
+
+        return {
+          type: i.type,
+          quantity: qty,
+          crates: i.crates,
+          looseEggs: i.looseEggs,
+          birdCount: i.birdCount || (i.type === 'chicken' ? qty : undefined),
+          weightKg: i.weightKg,
+          unit: i.unit || 'piece',
+          unitPrice: i.unitPrice,
+          subtotal
+        };
+      });
     } else if (legacyType && legacyQty && legacyPrice !== undefined) {
       const subtotal = Number((legacyQty * legacyPrice).toFixed(2));
       itemsToProcess = [{
@@ -107,11 +151,11 @@ router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res
       }
     }
 
-    // Deduct chicken count from batch if chicken items sold
+    // Deduct chicken count from batch if chicken items sold (using birdCount or quantity)
     if (batchId) {
       const totalChickensSold = itemsToProcess
         .filter(i => i.type === 'chicken')
-        .reduce((sum, i) => sum + i.quantity, 0);
+        .reduce((sum, i) => sum + (i.birdCount || i.quantity || 0), 0);
 
       if (totalChickensSold > 0) {
         const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });

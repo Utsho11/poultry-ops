@@ -32,9 +32,12 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [itemType, setItemType] = useState<'egg' | 'chicken'>('egg');
-  const [quantity, setQuantity] = useState('300');
-  const [unit, setUnit] = useState<'piece' | 'tray' | 'kg'>('piece');
-  const [unitPrice, setUnitPrice] = useState('12');
+  const [cratesInput, setCratesInput] = useState('10');
+  const [looseEggsInput, setLooseEggsInput] = useState('0');
+  const [birdCountInput, setBirdCountInput] = useState('50');
+  const [weightKgInput, setWeightKgInput] = useState('85');
+  const [unit, setUnit] = useState<'piece' | 'tray' | 'kg' | 'bird'>('tray');
+  const [unitPrice, setUnitPrice] = useState('360');
   const [amountPaid, setAmountPaid] = useState('0');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -68,10 +71,32 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
   const onRefresh = () => { setRefreshing(true); loadData(); };
 
   // Calculations for new sale form
-  const rawQty = parseFloat(quantity) || 0;
-  const actualQty = unit === 'tray' ? rawQty * 30 : rawQty;
+  const crates = parseFloat(cratesInput) || 0;
+  const loose = parseFloat(looseEggsInput) || 0;
+  const birds = parseFloat(birdCountInput) || 0;
+  const weight = parseFloat(weightKgInput) || 0;
   const price = parseFloat(unitPrice) || 0;
-  const totalInvoice = Number((actualQty * price).toFixed(2));
+
+  let totalInvoice = 0;
+  let actualQty = 0;
+
+  if (itemType === 'egg') {
+    actualQty = (crates * 30) + loose;
+    if (unit === 'tray') {
+      const totalTrays = crates + (loose / 30);
+      totalInvoice = Number((totalTrays * price).toFixed(2));
+    } else {
+      totalInvoice = Number((actualQty * price).toFixed(2));
+    }
+  } else {
+    actualQty = birds;
+    if (unit === 'kg' && weight > 0) {
+      totalInvoice = Number((weight * price).toFixed(2));
+    } else {
+      totalInvoice = Number((birds * price).toFixed(2));
+    }
+  }
+
   const paidAmt = parseFloat(amountPaid) || 0;
   const dueAmt = Math.max(0, Number((totalInvoice - paidAmt).toFixed(2)));
 
@@ -100,8 +125,8 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
   };
 
   const handleCreateSale = async () => {
-    if (actualQty <= 0 || price < 0) {
-      Alert.alert('Validation Error', 'Please enter valid quantity and price.');
+    if (totalInvoice <= 0) {
+      Alert.alert('Validation Error', 'Please enter valid quantities and unit price.');
       return;
     }
 
@@ -116,6 +141,10 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
           items: [{
             type: itemType,
             quantity: actualQty,
+            crates: itemType === 'egg' ? crates : undefined,
+            looseEggs: itemType === 'egg' ? loose : undefined,
+            birdCount: itemType === 'chicken' ? birds : undefined,
+            weightKg: itemType === 'chicken' ? weight : undefined,
             unit,
             unitPrice: price
           }],
@@ -343,49 +372,129 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
                 </View>
               )}
 
-              {/* Item Type & Qty */}
-              <Text style={s.inputLabel}>Item Type</Text>
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+              {/* Item Type Selector */}
+              <Text style={s.inputLabel}>Item Category</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
                 <TouchableOpacity
                   style={[s.typeChip, itemType === 'egg' && s.typeChipActive]}
-                  onPress={() => setItemType('egg')}
+                  onPress={() => { setItemType('egg'); setUnit('tray'); }}
                 >
-                  <Text style={s.chipText}>🥚 Eggs</Text>
+                  <Text style={s.chipText}>🥚 Layer Eggs</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[s.typeChip, itemType === 'chicken' && s.typeChipActive]}
-                  onPress={() => setItemType('chicken')}
+                  onPress={() => { setItemType('chicken'); setUnit('kg'); }}
                 >
-                  <Text style={s.chipText}>🐔 Chickens</Text>
+                  <Text style={s.chipText}>🐔 Poultry / Birds</Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.inputLabel}>Quantity</Text>
-                  <TextInput
-                    style={s.input}
-                    keyboardType="numeric"
-                    value={quantity}
-                    onChangeText={setQuantity}
-                  />
+              {/* DYNAMIC FORM FIELDS DEPENDING ON CATEGORY */}
+              {itemType === 'egg' ? (
+                <View style={{ gap: 10, marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.inputLabel}>Crates (30 eggs/crate)</Text>
+                      <TextInput
+                        style={s.input}
+                        keyboardType="numeric"
+                        value={cratesInput}
+                        onChangeText={setCratesInput}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.inputLabel}>Loose Eggs</Text>
+                      <TextInput
+                        style={s.input}
+                        keyboardType="numeric"
+                        value={looseEggsInput}
+                        onChangeText={setLooseEggsInput}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.inputLabel}>Pricing Unit</Text>
+                      <TouchableOpacity
+                        style={[s.input, { justifyContent: 'center' }]}
+                        onPress={() => setUnit(unit === 'tray' ? 'piece' : 'tray')}
+                      >
+                        <Text style={{ fontWeight: '700', color: colors.textMain }}>
+                          {unit === 'tray' ? 'Per Crate ৳' : 'Per Piece ৳'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.inputLabel}>Unit Price ৳</Text>
+                      <TextInput
+                        style={s.input}
+                        keyboardType="numeric"
+                        value={unitPrice}
+                        onChangeText={setUnitPrice}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={{ backgroundColor: 'rgba(74, 124, 89, 0.12)', padding: 8, borderRadius: 6 }}>
+                    <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: 11 }}>
+                      Total Eggs: {actualQty} eggs ({crates} Crates + {loose} Loose)
+                    </Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.inputLabel}>Unit</Text>
-                  <TouchableOpacity style={s.input} onPress={() => setUnit(unit === 'piece' ? 'tray' : 'piece')}>
-                    <Text style={{ fontWeight: '700' }}>{unit === 'piece' ? 'Pieces' : 'Trays (30)'}</Text>
-                  </TouchableOpacity>
+              ) : (
+                <View style={{ gap: 10, marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.inputLabel}>Bird Count (Birds)</Text>
+                      <TextInput
+                        style={s.input}
+                        keyboardType="numeric"
+                        value={birdCountInput}
+                        onChangeText={setBirdCountInput}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.inputLabel}>Total Weight (kg)</Text>
+                      <TextInput
+                        style={s.input}
+                        keyboardType="numeric"
+                        value={weightKgInput}
+                        onChangeText={setWeightKgInput}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.inputLabel}>Pricing Unit</Text>
+                      <TouchableOpacity
+                        style={[s.input, { justifyContent: 'center' }]}
+                        onPress={() => setUnit(unit === 'kg' ? 'bird' : 'kg')}
+                      >
+                        <Text style={{ fontWeight: '700', color: colors.textMain }}>
+                          {unit === 'kg' ? 'Per kg ৳' : 'Per Bird ৳'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.inputLabel}>Unit Price ৳</Text>
+                      <TextInput
+                        style={s.input}
+                        keyboardType="numeric"
+                        value={unitPrice}
+                        onChangeText={setUnitPrice}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={{ backgroundColor: 'rgba(61, 107, 140, 0.12)', padding: 8, borderRadius: 6 }}>
+                    <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 11 }}>
+                      Total Poultry: {birds} birds ({weight} kg)
+                    </Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.inputLabel}>Unit Price ৳</Text>
-                  <TextInput
-                    style={s.input}
-                    keyboardType="numeric"
-                    value={unitPrice}
-                    onChangeText={setUnitPrice}
-                  />
-                </View>
-              </View>
+              )}
 
               {/* Money Breakdown */}
               <View style={{ backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 8, marginBottom: 14 }}>

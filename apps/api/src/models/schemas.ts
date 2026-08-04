@@ -175,15 +175,23 @@ export const CustomerModel = model<ICustomerDoc>('Customer', customerSchema);
 export interface ISaleItemDoc {
   type: 'egg' | 'chicken';
   quantity: number;
-  unit: 'piece' | 'tray' | 'kg';
+  crates?: number;
+  looseEggs?: number;
+  birdCount?: number;
+  weightKg?: number;
+  unit: 'piece' | 'tray' | 'kg' | 'bird';
   unitPrice: number;
   subtotal: number;
 }
 
 const saleItemSchema = new Schema<ISaleItemDoc>({
   type: { type: String, enum: ['egg', 'chicken'], required: true },
-  quantity: { type: Number, required: true, min: 0.01 },
-  unit: { type: String, enum: ['piece', 'tray', 'kg'], default: 'piece' },
+  quantity: { type: Number, required: true, min: 0 },
+  crates: { type: Number, min: 0 },
+  looseEggs: { type: Number, min: 0 },
+  birdCount: { type: Number, min: 0 },
+  weightKg: { type: Number, min: 0 },
+  unit: { type: String, enum: ['piece', 'tray', 'kg', 'bird'], default: 'piece' },
   unitPrice: { type: Number, required: true, min: 0 },
   subtotal: { type: Number, required: true, min: 0 }
 }, { _id: false });

@@ -57,8 +57,12 @@ export const customerSchema = z.object({
 
 export const saleItemSchema = z.object({
   type: z.enum(['egg', 'chicken']),
-  quantity: z.number().positive('Quantity must be greater than 0'),
-  unit: z.enum(['piece', 'tray', 'kg']).default('piece'),
+  quantity: z.number().min(0, 'Quantity cannot be negative'),
+  crates: z.number().min(0).optional(),
+  looseEggs: z.number().min(0).optional(),
+  birdCount: z.number().min(0).optional(),
+  weightKg: z.number().min(0).optional(),
+  unit: z.enum(['piece', 'tray', 'kg', 'bird']).default('piece'),
   unitPrice: z.number().min(0, 'Unit price cannot be negative')
 });
 

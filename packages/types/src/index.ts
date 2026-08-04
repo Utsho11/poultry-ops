@@ -106,11 +106,15 @@ export interface ICustomer {
   updatedAt?: string | Date;
 }
 
-export type SaleItemUnit = 'piece' | 'tray' | 'kg';
+export type SaleItemUnit = 'piece' | 'tray' | 'kg' | 'bird';
 
 export interface ISaleItem {
   type: SaleItemType;
-  quantity: number;
+  quantity: number;        // total egg count (piece) OR bird count
+  crates?: number;         // number of egg crates (30 eggs/crate)
+  looseEggs?: number;      // loose eggs
+  birdCount?: number;      // bird count when selling poultry
+  weightKg?: number;       // total weight in kg when selling poultry
   unit: SaleItemUnit;
   unitPrice: number;
   subtotal: number;
