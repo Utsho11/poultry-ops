@@ -136,6 +136,10 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
       Alert.alert('Validation Error', 'Please enter valid quantities and unit price.');
       return;
     }
+    if (!saleDate) {
+      Alert.alert('Validation Error', 'Please enter a valid sale date (YYYY-MM-DD).');
+      return;
+    }
 
     try {
       await apiFetch('/sales', {
@@ -537,6 +541,15 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
                   Remaining Due: ৳{dueAmt.toLocaleString()}
                 </Text>
               </View>
+
+              <Text style={s.inputLabel}>📅 Sale Date (YYYY-MM-DD) *</Text>
+              <TextInput
+                style={[s.input, { marginBottom: 14 }]}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#64748b"
+                value={saleDate}
+                onChangeText={setSaleDate}
+              />
 
               <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
                 <TouchableOpacity style={s.cancelBtn} onPress={() => setNewSaleModalOpen(false)}>
