@@ -176,37 +176,33 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const activeLayerBirds = batches.filter(b => b.type === 'layer' && b.status === 'active').reduce((acc, b) => acc + b.currentCount, 0);
+  const activeBroilerBirds = batches.filter(b => b.type === 'broiler' && b.status === 'active').reduce((acc, b) => acc + b.currentCount, 0);
+
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading PoultryOps Dashboard...</div>;
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-      {/* Top Header Banner */}
+      {/* Top Header Banner & Quick Navigation Links */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{t('dashboard')}</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Real-time overview of active batches, daily yields (crates + eggs), sales income & stock</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Real-time overview of active layer/poultry flocks, daily yields, sales income & egg stock</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button onClick={() => setQuickLogOpen(true)} className="btn btn-primary" style={{ backgroundColor: '#4A7C59' }}>
-            <Zap size={18} />
-            ⚡ Quick Save Daily Log
-          </button>
-
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <Link to="/logs" className="btn btn-primary" style={{ backgroundColor: '#4A7C59', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Zap size={18} /> Daily Log
+          </Link>
           {isOwner && (
-            <button onClick={() => setSaleModalOpen(true)} className="btn btn-primary" style={{ backgroundColor: '#3D6B8C' }}>
-              <ShoppingCart size={18} />
-              💰 Record Sale
-            </button>
+            <Link to="/sales" className="btn btn-primary" style={{ backgroundColor: '#3D6B8C', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <ShoppingCart size={18} /> Sales & Dues
+            </Link>
           )}
-
-          {canManageBatches && (
-            <button onClick={() => setCreateBatchOpen(true)} className="btn btn-primary" style={{ backgroundColor: '#C7511F' }}>
-              <PlusCircle size={18} />
-              ➕ Create New Batch
-            </button>
-          )}
+          <Link to="/batches" className="btn btn-primary" style={{ backgroundColor: '#C7511F', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Layers size={18} /> Flocks / Batches
+          </Link>
         </div>
       </div>
 
@@ -220,53 +216,51 @@ export const DashboardPage: React.FC = () => {
               <Egg size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#2D2A26' }}>{formatEggCount(summary?.currentEggCount || 0)}</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2A26' }}>{formatEggCount(summary?.currentEggCount || 0)}</div>
           <div style={{ fontSize: '0.75rem', color: '#4A7C59', marginTop: '4px', fontWeight: 600 }}>
             {(summary?.currentEggCount || 0).toLocaleString()} unsold eggs in stock
           </div>
         </div>
 
-        {/* All Time Egg Count */}
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>All-Time Egg Count</span>
-            <div style={{ background: 'rgba(217, 164, 65, 0.15)', color: '#D9A441', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Egg size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatEggCount(summary?.allTimeEggCount || 0)}</div>
-          <div style={{ fontSize: '0.75rem', color: '#D9A441', marginTop: '4px' }}>
-            Total eggs collected across all batches
-          </div>
-        </div>
-
-        {/* Total Sales Income */}
+        {/* Total Sales Income (Both Batches) */}
         <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(61, 107, 140, 0.4)', background: 'linear-gradient(135deg, rgba(61, 107, 140, 0.1) 0%, rgba(255, 255, 255, 1) 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: '#3D6B8C', fontSize: '0.85rem', fontWeight: 700 }}>Total Sales Revenue</span>
+            <span style={{ color: '#3D6B8C', fontSize: '0.85rem', fontWeight: 700 }}>Total Revenue (All Batches)</span>
             <div style={{ background: 'rgba(61, 107, 140, 0.15)', color: '#3D6B8C', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <DollarSign size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#2D2A26' }}>৳{(summary?.totalIncome || 0).toLocaleString()}</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2A26' }}>৳{(summary?.totalIncome || 0).toLocaleString()}</div>
           <div style={{ fontSize: '0.75rem', color: '#3D6B8C', marginTop: '4px', fontWeight: 600 }}>
-            Eggs & Birds Sales Total
+            Combined Layer & Poultry Sales
           </div>
         </div>
 
-        {/* Total Birds */}
-        <div className="glass-panel" style={{ padding: '20px' }}>
+        {/* Active Layer Hens Count */}
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(199, 81, 31, 0.3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>Active Hen Population</span>
+            <span style={{ color: '#C7511F', fontSize: '0.85rem', fontWeight: 700 }}>Active Layer Hens</span>
             <div style={{ background: 'rgba(199, 81, 31, 0.15)', color: '#C7511F', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Bird size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>
-            {batches.filter(b => b.status === 'active').reduce((acc, b) => acc + b.currentCount, 0).toLocaleString()}
-          </div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2A26' }}>{activeLayerBirds.toLocaleString()} Birds</div>
           <div style={{ fontSize: '0.75rem', color: '#C7511F', marginTop: '4px', fontWeight: 600 }}>
-            Across {batches.filter(b => b.status === 'active').length} active flocks
+            {batches.filter(b => b.type === 'layer' && b.status === 'active').length} active Layer flocks
+          </div>
+        </div>
+
+        {/* Active Poultry / Broiler Bird Count */}
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(217, 164, 65, 0.4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ color: '#D9A441', fontSize: '0.85rem', fontWeight: 700 }}>Active Poultry / Broilers</span>
+            <div style={{ background: 'rgba(217, 164, 65, 0.15)', color: '#D9A441', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bird size={20} />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2A26' }}>{activeBroilerBirds.toLocaleString()} Birds</div>
+          <div style={{ fontSize: '0.75rem', color: '#D9A441', marginTop: '4px', fontWeight: 600 }}>
+            {batches.filter(b => b.type === 'broiler' && b.status === 'active').length} active Poultry flocks
           </div>
         </div>
       </div>

@@ -185,25 +185,26 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
     </View>
   );
 
+  const activeLayerBirds = batches.filter(b => b.type === 'layer' && b.status === 'active').reduce((a: number, b: any) => a + b.currentCount, 0);
+  const activeBroilerBirds = batches.filter(b => b.type === 'broiler' && b.status === 'active').reduce((a: number, b: any) => a + b.currentCount, 0);
+
   return (
     <View style={common.screen}>
       {/* Mobile Top Header */}
       <View style={s.topHeader}>
         <Text style={s.brandLogo}>PoultryOps</Text>
         <View style={{ flexDirection: 'row', gap: 6 }}>
-          <TouchableOpacity style={s.quickLogHeaderBtn} onPress={() => setQuickLogModal(true)}>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>⚡ Log</Text>
+          <TouchableOpacity style={s.quickLogHeaderBtn} onPress={() => navigation.navigate('Daily Log')}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>⚡ Daily Log</Text>
           </TouchableOpacity>
           {isOwner && (
-            <TouchableOpacity style={s.saleHeaderBtn} onPress={() => setSaleModalOpen(true)}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>💰 Sale</Text>
+            <TouchableOpacity style={s.saleHeaderBtn} onPress={() => navigation.navigate('Sales')}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>💰 Sales</Text>
             </TouchableOpacity>
           )}
-          {canManageBatches && (
-            <TouchableOpacity style={s.batchHeaderBtn} onPress={() => setCreateBatchModal(true)}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>➕ Batch</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={s.batchHeaderBtn} onPress={() => navigation.navigate('Batches')}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>🐔 Batches</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -212,34 +213,35 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         {/* Egg Stock & Sales Highlights */}
-        <Text style={[s.titleHeader, { marginTop: 8, marginBottom: 12 }]}>Egg Stock & Revenue</Text>
+        <Text style={[s.titleHeader, { marginTop: 8, marginBottom: 12 }]}>Egg Stock & Active Flocks KPI</Text>
+        
+        {/* Row 1: Current Egg Stock & Total Revenue */}
         <View style={s.statRow}>
-          <View style={[common.statCard, { borderColor: colors.secondary, borderWidth: 1 }]}>
+          <View style={[common.statCard, { borderColor: colors.secondary, borderWidth: 1, flex: 1 }]}>
             <Text style={common.statLabel}>Current Egg Stock</Text>
-            <Text style={[common.statValue, { color: colors.secondary, fontSize: 15 }]}>{formatEggCount(summary?.currentEggCount || 0)}</Text>
+            <Text style={[common.statValue, { color: colors.secondary, fontSize: 14 }]}>{formatEggCount(summary?.currentEggCount || 0)}</Text>
             <Text style={common.statSub}>{(summary?.currentEggCount || 0).toLocaleString()} unsold eggs</Text>
           </View>
           <View style={{ width: 10 }} />
-          <View style={common.statCard}>
-            <Text style={common.statLabel}>All-Time Eggs</Text>
-            <Text style={[common.statValue, { color: colors.amber, fontSize: 15 }]}>{formatEggCount(summary?.allTimeEggCount || 0)}</Text>
-            <Text style={common.statSub}>{(summary?.allTimeEggCount || 0).toLocaleString()} total</Text>
+          <View style={[common.statCard, { borderColor: colors.blue, borderWidth: 1, backgroundColor: 'rgba(61, 107, 140, 0.12)', flex: 1 }]}>
+            <Text style={common.statLabel}>Total Income (All Batches)</Text>
+            <Text style={[common.statValue, { color: colors.blue, fontSize: 14 }]}>৳{(summary?.totalIncome || 0).toLocaleString()}</Text>
+            <Text style={common.statSub}>Layer & Poultry Sales</Text>
           </View>
         </View>
 
+        {/* Row 2: Active Layer Hens & Active Poultry / Broilers */}
         <View style={[s.statRow, { marginTop: 10 }]}>
-          <View style={[common.statCard, { borderColor: colors.blue, borderWidth: 1, backgroundColor: 'rgba(61, 107, 140, 0.12)' }]}>
-            <Text style={common.statLabel}>Sales Income</Text>
-            <Text style={[common.statValue, { color: colors.blue, fontSize: 15 }]}>৳{(summary?.totalIncome || 0).toLocaleString()}</Text>
-            <Text style={common.statSub}>Total Revenue</Text>
+          <View style={[common.statCard, { borderColor: colors.brand, borderWidth: 1, flex: 1 }]}>
+            <Text style={common.statLabel}>Active Layer Hens</Text>
+            <Text style={[common.statValue, { color: colors.brand, fontSize: 14 }]}>{activeLayerBirds.toLocaleString()} Birds</Text>
+            <Text style={common.statSub}>{batches.filter(b => b.type === 'layer' && b.status === 'active').length} active Layer flocks</Text>
           </View>
           <View style={{ width: 10 }} />
-          <View style={common.statCard}>
-            <Text style={common.statLabel}>Active Birds</Text>
-            <Text style={[common.statValue, { color: colors.brand, fontSize: 15 }]}>
-              {batches.filter(b => b.status === 'active').reduce((a: number, b: any) => a + b.currentCount, 0).toLocaleString()}
-            </Text>
-            <Text style={common.statSub}>{batches.filter(b => b.status === 'active').length} active flocks</Text>
+          <View style={[common.statCard, { borderColor: colors.amber, borderWidth: 1, flex: 1 }]}>
+            <Text style={common.statLabel}>Active Poultry / Broilers</Text>
+            <Text style={[common.statValue, { color: colors.amber, fontSize: 14 }]}>{activeBroilerBirds.toLocaleString()} Birds</Text>
+            <Text style={common.statSub}>{batches.filter(b => b.type === 'broiler' && b.status === 'active').length} active Poultry flocks</Text>
           </View>
         </View>
 
