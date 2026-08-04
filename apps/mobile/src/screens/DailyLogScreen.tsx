@@ -19,6 +19,7 @@ export const DailyLogScreen: React.FC = () => {
   const [success, setSuccess] = useState(false);
 
   const [selectedBatchId, setSelectedBatchId] = useState('');
+  const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
   const [crates, setCrates] = useState('0');
   const [looseEggs, setLooseEggs] = useState('0');
   const [brokenEggCount, setBrokenEggCount] = useState('0');
@@ -38,7 +39,7 @@ export const DailyLogScreen: React.FC = () => {
       setLogs(logData);
     } catch (e) {}
     finally { setRefreshing(false); }
-  }, [token]);
+  }, [token, selectedBatchId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -46,14 +47,14 @@ export const DailyLogScreen: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!selectedBatchId) { showAlert('Error', 'Select a batch first'); return; }
+    if (!logDate) { showAlert('Error', 'Please enter a valid date (YYYY-MM-DD)'); return; }
     setSubmitting(true);
-    const today = new Date().toISOString().split('T')[0];
     try {
       await apiFetch('/logs', {
         method: 'POST',
         body: JSON.stringify({
           batchId: selectedBatchId,
-          date: today,
+          date: logDate,
           eggCount: totalCalculatedEggs,
           brokenEggCount: Number(brokenEggCount),
           deadCount: Number(deadCount),
@@ -142,6 +143,15 @@ export const DailyLogScreen: React.FC = () => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+
+            <Text style={common.label}>📅 Log Date (YYYY-MM-DD) *</Text>
+            <TextInput
+              style={common.input}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#64748b"
+              value={logDate}
+              onChangeText={setLogDate}
+            />
 
             {/* Crates & Loose Eggs Collection Input */}
             <View style={s.crateBox}>

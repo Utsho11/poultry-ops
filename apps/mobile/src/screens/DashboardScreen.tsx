@@ -19,6 +19,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
   // Quick Daily Log Modal State (Crates + Loose Eggs)
   const [quickLogModal, setQuickLogModal] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState('');
+  const [quickLogDate, setQuickLogDate] = useState(new Date().toISOString().split('T')[0]);
   const [crates, setCrates] = useState('0');
   const [looseEggs, setLooseEggs] = useState('0');
   const [brokenEggCount, setBrokenEggCount] = useState('0');
@@ -99,14 +100,17 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
       showAlert('Error', 'Please enter Egg count (Crates/Loose), Feed, and Water');
       return;
     }
+    if (!quickLogDate) {
+      showAlert('Error', 'Log Date is required (YYYY-MM-DD)');
+      return;
+    }
     setSubmittingLog(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
       await apiFetch('/logs', {
         method: 'POST',
         body: JSON.stringify({
           batchId: selectedBatchId,
-          date: today,
+          date: quickLogDate,
           eggCount: totalLogEggs,
           brokenEggCount: Number(brokenEggCount || 0),
           deadCount: Number(deadCount || 0),
@@ -477,6 +481,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 </TouchableOpacity>
               ))}
 
+              <Text style={common.label}>📅 Log Date (YYYY-MM-DD) *</Text>
+              <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#6B655C" value={quickLogDate} onChangeText={setQuickLogDate} />
+
               <View style={s.eggInputBox}>
                 <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: 13, marginBottom: 6 }}>
                   🥚 Eggs Collected (1 Crate = 30 Eggs)
@@ -587,6 +594,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
               <Text style={common.label}>Customer Name</Text>
               <TextInput style={common.input} placeholder="Wholesale Buyer" placeholderTextColor="#6B655C" value={saleCustomer} onChangeText={setSaleCustomer} />
+
+              <Text style={common.label}>📅 Sale Date (YYYY-MM-DD) *</Text>
+              <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#6B655C" value={saleDate} onChangeText={setSaleDate} />
             </ScrollView>
 
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
@@ -615,6 +625,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
               <Text style={common.label}>Initial Bird Count</Text>
               <TextInput style={common.input} keyboardType="numeric" placeholder="1000" placeholderTextColor="#6B655C" value={initialCount} onChangeText={setInitialCount} />
+
+              <Text style={common.label}>📅 Start Date (YYYY-MM-DD) *</Text>
+              <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#6B655C" value={startDate} onChangeText={setStartDate} />
 
               <Text style={common.label}>Shed / House Name</Text>
               <TextInput style={common.input} placeholder="Shed 1" placeholderTextColor="#6B655C" value={shed} onChangeText={setShed} />

@@ -45,6 +45,7 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
   const [breed, setBreed] = useState('Cobb 500');
   const [type, setType] = useState<'broiler' | 'layer'>('layer');
   const [initialCount, setInitialCount] = useState('1000');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [shed, setShed] = useState('Shed A');
 
   const load = useCallback(async () => {
@@ -78,13 +79,13 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
   const handleCreate = async () => {
     if (!name) { showAlert('Error', 'Batch name is required'); return; }
+    if (!startDate) { showAlert('Error', 'Start date is required (YYYY-MM-DD)'); return; }
     setSubmitting(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
       await apiFetch('/batches', {
         method: 'POST',
         body: JSON.stringify({
-          name, breed, type, startDate: today,
+          name, breed, type, startDate,
           initialCount: Number(initialCount), shed,
           assignedWorkerIds: selectedWorkerIds
         })
@@ -392,6 +393,9 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
               <Text style={common.label}>Initial Birds Count</Text>
               <TextInput style={common.input} keyboardType="numeric" value={initialCount} onChangeText={setInitialCount} />
+
+              <Text style={common.label}>📅 Start Date (YYYY-MM-DD) *</Text>
+              <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#6B655C" value={startDate} onChangeText={setStartDate} />
 
               <Text style={common.label}>Shed / House Name</Text>
               <TextInput style={common.input} value={shed} onChangeText={setShed} />
