@@ -341,6 +341,16 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
           <View style={s.modalContent}>
             <Text style={s.modalTitle}>🛒 Record New Sale Invoice</Text>
             <ScrollView>
+              {/* Sale Date Input (TOP) */}
+              <Text style={s.inputLabel}>📅 Sale Date (YYYY-MM-DD) *</Text>
+              <TextInput
+                style={[s.input, { marginBottom: 12 }]}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#64748b"
+                value={saleDate}
+                onChangeText={setSaleDate}
+              />
+
               {/* Batch Selector (Required) */}
               <Text style={s.inputLabel}>Select Flock / Batch *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
@@ -541,15 +551,6 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
                   Remaining Due: ৳{dueAmt.toLocaleString()}
                 </Text>
               </View>
-
-              <Text style={s.inputLabel}>📅 Sale Date (YYYY-MM-DD) *</Text>
-              <TextInput
-                style={[s.input, { marginBottom: 14 }]}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#64748b"
-                value={saleDate}
-                onChangeText={setSaleDate}
-              />
 
               <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
                 <TouchableOpacity style={s.cancelBtn} onPress={() => setNewSaleModalOpen(false)}>

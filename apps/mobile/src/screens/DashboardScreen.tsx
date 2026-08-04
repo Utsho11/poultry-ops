@@ -539,6 +539,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
           <View style={s.modalContainer}>
             <Text style={s.modalTitle}>💰 Record Sale Revenue</Text>
             <ScrollView>
+              <Text style={common.label}>📅 Sale Date (YYYY-MM-DD) *</Text>
+              <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#6B655C" value={saleDate} onChangeText={setSaleDate} />
+
               <Text style={common.label}>Item to Sell</Text>
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                 <TouchableOpacity
@@ -594,9 +597,6 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
               <Text style={common.label}>Customer Name</Text>
               <TextInput style={common.input} placeholder="Wholesale Buyer" placeholderTextColor="#6B655C" value={saleCustomer} onChangeText={setSaleCustomer} />
-
-              <Text style={common.label}>📅 Sale Date (YYYY-MM-DD) *</Text>
-              <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#6B655C" value={saleDate} onChangeText={setSaleDate} />
             </ScrollView>
 
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
