@@ -1,8 +1,9 @@
 import { Router, Response } from 'express';
 import { saleSchema } from '@poultry-ops/validation';
-import { SaleModel, BatchModel } from '../models/schemas';
+import { SaleModel, BatchModel, CustomerModel, PaymentModel } from '../models/schemas';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
+import { syncCustomerTotalDue } from './customers';
 
 const router = Router();
 
@@ -12,9 +13,11 @@ router.use(resolveTenant);
 // GET /api/sales - List sales for current farm
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { batchId, itemType, limit } = req.query;
+    const { batchId, customerId, status, itemType, limit } = req.query;
     const filter: any = { farmId: req.farmId };
     if (batchId) filter.batchId = batchId;
+    if (customerId) filter.customerId = customerId;
+    if (status) filter.status = status;
     if (itemType) filter.itemType = itemType;
 
     const query = SaleModel.find(filter).sort({ date: -1, createdAt: -1 });
@@ -27,40 +30,141 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// POST /api/sales - Record a new egg or chicken sale (OWNER ONLY)
-router.post('/', requireRole(['owner']), async (req: AuthRequest, res: Response) => {
+// GET /api/sales/:id - Sale details with payment trail
+router.get('/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const sale = await SaleModel.findOne({ _id: req.params.id, farmId: req.farmId });
+    if (!sale) return res.status(404).json({ error: 'Sale record not found' });
+
+    const payments = await PaymentModel.find({ farmId: req.farmId, saleId: sale._id }).sort({ date: -1 });
+    return res.json({ sale, payments });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/sales - Record a new sale (Multi-item, Customer & Due handling)
+router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
   try {
     const parseResult = saleSchema.safeParse(req.body);
     if (!parseResult.success) {
       return res.status(400).json({ error: 'Validation failed', details: parseResult.error.format() });
     }
 
-    const { batchId, itemType, quantity, unitPrice, date, customerName, note } = parseResult.data;
-    const totalAmount = Number((quantity * unitPrice).toFixed(2));
+    const {
+      batchId, customerId, customerName, customerPhone,
+      items: rawItems, itemType: legacyType, quantity: legacyQty, unitPrice: legacyPrice,
+      date, amountPaid = 0, note, notes
+    } = parseResult.data;
 
-    // If chicken sale with specific batch, decrease batch count
-    if (itemType === 'chicken' && batchId) {
-      const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
-      if (batch) {
-        batch.currentCount = Math.max(0, batch.currentCount - quantity);
-        await batch.save();
+    // Build line items array
+    let itemsToProcess: Array<{ type: 'egg' | 'chicken'; quantity: number; unit: 'piece' | 'tray' | 'kg'; unitPrice: number; subtotal: number }> = [];
+
+    if (rawItems && rawItems.length > 0) {
+      itemsToProcess = rawItems.map(i => ({
+        type: i.type,
+        quantity: i.quantity,
+        unit: i.unit || 'piece',
+        unitPrice: i.unitPrice,
+        subtotal: Number((i.quantity * i.unitPrice).toFixed(2))
+      }));
+    } else if (legacyType && legacyQty && legacyPrice !== undefined) {
+      const subtotal = Number((legacyQty * legacyPrice).toFixed(2));
+      itemsToProcess = [{
+        type: legacyType,
+        quantity: legacyQty,
+        unit: 'piece',
+        unitPrice: legacyPrice,
+        subtotal
+      }];
+    } else {
+      return res.status(400).json({ error: 'Sale must contain at least one valid line item' });
+    }
+
+    // SERVER-SIDE MONEY MATH - NEVER TRUST CLIENT TOTALS
+    const totalAmount = Number(itemsToProcess.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2));
+    const finalAmountPaid = Math.min(totalAmount, Math.max(0, Number(amountPaid.toFixed(2))));
+    const amountDue = Number((totalAmount - finalAmountPaid).toFixed(2));
+    const status: 'paid' | 'partial' | 'due' = amountDue <= 0 ? 'paid' : finalAmountPaid === 0 ? 'due' : 'partial';
+
+    // Handle Customer lookup or inline creation
+    let activeCustomer: any = null;
+    if (customerId) {
+      activeCustomer = await CustomerModel.findOne({ _id: customerId, farmId: req.farmId });
+    } else if (customerPhone) {
+      const normPhone = customerPhone.replace(/\D/g, '');
+      if (normPhone) {
+        activeCustomer = await CustomerModel.findOne({ farmId: req.farmId, phone: normPhone });
+        if (!activeCustomer && customerName) {
+          activeCustomer = new CustomerModel({
+            farmId: req.farmId,
+            name: customerName.trim(),
+            phone: normPhone,
+            totalDue: 0
+          });
+          await activeCustomer.save();
+        }
+      }
+    }
+
+    // Deduct chicken count from batch if chicken items sold
+    if (batchId) {
+      const totalChickensSold = itemsToProcess
+        .filter(i => i.type === 'chicken')
+        .reduce((sum, i) => sum + i.quantity, 0);
+
+      if (totalChickensSold > 0) {
+        const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
+        if (batch) {
+          batch.currentCount = Math.max(0, batch.currentCount - totalChickensSold);
+          await batch.save();
+        }
       }
     }
 
     const sale = new SaleModel({
       farmId: req.farmId,
       batchId: batchId || undefined,
-      itemType,
-      quantity,
-      unitPrice,
+      customerId: activeCustomer ? activeCustomer._id : undefined,
+      customerName: activeCustomer ? activeCustomer.name : (customerName || 'Walk-in Customer'),
+      customerPhone: activeCustomer ? activeCustomer.phone : customerPhone,
+      itemType: itemsToProcess[0]?.type || 'egg', // legacy fallback
+      quantity: itemsToProcess[0]?.quantity || 0, // legacy fallback
+      unitPrice: itemsToProcess[0]?.unitPrice || 0, // legacy fallback
+      items: itemsToProcess,
       totalAmount,
+      amountPaid: finalAmountPaid,
+      amountDue,
+      status,
       date,
-      customerName,
-      note,
+      notes: notes || note,
       recordedBy: req.user?.userId
     });
 
     await sale.save();
+
+    // If initial payment was made at sale creation, log Payment entry
+    if (finalAmountPaid > 0 && activeCustomer) {
+      const initialPayment = new PaymentModel({
+        farmId: req.farmId,
+        customerId: activeCustomer._id,
+        customerName: activeCustomer.name,
+        customerPhone: activeCustomer.phone,
+        saleId: sale._id,
+        amount: finalAmountPaid,
+        date,
+        method: 'cash',
+        notes: `Initial payment at sale creation (Invoice #${sale._id.toString().slice(-6)})`,
+        recordedBy: req.user?.userId
+      });
+      await initialPayment.save();
+    }
+
+    // Sync Customer's total due
+    if (activeCustomer) {
+      await syncCustomerTotalDue(req.farmId, activeCustomer._id);
+    }
+
     return res.status(201).json(sale);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -73,17 +177,33 @@ router.delete('/:id', requireRole(['owner']), async (req: AuthRequest, res: Resp
     const sale = await SaleModel.findOne({ _id: req.params.id, farmId: req.farmId });
     if (!sale) return res.status(404).json({ error: 'Sale record not found' });
 
-    // If deleting a chicken sale, restore batch count
-    if (sale.itemType === 'chicken' && sale.batchId) {
-      const batch = await BatchModel.findOne({ _id: sale.batchId, farmId: req.farmId });
-      if (batch) {
-        batch.currentCount += sale.quantity;
-        await batch.save();
+    // Restore batch chicken count if chicken items existed
+    if (sale.batchId) {
+      const totalChickensSold = sale.items && sale.items.length > 0
+        ? sale.items.filter(i => i.type === 'chicken').reduce((sum, i) => sum + i.quantity, 0)
+        : sale.itemType === 'chicken' ? (sale.quantity || 0) : 0;
+
+      if (totalChickensSold > 0) {
+        const batch = await BatchModel.findOne({ _id: sale.batchId, farmId: req.farmId });
+        if (batch) {
+          batch.currentCount += totalChickensSold;
+          await batch.save();
+        }
       }
     }
 
+    const customerId = sale.customerId;
+
+    // Delete linked payment records
+    await PaymentModel.deleteMany({ farmId: req.farmId, saleId: sale._id });
     await SaleModel.deleteOne({ _id: req.params.id, farmId: req.farmId });
-    return res.json({ message: 'Sale deleted successfully' });
+
+    // Recalculate customer due
+    if (customerId) {
+      await syncCustomerTotalDue(req.farmId, customerId);
+    }
+
+    return res.json({ message: 'Sale deleted successfully and dues updated' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

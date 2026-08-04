@@ -149,17 +149,62 @@ const expenseSchema = new Schema<IExpenseDoc>({
 expenseSchema.index({ farmId: 1, date: -1 });
 export const ExpenseModel = model<IExpenseDoc>('Expense', expenseSchema);
 
-// Sale Schema (Income & Sales Tracking for Eggs & Chickens)
+// Customer Schema
+export interface ICustomerDoc extends Document {
+  farmId: Schema.Types.ObjectId;
+  name: string;
+  phone: string;
+  address?: string;
+  totalDue: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const customerSchema = new Schema<ICustomerDoc>({
+  farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
+  name: { type: String, required: true, trim: true },
+  phone: { type: String, required: true, trim: true },
+  address: { type: String, trim: true },
+  totalDue: { type: Number, default: 0 }
+}, { timestamps: true });
+
+customerSchema.index({ farmId: 1, phone: 1 }, { unique: true });
+export const CustomerModel = model<ICustomerDoc>('Customer', customerSchema);
+
+// Sale Line Item Schema
+export interface ISaleItemDoc {
+  type: 'egg' | 'chicken';
+  quantity: number;
+  unit: 'piece' | 'tray' | 'kg';
+  unitPrice: number;
+  subtotal: number;
+}
+
+const saleItemSchema = new Schema<ISaleItemDoc>({
+  type: { type: String, enum: ['egg', 'chicken'], required: true },
+  quantity: { type: Number, required: true, min: 0.01 },
+  unit: { type: String, enum: ['piece', 'tray', 'kg'], default: 'piece' },
+  unitPrice: { type: Number, required: true, min: 0 },
+  subtotal: { type: Number, required: true, min: 0 }
+}, { _id: false });
+
+// Sale Schema (Multi-item line support, dues, payment tracking)
 export interface ISaleDoc extends Document {
   farmId: Schema.Types.ObjectId;
   batchId?: Schema.Types.ObjectId;
-  itemType: 'egg' | 'chicken';
-  quantity: number;
-  unitPrice: number;
-  totalAmount: number;
-  date: string;
+  customerId?: Schema.Types.ObjectId;
   customerName?: string;
-  note?: string;
+  customerPhone?: string;
+  itemType?: 'egg' | 'chicken';
+  quantity?: number;
+  unitPrice?: number;
+  items: ISaleItemDoc[];
+  totalAmount: number;
+  amountPaid: number;
+  amountDue: number;
+  status: 'paid' | 'partial' | 'due';
+  date: string;
+  notes?: string;
   recordedBy: Schema.Types.ObjectId;
   createdAt: Date;
 }
@@ -167,19 +212,58 @@ export interface ISaleDoc extends Document {
 const saleSchema = new Schema<ISaleDoc>({
   farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
   batchId: { type: Schema.Types.ObjectId, ref: 'Batch' },
-  itemType: { type: String, enum: ['egg', 'chicken'], required: true },
-  quantity: { type: Number, required: true, min: 1 },
-  unitPrice: { type: Number, required: true, min: 0 },
-  totalAmount: { type: Number, required: true, min: 0 },
-  date: { type: String, required: true },
+  customerId: { type: Schema.Types.ObjectId, ref: 'Customer' },
   customerName: { type: String },
-  note: { type: String },
+  customerPhone: { type: String },
+  itemType: { type: String, enum: ['egg', 'chicken'] },
+  quantity: { type: Number },
+  unitPrice: { type: Number },
+  items: [saleItemSchema],
+  totalAmount: { type: Number, required: true, min: 0 },
+  amountPaid: { type: Number, default: 0, min: 0 },
+  amountDue: { type: Number, default: 0, min: 0 },
+  status: { type: String, enum: ['paid', 'partial', 'due'], default: 'paid' },
+  date: { type: String, required: true },
+  notes: { type: String },
   recordedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }
 });
 
 saleSchema.index({ farmId: 1, date: -1 });
+saleSchema.index({ farmId: 1, customerId: 1, date: -1 });
 export const SaleModel = model<ISaleDoc>('Sale', saleSchema);
+
+// Payment Ledger Schema (Due Settlements)
+export interface IPaymentDoc extends Document {
+  farmId: Schema.Types.ObjectId;
+  customerId: Schema.Types.ObjectId;
+  customerName?: string;
+  customerPhone?: string;
+  saleId?: Schema.Types.ObjectId;
+  amount: number;
+  date: string;
+  method: 'cash' | 'bkash' | 'bank' | 'other';
+  notes?: string;
+  recordedBy: Schema.Types.ObjectId;
+  createdAt: Date;
+}
+
+const paymentSchema = new Schema<IPaymentDoc>({
+  farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
+  customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true, index: true },
+  customerName: { type: String },
+  customerPhone: { type: String },
+  saleId: { type: Schema.Types.ObjectId, ref: 'Sale' },
+  amount: { type: Number, required: true, min: 0.01 },
+  date: { type: String, required: true },
+  method: { type: String, enum: ['cash', 'bkash', 'bank', 'other'], default: 'cash' },
+  notes: { type: String },
+  recordedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+paymentSchema.index({ farmId: 1, customerId: 1, date: -1 });
+export const PaymentModel = model<IPaymentDoc>('Payment', paymentSchema);
 
 // HealthRecord Schema
 export interface IHealthRecordDoc extends Document {

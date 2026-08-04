@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import mongoose from 'mongoose';
-import { DailyLogModel, ExpenseModel, BatchModel, HealthRecordModel, SaleModel } from '../models/schemas';
+import { DailyLogModel, ExpenseModel, BatchModel, HealthRecordModel, SaleModel, CustomerModel } from '../models/schemas';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -756,6 +756,28 @@ router.get('/batch-dashboard/:batchId', async (req: AuthRequest, res: Response) 
         feedConversionRatio: FCR
       },
       dailyLogs
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 5. Dues & Customer Outstanding Summary Report
+router.get('/dues', async (req: AuthRequest, res: Response) => {
+  try {
+    const customersWithDue = await CustomerModel.find({
+      farmId: req.farmId,
+      totalDue: { $gt: 0 }
+    }).sort({ totalDue: -1 });
+
+    const totalOutstandingDue = customersWithDue.reduce((sum, c) => sum + c.totalDue, 0);
+    const topDueCustomers = customersWithDue.slice(0, 5);
+
+    return res.json({
+      totalOutstandingDue: Number(totalOutstandingDue.toFixed(2)),
+      customerCountWithDue: customersWithDue.length,
+      topDueCustomers,
+      customers: customersWithDue
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });

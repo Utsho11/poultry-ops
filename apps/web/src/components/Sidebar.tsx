@@ -15,6 +15,7 @@ export const Sidebar: React.FC = () => {
     { path: '/', label: 'Overview', icon: LayoutDashboard, roles: ['owner', 'manager', 'worker'] },
     { path: '/batches', label: 'Flocks', icon: Layers, roles: ['owner', 'manager', 'worker'] },
     { path: '/logs', label: 'Daily Log', icon: ClipboardList, roles: ['owner', 'manager', 'worker'] },
+    { path: '/sales', label: 'Sales & Dues', icon: DollarSign, roles: ['owner', 'manager'] },
     { path: '/expenses-health', label: 'Health & Finance', icon: DollarSign, roles: ['owner', 'manager'] },
     { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['owner', 'manager'] },
     { path: '/team-settings', label: 'Team', icon: Users, roles: ['owner', 'manager'] }

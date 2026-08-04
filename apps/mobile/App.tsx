@@ -14,6 +14,7 @@ import { ReportsScreen } from './src/screens/ReportsScreen';
 import { TeamScreen } from './src/screens/TeamScreen';
 import { BatchDashboardScreen } from './src/screens/BatchDashboardScreen';
 import { DailyReportScreen } from './src/screens/DailyReportScreen';
+import { SalesScreen } from './src/screens/SalesScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -22,6 +23,7 @@ const TAB_ICONS: Record<string, string> = {
   Dashboard: '🏠',
   Batches: '🐔',
   'Daily Log': '📋',
+  Sales: '🏷️',
   Expenses: '💰',
   Reports: '📊',
   Team: '👥',
@@ -65,6 +67,7 @@ function MainTabs() {
         <Tab.Screen name="Batches" component={BatchesScreen} />
         <Tab.Screen name="Daily Log" component={DailyLogScreen} />
 
+        {!isWorker && <Tab.Screen name="Sales" component={SalesScreen} />}
         {!isWorker && <Tab.Screen name="Expenses" component={ExpensesScreen} />}
         {!isWorker && <Tab.Screen name="Reports" component={ReportsScreen} />}
         {!isWorker && <Tab.Screen name="Team" component={TeamScreen} />}
@@ -93,6 +96,7 @@ function AppNavigator() {
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="BatchDashboard" component={BatchDashboardScreen} />
           <Stack.Screen name="DailyReport" component={DailyReportScreen} />
+          <Stack.Screen name="Sales" component={SalesScreen} />
         </>
       ) : (
         <Stack.Screen name="Login" component={LoginScreen} />

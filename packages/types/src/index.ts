@@ -95,17 +95,63 @@ export interface IExpense {
   createdAt?: string | Date;
 }
 
+export interface ICustomer {
+  _id: string;
+  farmId: string;
+  name: string;
+  phone: string;
+  address?: string;
+  totalDue: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export type SaleItemUnit = 'piece' | 'tray' | 'kg';
+
+export interface ISaleItem {
+  type: SaleItemType;
+  quantity: number;
+  unit: SaleItemUnit;
+  unitPrice: number;
+  subtotal: number;
+}
+
+export type SaleStatus = 'paid' | 'partial' | 'due';
+
 export interface ISale {
   _id: string;
   farmId: string;
   batchId?: string;
-  itemType: SaleItemType;
-  quantity: number;
-  unitPrice: number;
-  totalAmount: number;
-  date: string;
+  customerId?: string;
   customerName?: string;
-  note?: string;
+  customerPhone?: string;
+  date: string;
+  itemType?: SaleItemType; // Legacy support
+  quantity?: number;       // Legacy support
+  unitPrice?: number;      // Legacy support
+  items: ISaleItem[];
+  totalAmount: number;
+  amountPaid: number;
+  amountDue: number;
+  status: SaleStatus;
+  notes?: string;
+  recordedBy: string;
+  createdAt?: string | Date;
+}
+
+export type PaymentMethod = 'cash' | 'bkash' | 'bank' | 'other';
+
+export interface IPayment {
+  _id: string;
+  farmId: string;
+  customerId: string;
+  customerName?: string;
+  customerPhone?: string;
+  saleId?: string;
+  amount: number;
+  date: string;
+  method?: PaymentMethod;
+  notes?: string;
   recordedBy: string;
   createdAt?: string | Date;
 }

@@ -14,6 +14,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { TeamSettingsPage } from './pages/TeamSettingsPage';
 import { BatchDashboardPage } from './pages/BatchDashboardPage';
 import { DailyReportPage } from './pages/DailyReportPage';
+import { SalesPage } from './pages/SalesPage';
 
 const ProtectedLayout: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -33,6 +34,7 @@ const ProtectedLayout: React.FC = () => {
             <Route path="/batch-dashboard/:batchId" element={<BatchDashboardPage />} />
             <Route path="/daily-report" element={<DailyReportPage />} />
             <Route path="/logs" element={<DailyLogPage />} />
+            {!isWorker && <Route path="/sales" element={<SalesPage />} />}
             {!isWorker && <Route path="/expenses-health" element={<ExpensesHealthPage />} />}
             {!isWorker && <Route path="/reports" element={<ReportsPage />} />}
             {!isWorker && <Route path="/team-settings" element={<TeamSettingsPage />} />}
