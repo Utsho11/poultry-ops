@@ -228,12 +228,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
             <Text style={common.statSub}>{(summary?.currentEggCount || 0).toLocaleString()} unsold eggs</Text>
           </View>
           <View style={{ width: 10 }} />
-          <View style={[common.statCard, { borderColor: colors.amber, borderWidth: 2, backgroundColor: 'rgba(217, 164, 65, 0.12)', flex: 1 }]}>
-            <Text style={[common.statLabel, { color: colors.amber, fontWeight: '800' }]}>🌾 Feed Stock</Text>
-            <Text style={[common.statValue, { color: colors.textMain, fontSize: 16, fontWeight: '900', marginVertical: 2 }]}>
-              {Math.round((summary?.totalFeedKg || 0) / 50).toLocaleString()} <Text style={{ fontSize: 11, color: colors.amber, fontWeight: '800' }}>Bags</Text>
+          <View style={[common.statCard, { borderColor: colors.amber, borderWidth: 1, flex: 1 }]}>
+            <Text style={common.statLabel}>Feed Stock</Text>
+            <Text style={[common.statValue, { color: colors.amber, fontSize: 14 }]}>
+              {(summary?.availableFeedStockBags ?? Math.round((summary?.totalFeedKg || 0) / 50)).toLocaleString()} Bags
             </Text>
-            <Text style={[common.statSub, { color: colors.secondary, fontWeight: '800' }]}>{(summary?.totalFeedKg || 0).toLocaleString()} kg total (50kg/bag)</Text>
+            <Text style={common.statSub}>{(summary?.availableFeedStockKg ?? (summary?.totalFeedKg || 0)).toLocaleString()} kg (50kg/bag)</Text>
           </View>
         </View>
 

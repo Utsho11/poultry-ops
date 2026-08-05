@@ -222,22 +222,19 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Feed Stock Card - Redesigned (Bags Highlighted + kg) */}
-        <div className="glass-panel" style={{ padding: '20px', border: '2px solid #D9A441', background: 'linear-gradient(135deg, rgba(217, 164, 65, 0.15) 0%, rgba(255, 255, 255, 1) 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#D9A441', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🌾 Feed Stock</span>
-            <div style={{ background: 'rgba(217, 164, 65, 0.2)', color: '#D9A441', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Feed Stock Card - Uniform Design */}
+        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(217, 164, 65, 0.4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ color: '#D9A441', fontSize: '0.85rem', fontWeight: 700 }}>Feed Stock</span>
+            <div style={{ background: 'rgba(217, 164, 65, 0.15)', color: '#D9A441', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Scale size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#2D2A26' }}>
-            {Math.round((summary?.totalFeedKg || 0) / 50).toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: 800, color: '#D9A441' }}>Bags</span>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2A26' }}>
+            {(summary?.availableFeedStockBags ?? Math.round((summary?.totalFeedKg || 0) / 50)).toLocaleString()} Bags
           </div>
-          <div style={{ fontSize: '0.82rem', color: '#6B655C', marginTop: '6px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span className="badge" style={{ backgroundColor: 'rgba(74, 124, 89, 0.15)', color: '#4A7C59', fontSize: '0.78rem', fontWeight: 800 }}>
-              {(summary?.totalFeedKg || 0).toLocaleString()} kg total
-            </span>
-            <span>(50 kg / bag)</span>
+          <div style={{ fontSize: '0.75rem', color: '#D9A441', marginTop: '4px', fontWeight: 600 }}>
+            {(summary?.availableFeedStockKg ?? (summary?.totalFeedKg || 0)).toLocaleString()} kg in stock (50 kg/bag)
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { colors, common } from '../styles';
 
 interface DatePickerInputProps {
   label?: string;
@@ -47,11 +48,11 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
   return (
     <View style={style}>
-      {label && <Text style={s.label}>{label}</Text>}
+      {label && <Text style={common.label}>{label}</Text>}
       <TouchableOpacity
         style={s.button}
         onPress={() => setShowPicker(true)}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
         <Text style={s.dateText}>📅 {value || 'Select Date'}</Text>
         <Text style={s.changeBtnText}>Change 🗓️</Text>
@@ -62,7 +63,6 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
           value={currentDate}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
           onValueChange={handleDateChange}
           onDismiss={() => setShowPicker(false)}
         />
@@ -72,31 +72,25 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 };
 
 const s = StyleSheet.create({
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#94a3b8',
-    marginBottom: 6,
-  },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    justify: 'space-between',
-    backgroundColor: '#1e293b',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   dateText: {
-    color: '#f8fafc',
+    color: colors.textMain,
     fontSize: 15,
     fontWeight: '700',
   },
   changeBtnText: {
-    color: '#4A7C59',
-    fontSize: 12,
+    color: colors.brand,
+    fontSize: 13,
     fontWeight: '800',
   },
 });
