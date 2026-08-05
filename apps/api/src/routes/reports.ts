@@ -715,8 +715,31 @@ router.get('/batch-dashboard/:batchId', async (req: AuthRequest, res: Response) 
       .sort({ date: -1 })
       .limit(5);
 
+    const latestLog = dailyLogs[0] || null;
+    const latestEggCount = latestLog ? latestLog.eggCount : 0;
+    const latestBrokenEggs = latestLog ? latestLog.brokenEggCount : 0;
+    const latestDead = latestLog ? latestLog.deadCount : 0;
+    const latestFeedKg = latestLog ? latestLog.feedGivenKg : 0;
+    const latestWaterLiters = latestLog ? latestLog.waterGivenLiters : 0;
+    const latestLayingRate = (latestLog && batch.currentCount > 0)
+      ? Number(((latestEggCount / batch.currentCount) * 100).toFixed(1))
+      : 0;
+    const latestFeedPerBirdGrams = (latestLog && batch.currentCount > 0)
+      ? Number(((latestFeedKg * 1000) / batch.currentCount).toFixed(1))
+      : 0;
+
     return res.json({
       batch: batchWithAge,
+      latestLogSection: {
+        date: latestLog ? latestLog.date : 'N/A',
+        totalEggs: latestEggCount,
+        brokenEggs: latestBrokenEggs,
+        layingRate: latestLayingRate,
+        feedKg: latestFeedKg,
+        feedPerBirdGrams: latestFeedPerBirdGrams,
+        waterLiters: latestWaterLiters,
+        deadCount: latestDead
+      },
       eggSection: {
         totalEggs: logs.totalEggs,
         totalBrokenEggs: logs.totalBrokenEggs,

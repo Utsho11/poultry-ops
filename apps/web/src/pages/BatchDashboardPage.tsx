@@ -134,10 +134,19 @@ export const BatchDashboardPage: React.FC = () => {
     );
   }
 
-  const { batch, eggSection, mortalitySection, expenseSection, sellSection, incomeSection, foodSection, dailyLogs } = data;
-  const survivalRate = mortalitySection.initialCount > 0
-    ? ((mortalitySection.currentCount / mortalitySection.initialCount) * 100).toFixed(1)
-    : '0';
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+
+  const { batch, latestLogSection, eggSection, mortalitySection, expenseSection, sellSection, incomeSection, foodSection, dailyLogs } = data;
+  const latest = latestLogSection || {
+    date: 'N/A',
+    totalEggs: 0,
+    brokenEggs: 0,
+    layingRate: 0,
+    feedKg: 0,
+    feedPerBirdGrams: 0,
+    waterLiters: 0,
+    deadCount: 0
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -194,8 +203,95 @@ export const BatchDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 6 STRUCTURED BATCH SECTIONS GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+      {/* 📌 LATEST LOG TOP KPI CARDS */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#2D2A26' }}>
+            📌 Latest Log Summary <span style={{ fontSize: '0.85rem', color: '#6B655C', fontWeight: 600 }}>(Date: {latest.date})</span>
+          </h2>
+          <span className="badge badge-emerald" style={{ fontSize: '0.8rem' }}>Latest Entry</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+          {/* Card 1: Total Egg & Laying Rate per Bird */}
+          <div className="glass-panel" style={{ padding: '18px', borderLeft: '5px solid #4A7C59', backgroundColor: '#FFFFFF' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4A7C59', textTransform: 'uppercase', marginBottom: '6px' }}>
+              🥚 1. Total Eggs & Laying Rate
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#2D2A26' }}>
+              {formatEggCount(latest.totalEggs)}
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#4A7C59', fontWeight: 700, marginTop: '4px' }}>
+              ⚡ {latest.layingRate}% Laying Rate / Hen ({latest.totalEggs} eggs)
+            </div>
+          </div>
+
+          {/* Card 2: Feed per Bird */}
+          <div className="glass-panel" style={{ padding: '18px', borderLeft: '5px solid #D9A441', backgroundColor: '#FFFFFF' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#D9A441', textTransform: 'uppercase', marginBottom: '6px' }}>
+              🌾 2. Feed per Bird
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#2D2A26' }}>
+              {latest.feedPerBirdGrams} g / bird
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#D9A441', fontWeight: 700, marginTop: '4px' }}>
+              {latest.feedKg} kg total feed logged
+            </div>
+          </div>
+
+          {/* Card 3: Water */}
+          <div className="glass-panel" style={{ padding: '18px', borderLeft: '5px solid #3D6B8C', backgroundColor: '#FFFFFF' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#3D6B8C', textTransform: 'uppercase', marginBottom: '6px' }}>
+              💧 3. Water Intake
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#2D2A26' }}>
+              {latest.waterLiters} Liters
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#3D6B8C', fontWeight: 700, marginTop: '4px' }}>
+              Total water provided
+            </div>
+          </div>
+
+          {/* Card 4: Mortality */}
+          <div className="glass-panel" style={{ padding: '18px', borderLeft: '5px solid #B23A2F', backgroundColor: '#FFFFFF' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#B23A2F', textTransform: 'uppercase', marginBottom: '6px' }}>
+              💀 4. Daily Mortality
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: latest.deadCount > 0 ? '#B23A2F' : '#4A7C59' }}>
+              {latest.deadCount} Dead Birds
+            </div>
+            <div style={{ fontSize: '0.82rem', color: latest.deadCount > 0 ? '#B23A2F' : '#4A7C59', fontWeight: 700, marginTop: '4px' }}>
+              {latest.deadCount > 0 ? 'Dead birds reported today' : 'Zero mortality today'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 📋 MORE BATCH DETAILS TOGGLE BUTTON */}
+      <div>
+        <button
+          onClick={() => setShowMoreDetails(!showMoreDetails)}
+          className="btn btn-secondary"
+          style={{
+            width: '100%',
+            justify: 'center',
+            padding: '14px 20px',
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            backgroundColor: '#F4EFE6',
+            color: '#2D2A26',
+            border: '1px solid #E8E2D8',
+            borderRadius: '12px',
+            cursor: 'pointer'
+          }}
+        >
+          📋 More Batch Details {showMoreDetails ? '▲ (Hide Financials & Analytics)' : '▼ (Click to Show Full Batch Sections)'}
+        </button>
+      </div>
+
+      {/* 6 STRUCTURED BATCH SECTIONS GRID (HIDDEN UNDER MORE BATCH DETAILS) */}
+      {showMoreDetails && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
          {/* SECTION 1: 🥚 EGG */}
         <div
           onClick={() => navigate(`/daily-report?batchId=${batchId}&tab=egg`)}
@@ -417,7 +513,7 @@ export const BatchDashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Daily Egg Yield Trend Chart for this Batch */}
       <div className="glass-panel" style={{ padding: '24px', backgroundColor: '#FFFFFF' }}>

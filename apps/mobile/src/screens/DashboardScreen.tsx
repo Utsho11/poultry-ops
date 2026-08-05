@@ -228,9 +228,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
           </View>
           <View style={{ width: 10 }} />
           <View style={[common.statCard, { borderColor: colors.blue, borderWidth: 1, backgroundColor: 'rgba(61, 107, 140, 0.12)', flex: 1 }]}>
-            <Text style={common.statLabel}>Total Income (All Batches)</Text>
-            <Text style={[common.statValue, { color: colors.blue, fontSize: 14 }]}>৳{(summary?.totalIncome || 0).toLocaleString()}</Text>
-            <Text style={common.statSub}>Layer & Poultry Sales</Text>
+            <Text style={common.statLabel}>Feed Stock Used</Text>
+            <Text style={[common.statValue, { color: colors.blue, fontSize: 14 }]}>{(summary?.totalFeedKg || 0).toLocaleString()} kg</Text>
+            <Text style={common.statSub}>{Math.round((summary?.totalFeedKg || 0) / 50)} Bags consumed</Text>
           </View>
         </View>
 

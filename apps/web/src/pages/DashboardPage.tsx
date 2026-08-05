@@ -222,17 +222,17 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Total Sales Income (Both Batches) */}
+        {/* Total Feed Stock Used */}
         <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(61, 107, 140, 0.4)', background: 'linear-gradient(135deg, rgba(61, 107, 140, 0.1) 0%, rgba(255, 255, 255, 1) 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: '#3D6B8C', fontSize: '0.85rem', fontWeight: 700 }}>Total Revenue (All Batches)</span>
+            <span style={{ color: '#3D6B8C', fontSize: '0.85rem', fontWeight: 700 }}>Total Feed Stock Used</span>
             <div style={{ background: 'rgba(61, 107, 140, 0.15)', color: '#3D6B8C', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={20} />
+              <Scale size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2A26' }}>৳{(summary?.totalIncome || 0).toLocaleString()}</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2A26' }}>{(summary?.totalFeedKg || 0).toLocaleString()} kg</div>
           <div style={{ fontSize: '0.75rem', color: '#3D6B8C', marginTop: '4px', fontWeight: 600 }}>
-            Combined Layer & Poultry Sales
+            {Math.round((summary?.totalFeedKg || 0) / 50)} Bags total feed consumed
           </div>
         </div>
 

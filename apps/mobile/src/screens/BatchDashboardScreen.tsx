@@ -129,7 +129,19 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
     );
   }
 
-  const { batch, eggSection, mortalitySection, expenseSection, sellSection, incomeSection, foodSection } = data;
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+
+  const { batch, latestLogSection, eggSection, mortalitySection, expenseSection, sellSection, incomeSection, foodSection } = data;
+  const latest = latestLogSection || {
+    date: 'N/A',
+    totalEggs: 0,
+    brokenEggs: 0,
+    layingRate: 0,
+    feedKg: 0,
+    feedPerBirdGrams: 0,
+    waterLiters: 0,
+    deadCount: 0
+  };
 
   return (
     <View style={common.screen}>
@@ -181,7 +193,54 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* 1. EGG SECTION */}
+        {/* 📌 LATEST LOG TOP KPI CARDS */}
+        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.textMain, marginBottom: 8, marginTop: 4 }}>
+          📌 Latest Log Summary ({latest.date})
+        </Text>
+
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          <View style={[s.topKpiCard, { borderColor: colors.secondary }]}>
+            <Text style={[s.topKpiLabel, { color: colors.secondary }]}>🥚 Eggs & Laying Rate</Text>
+            <Text style={s.topKpiVal}>{formatEggCount(latest.totalEggs)}</Text>
+            <Text style={[s.topKpiSub, { color: colors.secondary }]}>⚡ {latest.layingRate}% Laying Rate / Hen</Text>
+          </View>
+
+          <View style={[s.topKpiCard, { borderColor: colors.amber }]}>
+            <Text style={[s.topKpiLabel, { color: colors.amber }]}>🌾 Feed per Bird</Text>
+            <Text style={s.topKpiVal}>{latest.feedPerBirdGrams} g / bird</Text>
+            <Text style={[s.topKpiSub, { color: colors.amber }]}>{latest.feedKg} kg feed logged</Text>
+          </View>
+
+          <View style={[s.topKpiCard, { borderColor: colors.blue }]}>
+            <Text style={[s.topKpiLabel, { color: colors.blue }]}>💧 Water Intake</Text>
+            <Text style={s.topKpiVal}>{latest.waterLiters} Liters</Text>
+            <Text style={[s.topKpiSub, { color: colors.blue }]}>Total water provided</Text>
+          </View>
+
+          <View style={[s.topKpiCard, { borderColor: colors.rose }]}>
+            <Text style={[s.topKpiLabel, { color: colors.rose }]}>💀 Mortality</Text>
+            <Text style={[s.topKpiVal, { color: latest.deadCount > 0 ? colors.rose : colors.secondary }]}>
+              {latest.deadCount} Dead Birds
+            </Text>
+            <Text style={[s.topKpiSub, { color: latest.deadCount > 0 ? colors.rose : colors.secondary }]}>
+              {latest.deadCount > 0 ? 'Dead reported today' : 'Zero mortality'}
+            </Text>
+          </View>
+        </View>
+
+        {/* 📋 MORE BATCH DETAILS TOGGLE BUTTON */}
+        <TouchableOpacity
+          style={s.moreDetailsBtn}
+          onPress={() => setShowMoreDetails(!showMoreDetails)}
+        >
+          <Text style={s.moreDetailsBtnText}>
+            📋 More Batch Details {showMoreDetails ? '▲ (Hide)' : '▼ (Show Full Sections)'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* 6 STRUCTURED BATCH SECTIONS (COLLAPSIBLE) */}
+        {showMoreDetails && (
+          <View style={{ marginTop: 10 }}>
         <TouchableOpacity
           onPress={() => navigation.navigate('DailyReport', { batchId, initialTab: 'egg' })}
           activeOpacity={0.8}
@@ -345,6 +404,8 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
             </View>
           </View>
         </TouchableOpacity>
+        </View>
+      )}
       </ScrollView>
 
       {/* QUICK LOG MODAL */}
@@ -506,5 +567,11 @@ const s = StyleSheet.create({
   typeBtnSelectedChicken: { borderColor: colors.blue, backgroundColor: 'rgba(61, 107, 140, 0.15)' },
   cancelBtn: { flex: 1, backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 8, alignItems: 'center' },
   submitBtn: { flex: 1, backgroundColor: colors.secondary, padding: 12, borderRadius: 8, alignItems: 'center' },
-  btnText: { color: '#fff', fontWeight: '800', fontSize: 14 }
+  btnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  topKpiCard: { width: '48%', backgroundColor: colors.surface, padding: 12, borderRadius: 10, borderWidth: 1, borderLeftWidth: 4 },
+  topKpiLabel: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', marginBottom: 2 },
+  topKpiVal: { fontSize: 14, fontWeight: '800', color: colors.textMain },
+  topKpiSub: { fontSize: 10, fontWeight: '700', marginTop: 2 },
+  moreDetailsBtn: { backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: 'center', marginVertical: 8 },
+  moreDetailsBtnText: { color: colors.textMain, fontWeight: '800', fontSize: 13 }
 });
