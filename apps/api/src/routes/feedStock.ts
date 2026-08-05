@@ -1,9 +1,13 @@
 import { Router, Response } from 'express';
-import { AuthRequest, requireRole } from '../middleware/auth';
+import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
+import { resolveTenant } from '../middleware/tenant';
 import { FeedStockModel, DailyLogModel, ExpenseModel } from '../models/schemas';
 import { feedStockSchema } from '@poultry-ops/validation';
 
 const router = Router();
+
+router.use(authenticate);
+router.use(resolveTenant);
 
 // Get feed stock purchases and overall inventory summary
 router.get('/', async (req: AuthRequest, res: Response) => {
