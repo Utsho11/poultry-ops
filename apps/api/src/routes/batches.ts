@@ -38,17 +38,12 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 // Create new batch (Owner/Manager only - Password verification required)
 router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
   try {
-    const parseResult = createBatchSchema.safeParse(req.body);
-    if (!parseResult.success) {
-      return res.status(400).json({ error: 'Validation failed', details: parseResult.error.format() });
-    }
-
     const { password } = req.body;
     if (!password) {
       return res.status(400).json({ error: 'Password verification required to create a batch' });
     }
 
-    // Verify Password
+    // Verify Password first
     const currentUser = await UserModel.findById(req.user?.userId);
     if (!currentUser) {
       return res.status(404).json({ error: 'User account not found' });
@@ -57,6 +52,12 @@ router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res
     const isPasswordValid = await bcrypt.compare(password, currentUser.passwordHash);
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Incorrect password! Security verification failed.' });
+    }
+
+    const parseResult = createBatchSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      const firstError = parseResult.error.issues[0]?.message || 'Validation failed';
+      return res.status(400).json({ error: `Validation error: ${firstError}`, details: parseResult.error.format() });
     }
 
     const { name, breed, type, startDate, initialCount, shed } = parseResult.data;

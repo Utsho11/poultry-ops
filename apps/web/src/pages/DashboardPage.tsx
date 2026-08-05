@@ -42,11 +42,11 @@ export const DashboardPage: React.FC = () => {
   // Create New Batch Modal State
   const [createBatchOpen, setCreateBatchOpen] = useState(false);
   const [batchName, setBatchName] = useState('');
-  const [breed, setBreed] = useState('');
+  const [breed, setBreed] = useState('Hy-Line Brown');
   const [batchType, setBatchType] = useState<'layer' | 'broiler'>('layer');
-  const [initialCount, setInitialCount] = useState('');
+  const [initialCount, setInitialCount] = useState('1000');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [shed, setShed] = useState('');
+  const [shed, setShed] = useState('Shed A');
   const [teamWorkers, setTeamWorkers] = useState<IUser[]>([]);
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
   const [submittingBatch, setSubmittingBatch] = useState(false);
