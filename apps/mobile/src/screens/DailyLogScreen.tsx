@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
 import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
+import { DatePickerInput } from '../components/DatePickerInput';
 
 export const DailyLogScreen: React.FC = () => {
   const { token } = useAuth();
@@ -221,13 +222,11 @@ export const DailyLogScreen: React.FC = () => {
                   ))}
                 </ScrollView>
 
-                <Text style={common.label}>📅 Log Date (YYYY-MM-DD) *</Text>
-                <TextInput
-                  style={common.input}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#64748b"
+                <DatePickerInput
+                  label="📅 Log Date *"
                   value={logDate}
-                  onChangeText={setLogDate}
+                  onChange={setLogDate}
+                  style={{ marginBottom: 14 }}
                 />
 
                 {/* Crates & Loose Eggs Collection Input */}
@@ -314,8 +313,12 @@ export const DailyLogScreen: React.FC = () => {
                 <Text style={{ color: colors.amber, fontSize: 16, fontWeight: '800', marginBottom: 6 }}>🌾 Buy & Add Feed Bags to Stock</Text>
                 <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 14 }}>Add bags to farm store stock and set bag price (1 Bag = 50 kg).</Text>
 
-                <Text style={common.label}>📅 Date *</Text>
-                <TextInput style={common.input} value={stockDate} onChangeText={setStockDate} placeholder="YYYY-MM-DD" />
+                <DatePickerInput
+                  label="📅 Purchase Date *"
+                  value={stockDate}
+                  onChange={setStockDate}
+                  style={{ marginBottom: 14 }}
+                />
 
                 <Text style={common.label}>Number of Feed Bags Purchased *</Text>
                 <TextInput style={common.input} keyboardType="numeric" value={stockBags} onChangeText={setStockBags} placeholder="10" />

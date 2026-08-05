@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
+import { DatePickerInput } from '../components/DatePickerInput';
 
 const CATEGORIES = ['feed', 'medicine', 'labor', 'utility', 'equipment', 'other'];
 const HEALTH_TYPES = ['vaccination', 'checkup', 'injection', 'treatment'];
@@ -223,8 +224,12 @@ export const ExpensesScreen: React.FC = () => {
               ))}
             </ScrollView>
 
-            <Text style={common.label}>Expense Date (Manual Input YYYY-MM-DD) *</Text>
-            <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#64748b" value={expDate} onChangeText={setExpDate} />
+            <DatePickerInput
+              label="Expense Date *"
+              value={expDate}
+              onChange={setExpDate}
+              style={{ marginBottom: 14 }}
+            />
 
             <Text style={common.label}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
@@ -270,8 +275,12 @@ export const ExpensesScreen: React.FC = () => {
               ))}
             </ScrollView>
 
-            <Text style={common.label}>Record Date (Manual Input YYYY-MM-DD) *</Text>
-            <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#64748b" value={healthDate} onChangeText={setHealthDate} />
+            <DatePickerInput
+              label="Record Date *"
+              value={healthDate}
+              onChange={setHealthDate}
+              style={{ marginBottom: 14 }}
+            />
 
             <Text style={common.label}>Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>

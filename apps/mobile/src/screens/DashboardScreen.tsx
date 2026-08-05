@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
 import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
+import { DatePickerInput } from '../components/DatePickerInput';
 
 export const DashboardScreen: React.FC<any> = ({ navigation }) => {
   const { token, user } = useAuth();
@@ -633,8 +634,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <Text style={common.label}>Initial Bird Count</Text>
               <TextInput style={common.input} keyboardType="numeric" placeholder="1000" placeholderTextColor="#6B655C" value={initialCount} onChangeText={setInitialCount} />
 
-              <Text style={common.label}>📅 Start Date (YYYY-MM-DD) *</Text>
-              <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#6B655C" value={startDate} onChangeText={setStartDate} />
+              <DatePickerInput
+                label="📅 Start Date *"
+                value={startDate}
+                onChange={setStartDate}
+                style={{ marginBottom: 14 }}
+              />
 
               <Text style={common.label}>Shed / House Name</Text>
               <TextInput style={common.input} placeholder="Shed 1" placeholderTextColor="#6B655C" value={shed} onChangeText={setShed} />

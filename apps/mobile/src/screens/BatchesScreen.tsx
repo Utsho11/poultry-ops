@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
+import { DatePickerInput } from '../components/DatePickerInput';
 function getBatchAgeText(startDateStr: string) {
   if (!startDateStr) return 'N/A';
   const start = new Date(startDateStr);
@@ -394,8 +395,12 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
               <Text style={common.label}>Initial Birds Count</Text>
               <TextInput style={common.input} keyboardType="numeric" value={initialCount} onChangeText={setInitialCount} />
 
-              <Text style={common.label}>📅 Start Date (YYYY-MM-DD) *</Text>
-              <TextInput style={common.input} placeholder="YYYY-MM-DD" placeholderTextColor="#6B655C" value={startDate} onChangeText={setStartDate} />
+              <DatePickerInput
+                label="📅 Start Date *"
+                value={startDate}
+                onChange={setStartDate}
+                style={{ marginBottom: 14 }}
+              />
 
               <Text style={common.label}>Shed / House Name</Text>
               <TextInput style={common.input} value={shed} onChangeText={setShed} />

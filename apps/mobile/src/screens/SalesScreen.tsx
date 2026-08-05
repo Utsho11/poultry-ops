@@ -8,6 +8,7 @@ import { apiFetch } from '../config';
 import { colors, common } from '../styles';
 import { formatEggCount } from '../utils/crates';
 import { ISale, ICustomer, IBatch, IPayment } from '@poultry-ops/types';
+import { DatePickerInput } from '../components/DatePickerInput';
 
 export const SalesScreen: React.FC<any> = ({ navigation }) => {
   const { token, user } = useAuth();
@@ -342,13 +343,11 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
             <Text style={s.modalTitle}>🛒 Record New Sale Invoice</Text>
             <ScrollView>
               {/* Sale Date Input (TOP) */}
-              <Text style={s.inputLabel}>📅 Sale Date (YYYY-MM-DD) *</Text>
-              <TextInput
-                style={[s.input, { marginBottom: 12 }]}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#64748b"
+              <DatePickerInput
+                label="📅 Sale Date *"
                 value={saleDate}
-                onChangeText={setSaleDate}
+                onChange={setSaleDate}
+                style={{ marginBottom: 14 }}
               />
 
               {/* Batch Selector (Required) */}
