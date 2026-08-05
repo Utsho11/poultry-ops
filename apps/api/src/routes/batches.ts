@@ -103,9 +103,25 @@ router.patch('/:id/assign-workers', requireRole(['owner', 'manager']), async (re
   }
 });
 
-// Close batch
+// Close batch (Owner/Manager only - Password verification required)
 router.post('/:id/close', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
   try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: 'Password security verification required to close a batch' });
+    }
+
+    // Verify Password
+    const currentUser = await UserModel.findById(req.user?.userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User account not found' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, currentUser.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Incorrect password! Security verification failed.' });
+    }
+
     const batch = await BatchModel.findOne({ _id: req.params.id, farmId: req.farmId });
     if (!batch) {
       return res.status(404).json({ error: 'Batch not found' });

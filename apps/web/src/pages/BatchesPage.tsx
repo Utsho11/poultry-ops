@@ -92,8 +92,8 @@ export const BatchesPage: React.FC = () => {
 
   // bKash-style Password Security Verification Modal state
   const [securityModalOpen, setSecurityModalOpen] = useState(false);
-  const [securityAction, setSecurityAction] = useState<'create' | 'delete' | null>(null);
-  const [batchToDelete, setBatchToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [securityAction, setSecurityAction] = useState<'create' | 'delete' | 'close' | null>(null);
+  const [batchTarget, setBatchTarget] = useState<{ id: string; name: string } | null>(null);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [securityError, setSecurityError] = useState('');
   const [verifyingSecurity, setVerifyingSecurity] = useState(false);
@@ -119,8 +119,21 @@ export const BatchesPage: React.FC = () => {
       alert('Unauthorized! Only farm Owners and Managers can delete flocks.');
       return;
     }
-    setBatchToDelete({ id, name: batchName });
+    setBatchTarget({ id, name: batchName });
     setSecurityAction('delete');
+    setConfirmPassword('');
+    setSecurityError('');
+    setSecurityModalOpen(true);
+  };
+
+  // Trigger Close Security Verification Modal
+  const handleOpenCloseSecurity = (id: string, batchName: string) => {
+    if (!canManage) {
+      alert('Unauthorized! Only farm Owners and Managers can close flocks.');
+      return;
+    }
+    setBatchTarget({ id, name: batchName });
+    setSecurityAction('close');
     setConfirmPassword('');
     setSecurityError('');
     setSecurityModalOpen(true);
@@ -153,17 +166,26 @@ export const BatchesPage: React.FC = () => {
         setName('');
         setSelectedWorkerIds([]);
         loadData();
-      } else if (securityAction === 'delete' && batchToDelete) {
-        await fetchWithAuth(`/batches/${batchToDelete.id}`, {
+      } else if (securityAction === 'delete' && batchTarget) {
+        await fetchWithAuth(`/batches/${batchTarget.id}`, {
           method: 'DELETE',
           body: JSON.stringify({ password: confirmPassword })
         });
         setSecurityModalOpen(false);
-        if (activeBatchId === batchToDelete.id) {
+        if (activeBatchId === batchTarget.id) {
           setActiveBatchId(null);
           setBatchDashboardData(null);
         }
-        setBatchToDelete(null);
+        setBatchTarget(null);
+        loadData();
+      } else if (securityAction === 'close' && batchTarget) {
+        await fetchWithAuth(`/batches/${batchTarget.id}/close`, {
+          method: 'POST',
+          body: JSON.stringify({ password: confirmPassword })
+        });
+        setSecurityModalOpen(false);
+        if (activeBatchId === batchTarget.id) loadBatchDashboard(batchTarget.id);
+        setBatchTarget(null);
         loadData();
       }
     } catch (err: any) {
@@ -525,8 +547,9 @@ export const BatchesPage: React.FC = () => {
                   <div style={{ marginTop: '14px', borderTop: '1px solid #E8E2D8', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {!isClosed && (
                       <button
-                        onClick={() => handleCloseBatch(batch._id)}
+                        onClick={() => handleOpenCloseSecurity(batch._id, batch.name)}
                         style={{ background: 'none', border: 'none', color: '#B23A2F', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                        title="Close Flock with Password Verification"
                       >
                         Close Batch
                       </button>
@@ -691,8 +714,8 @@ export const BatchesPage: React.FC = () => {
               <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#2D2A26', marginBottom: '8px' }}>👤 {user?.name} ({user?.email})</div>
               
               <div style={{ fontSize: '0.78rem', color: '#6B655C', fontWeight: 700, textTransform: 'uppercase' }}>Target Action</div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: securityAction === 'delete' ? '#B23A2F' : '#4A7C59' }}>
-                {securityAction === 'create' ? `➕ Create New Flock '${name}'` : `🗑️ Delete Flock '${batchToDelete?.name}'`}
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: securityAction === 'delete' || securityAction === 'close' ? '#B23A2F' : '#4A7C59' }}>
+                {securityAction === 'create' ? `➕ Create New Flock '${name}'` : securityAction === 'delete' ? `🗑️ Delete Flock '${batchTarget?.name}'` : `🔒 Close Flock '${batchTarget?.name}'`}
               </div>
             </div>
 
