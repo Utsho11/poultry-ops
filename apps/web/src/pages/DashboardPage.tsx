@@ -47,6 +47,8 @@ export const DashboardPage: React.FC = () => {
   const [initialCount, setInitialCount] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [shed, setShed] = useState('');
+  const [teamWorkers, setTeamWorkers] = useState<IUser[]>([]);
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
   const [submittingBatch, setSubmittingBatch] = useState(false);
 
   const isOwner = user?.role === 'owner';
@@ -54,12 +56,16 @@ export const DashboardPage: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [batchesData, logsData, summaryData] = await Promise.all([
+      const [batchesData, logsData, summaryData, teamData] = await Promise.all([
         fetchWithAuth('/batches'),
         fetchWithAuth('/logs'),
-        fetchWithAuth('/reports/summary')
+        fetchWithAuth('/reports/summary'),
+        canManageBatches ? fetchWithAuth('/team') : Promise.resolve([])
       ]);
       setBatches(batchesData);
+      if (Array.isArray(teamData)) {
+        setTeamWorkers(teamData.filter((u: IUser) => u.role === 'worker'));
+      }
       const activeBatches = batchesData.filter((b: IBatch) => b.status === 'active');
       if (activeBatches.length > 0 && !logBatchId) setLogBatchId(activeBatches[0]._id);
       else if (batchesData.length > 0 && !logBatchId) setLogBatchId(batchesData[0]._id);
@@ -162,6 +168,12 @@ export const DashboardPage: React.FC = () => {
     setSecurityModalOpen(true);
   };
 
+  const toggleWorkerSelection = (workerId: string) => {
+    setSelectedWorkerIds(prev =>
+      prev.includes(workerId) ? prev.filter(id => id !== workerId) : [...prev, workerId]
+    );
+  };
+
   const handleConfirmCreateBatchWithPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!confirmPassword) {
@@ -180,6 +192,7 @@ export const DashboardPage: React.FC = () => {
           initialCount: Number(initialCount),
           startDate,
           shed: shed || undefined,
+          assignedWorkerIds: selectedWorkerIds,
           password: confirmPassword
         })
       });
@@ -189,6 +202,7 @@ export const DashboardPage: React.FC = () => {
       setBreed('');
       setInitialCount('');
       setShed('');
+      setSelectedWorkerIds([]);
       alert(`Flock '${batchName}' created successfully!`);
       loadDashboardData();
     } catch (err: any) {
@@ -478,6 +492,30 @@ export const DashboardPage: React.FC = () => {
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#6B655C', marginBottom: '6px' }}>Shed / Location Name</label>
                 <input type="text" placeholder="e.g. Shed 1" value={shed} onChange={(e) => setShed(e.target.value)} className="input-field" />
               </div>
+
+              {teamWorkers.length > 0 && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#4A7C59', marginBottom: '6px' }}>Assign Workers (Optional)</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '120px', overflowY: 'auto' }}>
+                    {teamWorkers.map(w => {
+                      const isSel = selectedWorkerIds.includes(w._id);
+                      return (
+                        <div
+                          key={w._id}
+                          onClick={() => toggleWorkerSelection(w._id)}
+                          style={{
+                            padding: '6px 12px', borderRadius: '8px', border: `1px solid ${isSel ? '#4A7C59' : '#E8E2D8'}`,
+                            backgroundColor: isSel ? 'rgba(74,124,89,0.15)' : '#F4EFE6', color: isSel ? '#4A7C59' : '#6B655C',
+                            fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer'
+                          }}
+                        >
+                          {isSel ? '✓ ' : '+ '} {w.name} ({w.email})
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
                 <button type="button" onClick={() => setCreateBatchOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>

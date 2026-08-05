@@ -49,6 +49,8 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
   const [initialCount, setInitialCount] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [shed, setShed] = useState('');
+  const [teamWorkers, setTeamWorkers] = useState<any[]>([]);
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
   const [submittingBatch, setSubmittingBatch] = useState(false);
 
   // Dedicated Batchwise Dashboard Modal State
@@ -61,20 +63,24 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
   const load = useCallback(async () => {
     try {
-      const [sum, batchData, logs] = await Promise.all([
+      const [sum, batchData, logs, usersData] = await Promise.all([
         apiFetch('/reports/summary', {}, token),
         apiFetch('/batches', {}, token),
         apiFetch('/logs', {}, token),
+        canManageBatches ? apiFetch('/team', {}, token) : Promise.resolve([])
       ]);
       setSummary(sum);
       setBatches(batchData);
+      if (Array.isArray(usersData)) {
+        setTeamWorkers(usersData.filter((u: any) => u.role === 'worker'));
+      }
       const activeBatches = batchData.filter((b: any) => b.status === 'active');
       if (activeBatches.length > 0 && !selectedBatchId) setSelectedBatchId(activeBatches[0]._id);
       else if (batchData.length > 0 && !selectedBatchId) setSelectedBatchId(batchData[0]._id);
       setRecentLogs(logs.slice(0, 5));
     } catch (e) { /* ignore */ }
     finally { setLoading(false); setRefreshing(false); }
-  }, [token, selectedBatchId]);
+  }, [token, selectedBatchId, canManageBatches]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -178,6 +184,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
     setTimeout(() => setCreateBatchModal(true), 300);
   };
 
+  const toggleWorkerSelection = (workerId: string) => {
+    setSelectedWorkerIds(prev =>
+      prev.includes(workerId) ? prev.filter(id => id !== workerId) : [...prev, workerId]
+    );
+  };
+
   const handleConfirmCreateBatchWithPassword = async () => {
     if (!confirmPassword) {
       showAlert('Security Check', 'Please enter your account password');
@@ -194,11 +206,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
           initialCount: Number(initialCount),
           startDate,
           shed: shed || undefined,
+          assignedWorkerIds: selectedWorkerIds,
           password: confirmPassword
         })
       }, token);
       setSecurityModalVisible(false);
-      setBatchName(''); setBreed(''); setInitialCount(''); setShed('');
+      setBatchName(''); setBreed(''); setInitialCount(''); setShed(''); setSelectedWorkerIds([]);
       showAlert('Success', `Flock '${batchName}' created successfully!`);
       load();
     } catch (err: any) {
@@ -655,6 +668,22 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <Text style={common.label}>Breed</Text>
               <TextInput style={common.input} placeholder="e.g. Hy-Line Brown" placeholderTextColor="#6B655C" value={breed} onChangeText={setBreed} />
 
+              <Text style={common.label}>Flock Type</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+                <TouchableOpacity
+                  style={[s.typeBtn, batchType === 'layer' && s.typeBtnSelectedEgg]}
+                  onPress={() => setBatchType('layer')}
+                >
+                  <Text style={{ color: batchType === 'layer' ? colors.secondary : colors.textMuted, fontWeight: '800' }}>🥚 Layer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.typeBtn, batchType === 'broiler' && s.typeBtnSelectedChicken]}
+                  onPress={() => setBatchType('broiler')}
+                >
+                  <Text style={{ color: batchType === 'broiler' ? colors.blue : colors.textMuted, fontWeight: '800' }}>🍗 Broiler</Text>
+                </TouchableOpacity>
+              </View>
+
               <Text style={common.label}>Initial Bird Count</Text>
               <TextInput style={common.input} keyboardType="numeric" placeholder="1000" placeholderTextColor="#6B655C" value={initialCount} onChangeText={setInitialCount} />
 
@@ -667,6 +696,32 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
               <Text style={common.label}>Shed / House Name</Text>
               <TextInput style={common.input} placeholder="Shed 1" placeholderTextColor="#6B655C" value={shed} onChangeText={setShed} />
+
+              {teamWorkers.length > 0 && (
+                <View style={{ marginTop: 10 }}>
+                  <Text style={[common.label, { color: colors.secondary }]}>Assign Workers (Optional)</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                    {teamWorkers.map(w => {
+                      const isSel = selectedWorkerIds.includes(w._id);
+                      return (
+                        <TouchableOpacity
+                          key={w._id}
+                          onPress={() => toggleWorkerSelection(w._id)}
+                          style={{
+                            paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, borderWidth: 1,
+                            borderColor: isSel ? colors.secondary : colors.border,
+                            backgroundColor: isSel ? 'rgba(74,124,89,0.15)' : colors.surfaceElevated
+                          }}
+                        >
+                          <Text style={{ color: isSel ? colors.secondary : colors.textMuted, fontSize: 12, fontWeight: '700' }}>
+                            {isSel ? '✓ ' : '+ '} {w.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
             </ScrollView>
 
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
