@@ -16,6 +16,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
   const [batches, setBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   // Quick Daily Log Modal State for this batch
   const [quickLogOpen, setQuickLogOpen] = useState(false);
@@ -128,8 +129,6 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
       </View>
     );
   }
-
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   const { batch, latestLogSection, eggSection, mortalitySection, expenseSection, sellSection, incomeSection, foodSection } = data;
   const latest = latestLogSection || {

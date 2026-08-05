@@ -20,6 +20,7 @@ export const BatchDashboardPage: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [batches, setBatches] = useState<IBatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   // Quick Daily Log Modal State for this batch
   const [quickLogOpen, setQuickLogOpen] = useState(false);
@@ -133,8 +134,6 @@ export const BatchDashboardPage: React.FC = () => {
       </div>
     );
   }
-
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   const { batch, latestLogSection, eggSection, mortalitySection, expenseSection, sellSection, incomeSection, foodSection, dailyLogs } = data;
   const latest = latestLogSection || {
@@ -513,6 +512,7 @@ export const BatchDashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* Daily Egg Yield Trend Chart for this Batch */}
