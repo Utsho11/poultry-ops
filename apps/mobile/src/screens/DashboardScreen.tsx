@@ -157,12 +157,33 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
     } finally { setSubmittingSale(false); }
   };
 
-  const handleCreateBatch = async () => {
+  // bKash-style Password Security Verification Modal state
+  const [securityModalVisible, setSecurityModalVisible] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [securitySubmitting, setSecuritySubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleOpenCreateSecurity = () => {
     if (!batchName || !breed || !initialCount || Number(initialCount) <= 0) {
       showAlert('Error', 'Batch Name, Breed, and Initial Birds count are required');
       return;
     }
-    setSubmittingBatch(true);
+    setCreateBatchModal(false);
+    setConfirmPassword('');
+    setTimeout(() => setSecurityModalVisible(true), 300);
+  };
+
+  const handleCancelSecurity = () => {
+    setSecurityModalVisible(false);
+    setTimeout(() => setCreateBatchModal(true), 300);
+  };
+
+  const handleConfirmCreateBatchWithPassword = async () => {
+    if (!confirmPassword) {
+      showAlert('Security Check', 'Please enter your account password');
+      return;
+    }
+    setSecuritySubmitting(true);
     try {
       await apiFetch('/batches', {
         method: 'POST',
@@ -172,16 +193,19 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
           type: batchType,
           initialCount: Number(initialCount),
           startDate,
-          shed: shed || undefined
+          shed: shed || undefined,
+          password: confirmPassword
         })
       }, token);
-      setCreateBatchModal(false);
+      setSecurityModalVisible(false);
       setBatchName(''); setBreed(''); setInitialCount(''); setShed('');
+      showAlert('Success', `Flock '${batchName}' created successfully!`);
       load();
-      showAlert('Success', `Batch "${batchName}" created successfully!`);
     } catch (err: any) {
-      showAlert('Error', err.message);
-    } finally { setSubmittingBatch(false); }
+      showAlert('Verification Failed', err.message || 'Incorrect password! Security check failed.');
+    } finally {
+      setSecuritySubmitting(false);
+    }
   };
 
   if (loading) return (
@@ -649,8 +673,67 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <TouchableOpacity style={s.cancelBtn} onPress={() => setCreateBatchModal(false)}>
                 <Text style={s.btnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.submitBtn, { backgroundColor: colors.brand }]} onPress={handleCreateBatch} disabled={submittingBatch}>
-                <Text style={s.btnText}>{submittingBatch ? 'Creating...' : '➕ Create Flock'}</Text>
+              <TouchableOpacity style={[s.submitBtn, { backgroundColor: colors.brand }]} onPress={handleOpenCreateSecurity}>
+                <Text style={s.btnText}>➕ Create Flock</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 🔐 BKASH-STYLE PASSWORD SECURITY VERIFICATION MODAL FOR DASHBOARD */}
+      <Modal visible={securityModalVisible} animationType="fade" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContainer, { borderLeftWidth: 6, borderLeftColor: '#E2136E', padding: 22 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 10 }}>
+              <View style={{ backgroundColor: '#E2136E', padding: 8, borderRadius: 10 }}>
+                <Text style={{ color: '#fff', fontSize: 18 }}>🔐</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#E2136E', textTransform: 'uppercase' }}>bKash-Style Security Check</Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textMain }}>Password Verification</Text>
+              </View>
+            </View>
+
+            <View style={{ backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '700' }}>ACCOUNT USER</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain, marginBottom: 6 }}>👤 {user?.name} ({user?.email})</Text>
+
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '700' }}>TARGET ACTION</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.brand }}>
+                ➕ Create Flock '{batchName}'
+              </Text>
+            </View>
+
+            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain, marginBottom: 6 }}>🔑 Enter Account Password *</Text>
+            <View style={{ position: 'relative', marginBottom: 16 }}>
+              <TextInput
+                style={[common.input, { borderColor: '#E2136E', borderWidth: 2, fontSize: 15, paddingRight: 40 }]}
+                secureTextEntry={!showPassword}
+                placeholder="Enter login password"
+                placeholderTextColor={colors.textMuted}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 12, top: 12 }}
+              >
+                <Text style={{ fontSize: 14, color: colors.textMuted }}>{showPassword ? '👁️' : '🙈'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={s.cancelBtn} onPress={handleCancelSecurity}>
+                <Text style={[s.btnText, { color: colors.textMain }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.submitBtn, { backgroundColor: '#E2136E' }]}
+                onPress={handleConfirmCreateBatchWithPassword}
+                disabled={securitySubmitting}
+              >
+                <Text style={s.btnText}>{securitySubmitting ? 'Verifying...' : '⚡ Confirm & Proceed'}</Text>
               </TouchableOpacity>
             </View>
           </View>

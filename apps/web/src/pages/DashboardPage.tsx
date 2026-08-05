@@ -4,7 +4,7 @@ import { fetchWithAuth } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { IBatch, IDailyLog, IReportMetrics } from '@poultry-ops/types';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
-import { Bird, Egg, AlertTriangle, Scale, DollarSign, PlusCircle, ArrowUpRight, Zap, ShoppingCart, TrendingUp, Layers } from 'lucide-react';
+import { Bird, Egg, AlertTriangle, Scale, DollarSign, PlusCircle, ArrowUpRight, Zap, ShoppingCart, TrendingUp, Layers, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
 
@@ -144,13 +144,32 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleSubmitCreateBatch = async (e: React.FormEvent) => {
+  // bKash-style Password Security Verification Modal State
+  const [securityModalOpen, setSecurityModalOpen] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [securityError, setSecurityError] = useState('');
+  const [verifyingSecurity, setVerifyingSecurity] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleOpenCreateSecurity = (e: React.FormEvent) => {
     e.preventDefault();
     if (!batchName || !breed || !initialCount || Number(initialCount) <= 0) {
       alert('Batch Name, Breed, and Initial Bird Count are required');
       return;
     }
-    setSubmittingBatch(true);
+    setConfirmPassword('');
+    setSecurityError('');
+    setSecurityModalOpen(true);
+  };
+
+  const handleConfirmCreateBatchWithPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!confirmPassword) {
+      setSecurityError('Please enter your account password');
+      return;
+    }
+    setVerifyingSecurity(true);
+    setSecurityError('');
     try {
       await fetchWithAuth('/batches', {
         method: 'POST',
@@ -160,19 +179,22 @@ export const DashboardPage: React.FC = () => {
           type: batchType,
           initialCount: Number(initialCount),
           startDate,
-          shed: shed || undefined
+          shed: shed || undefined,
+          password: confirmPassword
         })
       });
+      setSecurityModalOpen(false);
       setCreateBatchOpen(false);
       setBatchName('');
       setBreed('');
       setInitialCount('');
       setShed('');
+      alert(`Flock '${batchName}' created successfully!`);
       loadDashboardData();
     } catch (err: any) {
-      alert(err.message);
+      setSecurityError(err.message || 'Incorrect password! Security check failed.');
     } finally {
-      setSubmittingBatch(false);
+      setVerifyingSecurity(false);
     }
   };
 
@@ -422,7 +444,7 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmitCreateBatch} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form onSubmit={handleOpenCreateSecurity} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#6B655C', marginBottom: '6px' }}>Batch Name *</label>
                 <input type="text" required placeholder="e.g. Batch 2026-A" value={batchName} onChange={(e) => setBatchName(e.target.value)} className="input-field" />
@@ -645,6 +667,90 @@ export const DashboardPage: React.FC = () => {
                 <button type="button" onClick={() => setSaleModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
                 <button type="submit" disabled={submittingSale} className="btn btn-primary" style={{ flex: 1, backgroundColor: '#3D6B8C' }}>
                   {submittingSale ? 'Recording...' : '💰 Record Income'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🔐 BKASH-STYLE PASSWORD SECURITY VERIFICATION MODAL FOR DASHBOARD */}
+      {securityModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(45, 42, 38, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '440px', padding: '28px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '2px solid #E2136E', boxShadow: '0 20px 40px rgba(226, 19, 110, 0.2)' }}>
+            
+            {/* Header with bKash Security Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid #E8E2D8' }}>
+              <div style={{ backgroundColor: '#E2136E', color: '#FFFFFF', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldCheck size={26} />
+              </div>
+              <div>
+                <span className="badge" style={{ backgroundColor: 'rgba(226, 19, 110, 0.12)', color: '#E2136E', fontWeight: 800, fontSize: '0.75rem' }}>
+                  bKash-Style Security Verification
+                </span>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2D2A26', marginTop: '2px' }}>Enter Password to Authorize</h2>
+              </div>
+            </div>
+
+            {/* Account & Action Card */}
+            <div style={{ backgroundColor: '#F4EFE6', padding: '14px', borderRadius: '10px', marginBottom: '16px', border: '1px solid #E8E2D8' }}>
+              <div style={{ fontSize: '0.78rem', color: '#6B655C', fontWeight: 700, textTransform: 'uppercase' }}>Account User</div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#2D2A26', marginBottom: '8px' }}>👤 {user?.name} ({user?.email})</div>
+              
+              <div style={{ fontSize: '0.78rem', color: '#6B655C', fontWeight: 700, textTransform: 'uppercase' }}>Target Action</div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#4A7C59' }}>
+                ➕ Create New Flock '{batchName}'
+              </div>
+            </div>
+
+            {securityError && (
+              <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.85rem', fontWeight: 700, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                {securityError}
+              </div>
+            )}
+
+            <form onSubmit={handleConfirmCreateBatchWithPassword}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#2D2A26', marginBottom: '6px' }}>
+                  🔑 Enter Your Account Password *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoFocus
+                    placeholder="Enter login password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input-field"
+                    style={{ paddingRight: '40px', fontSize: '1rem', border: '2px solid #E2136E' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B655C', cursor: 'pointer' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSecurityModalOpen(false)}
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={verifyingSecurity}
+                  className="btn btn-primary"
+                  style={{ flex: 1, backgroundColor: '#E2136E', fontWeight: 800 }}
+                >
+                  {verifyingSecurity ? 'Verifying...' : '⚡ Confirm & Proceed'}
                 </button>
               </div>
             </form>
