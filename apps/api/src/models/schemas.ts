@@ -123,7 +123,7 @@ export const DailyLogModel = model<IDailyLogDoc>('DailyLog', dailyLogSchema);
 export interface IExpenseDoc extends Document {
   farmId: Schema.Types.ObjectId;
   batchId?: Schema.Types.ObjectId;
-  category: 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
+  category: 'feed' | 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
   amount: number;
   currency: string;
   date: string;
@@ -136,7 +136,7 @@ export interface IExpenseDoc extends Document {
 const expenseSchema = new Schema<IExpenseDoc>({
   farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
   batchId: { type: Schema.Types.ObjectId, ref: 'Batch' },
-  category: { type: String, enum: ['medicine', 'labor', 'utility', 'equipment', 'other'], required: true },
+  category: { type: String, enum: ['feed', 'medicine', 'labor', 'utility', 'equipment', 'other'], required: true },
   amount: { type: Number, required: true, min: 0 },
   currency: { type: String, default: 'BDT' },
   date: { type: String, required: true },

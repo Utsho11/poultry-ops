@@ -9,7 +9,7 @@ export type FeedCategory =
   | 'broiler_grower'
   | 'broiler_finisher';
 
-export type ExpenseCategory = 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
+export type ExpenseCategory = 'feed' | 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
 export type HealthRecordType = 'checkup' | 'vaccination' | 'injection' | 'treatment';
 export type SubscriptionPlan = 'free' | 'pro';
 export type SaleItemType = 'egg' | 'chicken';

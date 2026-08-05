@@ -9,10 +9,11 @@ import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
 import { DatePickerInput } from '../components/DatePickerInput';
 
-const CATEGORIES = ['medicine', 'labor', 'utility', 'equipment', 'other'];
+const CATEGORIES = ['feed', 'medicine', 'labor', 'utility', 'equipment', 'other'];
 const HEALTH_TYPES = ['vaccination', 'checkup', 'injection', 'treatment'];
 
 const categoryColor: Record<string, string> = {
+  feed: colors.amber,
   medicine: colors.blue,
   labor: colors.amber,
   utility: colors.purple,
@@ -32,7 +33,10 @@ export const ExpensesScreen: React.FC = () => {
   // Expense form
   const [expModal, setExpModal] = useState(false);
   const [expBatchId, setExpBatchId] = useState('');
-  const [expCategory, setExpCategory] = useState('medicine');
+  const [expCategory, setExpCategory] = useState('feed');
+  const [feedCategory, setFeedCategory] = useState('layer_layer_1');
+  const [stockBags, setStockBags] = useState('10');
+  const [bagPrice, setBagPrice] = useState('2500');
   const [expAmount, setExpAmount] = useState('');
   const [expDate, setExpDate] = useState(new Date().toISOString().split('T')[0]);
   const [expNote, setExpNote] = useState('');
@@ -69,23 +73,43 @@ export const ExpensesScreen: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const handleCreateExpense = async () => {
-    if (!expBatchId) { showAlert('Error', 'Please select a target Flock / Batch.'); return; }
-    if (!expAmount) { showAlert('Error', 'Amount is required'); return; }
     if (!expDate) { showAlert('Error', 'Date is required (YYYY-MM-DD)'); return; }
 
     setExpSubmitting(true);
     try {
-      await apiFetch('/expenses', {
-        method: 'POST',
-        body: JSON.stringify({
-          batchId: expBatchId,
-          category: expCategory,
-          amount: Number(expAmount),
-          currency: 'BDT',
-          date: expDate,
-          note: expNote
-        })
-      }, token);
+      if (expCategory === 'feed') {
+        const bagsNum = Number(stockBags || 0);
+        const priceNum = Number(bagPrice || 0);
+        if (bagsNum <= 0 || priceNum <= 0) {
+          showAlert('Error', 'Please enter valid Bags count and Price per Bag.');
+          setExpSubmitting(false);
+          return;
+        }
+        await apiFetch('/feed-stock', {
+          method: 'POST',
+          body: JSON.stringify({
+            category: feedCategory,
+            bagPrice: priceNum,
+            bags: bagsNum,
+            date: expDate,
+            note: expNote ? `Vendor: ${expNote}` : undefined
+          })
+        }, token);
+      } else {
+        if (!expBatchId) { showAlert('Error', 'Please select a target Flock / Batch.'); setExpSubmitting(false); return; }
+        if (!expAmount) { showAlert('Error', 'Amount is required'); setExpSubmitting(false); return; }
+        await apiFetch('/expenses', {
+          method: 'POST',
+          body: JSON.stringify({
+            batchId: expBatchId,
+            category: expCategory,
+            amount: Number(expAmount),
+            currency: 'BDT',
+            date: expDate,
+            note: expNote
+          })
+        }, token);
+      }
       setExpModal(false);
       setExpAmount('');
       setExpNote('');
@@ -211,39 +235,87 @@ export const ExpensesScreen: React.FC = () => {
       <Modal visible={expModal} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalCard}>
-            <Text style={{ color: colors.textMain, fontSize: 18, fontWeight: '800', marginBottom: 16 }}>Add Batch Expense</Text>
-            
-            <Text style={common.label}>Select Flock / Batch *</Text>
+            <Text style={{ color: colors.textMain, fontSize: 18, fontWeight: '800', marginBottom: 16 }}>
+              {expCategory === 'feed' ? '🌾 Add Feed Stock Purchase' : '💸 Add Farm Expense'}
+            </Text>
+
+            <Text style={common.label}>Expense Category *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-              {batches.map(b => (
-                <TouchableOpacity key={b._id} onPress={() => setExpBatchId(b._id)}
-                  style={[s.catChip, expBatchId === b._id && { backgroundColor: colors.brand, borderColor: colors.brand }]}>
-                  <Text style={{ color: expBatchId === b._id ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: '600' }}>🐔 {b.name}</Text>
+              {CATEGORIES.map(cat => (
+                <TouchableOpacity key={cat} onPress={() => setExpCategory(cat)}
+                  style={[s.catChip, expCategory === cat && { backgroundColor: categoryColor[cat] || colors.brand, borderColor: categoryColor[cat] || colors.brand }]}>
+                  <Text style={{ color: expCategory === cat ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'capitalize' }}>
+                    {cat === 'feed' ? '🌾 feed stock' : cat}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
             <DatePickerInput
-              label="Expense Date *"
+              label="Purchase / Expense Date *"
               value={expDate}
               onChange={setExpDate}
               style={{ marginBottom: 14 }}
             />
 
-            <Text style={common.label}>Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-              {CATEGORIES.map(cat => (
-                <TouchableOpacity key={cat} onPress={() => setExpCategory(cat)}
-                  style={[s.catChip, expCategory === cat && { backgroundColor: categoryColor[cat] || colors.brand, borderColor: categoryColor[cat] || colors.brand }]}>
-                  <Text style={{ color: expCategory === cat ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: '600', textTransform: 'capitalize' }}>{cat}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {expCategory === 'feed' ? (
+              <View>
+                <Text style={common.label}>Feed Category *</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+                  {[
+                    { id: 'layer_starter', label: '🥚 Layer Starter' },
+                    { id: 'layer_grower', label: '🥚 Layer Grower' },
+                    { id: 'layer_layer_1', label: '🥚 Layer Layer-1' },
+                    { id: 'broiler_starter', label: '🍗 Broiler Starter' },
+                    { id: 'broiler_grower', label: '🍗 Broiler Grower' },
+                    { id: 'broiler_finisher', label: '🍗 Broiler Finisher' },
+                  ].map(item => (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => setFeedCategory(item.id)}
+                      style={[
+                        s.catChip,
+                        { marginRight: 8 },
+                        feedCategory === item.id ? { backgroundColor: colors.amber, borderColor: colors.amber } : { borderColor: colors.border }
+                      ]}
+                    >
+                      <Text style={{ color: feedCategory === item.id ? '#fff' : colors.textMain, fontWeight: '700', fontSize: 12 }}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
 
-            <Text style={common.label}>Amount (BDT ৳) *</Text>
-            <TextInput style={common.input} keyboardType="numeric" placeholder="5000" placeholderTextColor="#64748b" value={expAmount} onChangeText={setExpAmount} />
+                <Text style={common.label}>Number of Bags (50kg/bag) *</Text>
+                <TextInput style={common.input} keyboardType="numeric" placeholder="10" placeholderTextColor="#64748b" value={stockBags} onChangeText={setStockBags} />
+                <Text style={{ color: colors.secondary, fontWeight: '700', fontSize: 12, marginBottom: 10 }}>
+                  = {(Number(stockBags || 0) * 50).toLocaleString()} kg feed added
+                </Text>
 
-            <Text style={common.label}>Note</Text>
+                <Text style={common.label}>Price per Bag (৳) *</Text>
+                <TextInput style={common.input} keyboardType="numeric" placeholder="2500" placeholderTextColor="#64748b" value={bagPrice} onChangeText={setBagPrice} />
+                <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 13, marginBottom: 10 }}>
+                  Total Cost: ৳{(Number(stockBags || 0) * Number(bagPrice || 0)).toLocaleString()}
+                </Text>
+              </View>
+            ) : (
+              <View>
+                <Text style={common.label}>Select Flock / Batch *</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+                  {batches.map(b => (
+                    <TouchableOpacity key={b._id} onPress={() => setExpBatchId(b._id)}
+                      style={[s.catChip, expBatchId === b._id && { backgroundColor: colors.brand, borderColor: colors.brand }]}>
+                      <Text style={{ color: expBatchId === b._id ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: '600' }}>🐔 {b.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <Text style={common.label}>Amount (BDT ৳) *</Text>
+                <TextInput style={common.input} keyboardType="numeric" placeholder="5000" placeholderTextColor="#64748b" value={expAmount} onChangeText={setExpAmount} />
+              </View>
+            )}
+
+            <Text style={common.label}>Notes / Vendor</Text>
             <TextInput style={common.input} placeholder="Receipt or vendor details..." placeholderTextColor="#64748b" value={expNote} onChangeText={setExpNote} />
 
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 40 }}>

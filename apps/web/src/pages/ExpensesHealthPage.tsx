@@ -18,7 +18,10 @@ export const ExpensesHealthPage: React.FC = () => {
   // Expense form state
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [expBatchId, setExpBatchId] = useState('');
-  const [expCategory, setExpCategory] = useState<'medicine' | 'labor' | 'utility' | 'equipment' | 'other'>('medicine');
+  const [expCategory, setExpCategory] = useState<'feed' | 'medicine' | 'labor' | 'utility' | 'equipment' | 'other'>('feed');
+  const [feedCategory, setFeedCategory] = useState<'layer_starter' | 'layer_grower' | 'layer_layer_1' | 'broiler_starter' | 'broiler_grower' | 'broiler_finisher'>('layer_layer_1');
+  const [stockBags, setStockBags] = useState<number>(10);
+  const [bagPrice, setBagPrice] = useState<number>(2500);
   const [expAmount, setExpAmount] = useState<number>(5000);
   const [expDate, setExpDate] = useState(new Date().toISOString().split('T')[0]);
   const [expNote, setExpNote] = useState('');
@@ -58,22 +61,35 @@ export const ExpensesHealthPage: React.FC = () => {
 
   const handleCreateExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!expBatchId) {
-      alert('Please select a target Flock / Batch.');
-      return;
-    }
     try {
-      await fetchWithAuth('/expenses', {
-        method: 'POST',
-        body: JSON.stringify({
-          batchId: expBatchId,
-          category: expCategory,
-          amount: Number(expAmount),
-          currency: 'BDT',
-          date: expDate,
-          note: expNote
-        })
-      });
+      if (expCategory === 'feed') {
+        await fetchWithAuth('/feed-stock', {
+          method: 'POST',
+          body: JSON.stringify({
+            category: feedCategory,
+            bagPrice: Number(bagPrice),
+            bags: Number(stockBags),
+            date: expDate,
+            note: expNote ? `Vendor/Details: ${expNote}` : undefined
+          })
+        });
+      } else {
+        if (!expBatchId) {
+          alert('Please select a target Flock / Batch.');
+          return;
+        }
+        await fetchWithAuth('/expenses', {
+          method: 'POST',
+          body: JSON.stringify({
+            batchId: expBatchId,
+            category: expCategory,
+            amount: Number(expAmount),
+            currency: 'BDT',
+            date: expDate,
+            note: expNote
+          })
+        });
+      }
       setShowExpenseModal(false);
       loadData();
     } catch (err: any) {
@@ -305,29 +321,84 @@ export const ExpensesHealthPage: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Category</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Category *</label>
                 <select value={expCategory} onChange={(e) => setExpCategory(e.target.value as any)} className="input-field">
-                  <option value="medicine">Medicine (ঔষধ / ভ্যাকসিন)</option>
-                  <option value="labor">Labor (শ্রমিক বেতন)</option>
-                  <option value="utility">Utility (বিদ্যুৎ / পানি)</option>
-                  <option value="equipment">Equipment (যন্ত্রপাতি)</option>
-                  <option value="other">Other (অন্যান্য)</option>
+                  <option value="feed">🌾 Feed (খাবার Stock)</option>
+                  <option value="medicine">💊 Medicine (ঔষধ / ভ্যাকসিন)</option>
+                  <option value="labor">👷 Labor (শ্রমিক বেতন)</option>
+                  <option value="utility">💡 Utility (বিদ্যুৎ / পানি)</option>
+                  <option value="equipment">🔧 Equipment (যন্ত্রপাতি)</option>
+                  <option value="other">📝 Other (অন্যান্য)</option>
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Amount (BDT ৳) *</label>
-                  <input type="number" required min="1" value={expAmount} onChange={(e) => setExpAmount(Number(e.target.value))} className="input-field" />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Expense Date (Manual) *</label>
-                  <input type="date" required value={expDate} onChange={(e) => setExpDate(e.target.value)} className="input-field" />
-                </div>
-              </div>
+              {expCategory === 'feed' ? (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>
+                      Feed Type / Sub-category *
+                    </label>
+                    <select value={feedCategory} onChange={(e: any) => setFeedCategory(e.target.value)} className="input-field" required>
+                      <optgroup label="🥚 Layer Feed Categories">
+                        <option value="layer_starter">Layer Starter</option>
+                        <option value="layer_grower">Layer Grower</option>
+                        <option value="layer_layer_1">Layer Layer-1</option>
+                      </optgroup>
+                      <optgroup label="🍗 Broiler Feed Categories">
+                        <option value="broiler_starter">Broiler Starter</option>
+                        <option value="broiler_grower">Broiler Grower</option>
+                        <option value="broiler_finisher">Broiler Finisher</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>Number of Bags *</label>
+                      <input type="number" required min="1" placeholder="10" value={stockBags} onChange={(e) => setStockBags(Number(e.target.value))} className="input-field" />
+                      <div style={{ fontSize: '0.78rem', color: '#4A7C59', fontWeight: 700, marginTop: '4px' }}>
+                        = {(stockBags * 50).toLocaleString()} kg feed
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>Price per Bag (৳) *</label>
+                      <input type="number" required min="1" step="0.01" placeholder="2500" value={bagPrice} onChange={(e) => setBagPrice(Number(e.target.value))} className="input-field" />
+                      <div style={{ fontSize: '0.78rem', color: '#3D6B8C', fontWeight: 700, marginTop: '4px' }}>
+                        Total: ৳{(stockBags * bagPrice).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Expense Date *</label>
+                    <input type="date" required value={expDate} onChange={(e) => setExpDate(e.target.value)} className="input-field" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Select Flock / Batch *</label>
+                    <select value={expBatchId} onChange={(e) => setExpBatchId(e.target.value)} className="input-field" required>
+                      <option value="" disabled>-- Select Batch (Required) --</option>
+                      {batches.map(b => <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>)}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Amount (BDT ৳) *</label>
+                      <input type="number" required min="1" value={expAmount} onChange={(e) => setExpAmount(Number(e.target.value))} className="input-field" />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Expense Date *</label>
+                      <input type="date" required value={expDate} onChange={(e) => setExpDate(e.target.value)} className="input-field" />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Notes</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Notes / Supplier</label>
                 <input type="text" value={expNote} onChange={(e) => setExpNote(e.target.value)} className="input-field" placeholder="Receipt or vendor details..." />
               </div>
 

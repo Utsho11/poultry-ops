@@ -170,54 +170,24 @@ export const DailyLogPage: React.FC = () => {
       {/* Entry Form Container */}
       {showForm && (
         <div className="glass-panel" style={{ padding: '28px' }}>
-          {/* Section Tabs */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-            <button
-              type="button"
-              onClick={() => setActiveFormTab('log')}
-              style={{
-                padding: '10px 18px', borderRadius: '10px', fontWeight: 800, fontSize: '0.92rem', cursor: 'pointer',
-                backgroundColor: activeFormTab === 'log' ? 'rgba(74, 124, 89, 0.15)' : 'transparent',
-                color: activeFormTab === 'log' ? '#4A7C59' : '#6B655C',
-                border: `1px solid ${activeFormTab === 'log' ? '#4A7C59' : '#E8E2D8'}`
-              }}
-            >
-              ⚡ 1. Daily Feeding & Yield Log
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveFormTab('stock')}
-              style={{
-                padding: '10px 18px', borderRadius: '10px', fontWeight: 800, fontSize: '0.92rem', cursor: 'pointer',
-                backgroundColor: activeFormTab === 'stock' ? 'rgba(217, 164, 65, 0.15)' : 'transparent',
-                color: activeFormTab === 'stock' ? '#D9A441' : '#6B655C',
-                border: `1px solid ${activeFormTab === 'stock' ? '#D9A441' : '#E8E2D8'}`
-              }}
-            >
-              🌾 2. Store Feed Stock Entry (Buy Feed Bags)
-            </button>
-          </div>
-
           {error && <div style={{ color: 'var(--accent-rose)', fontSize: '0.85rem', marginBottom: '14px' }}>{error}</div>}
 
-          {/* SECTION 1: DAILY FEEDING & PRODUCTION LOG */}
-          {activeFormTab === 'log' ? (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Select Active Batch *</label>
-                  <select value={selectedBatchId} onChange={(e) => setSelectedBatchId(e.target.value)} className="input-field">
-                    {batches.map(b => (
-                      <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Date *</label>
-                  <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="input-field" />
-                </div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Select Active Batch *</label>
+                <select value={selectedBatchId} onChange={(e) => setSelectedBatchId(e.target.value)} className="input-field">
+                  {batches.map(b => (
+                    <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>
+                  ))}
+                </select>
               </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Date *</label>
+                <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="input-field" />
+              </div>
+            </div>
 
               {/* Egg Collection inputs (Crates + Loose) */}
               <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '18px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
@@ -306,67 +276,8 @@ export const DailyLogPage: React.FC = () => {
                 {submitting ? 'Saving Log...' : t('saveLog')}
               </button>
             </form>
-          ) : (
-            /* SECTION 2: STORE FEED STOCK ENTRY FORM (BUY FEED BAGS) */
-            <form onSubmit={handleSubmitStoreFeedStock} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ backgroundColor: 'rgba(217, 164, 65, 0.08)', padding: '18px', borderRadius: '12px', border: '1px solid rgba(217, 164, 65, 0.25)' }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#D9A441', marginBottom: '4px' }}>🌾 Buy & Add Bags to Store Feed Stock</h3>
-                <p style={{ fontSize: '0.8rem', color: '#6B655C' }}>Enter purchased feed bags and bag price to add to store inventory & record expense automatically (1 Bag = 50 kg).</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Date *</label>
-                  <input type="date" required value={stockDate} onChange={(e) => setStockDate(e.target.value)} className="input-field" />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>Feed Category *</label>
-                  <select value={feedCategory} onChange={(e: any) => setFeedCategory(e.target.value)} className="input-field" required>
-                    <optgroup label="🥚 Layer Feed Categories">
-                      <option value="layer_starter">Layer Starter</option>
-                      <option value="layer_grower">Layer Grower</option>
-                      <option value="layer_layer_1">Layer Layer-1</option>
-                    </optgroup>
-                    <optgroup label="🍗 Broiler Feed Categories">
-                      <option value="broiler_starter">Broiler Starter</option>
-                      <option value="broiler_grower">Broiler Grower</option>
-                      <option value="broiler_finisher">Broiler Finisher</option>
-                    </optgroup>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>Number of Feed Bags Purchased *</label>
-                  <input type="number" min="1" required placeholder="e.g. 10" value={stockBags} onChange={(e) => setStockBags(Number(e.target.value))} className="input-field" />
-                  <div style={{ fontSize: '0.78rem', color: '#4A7C59', fontWeight: 700, marginTop: '4px' }}>
-                    = {(stockBags * 50).toLocaleString()} kg feed added to stock
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>Price per Bag (৳) *</label>
-                  <input type="number" min="1" step="0.01" required placeholder="e.g. 2500" value={bagPrice} onChange={(e) => setBagPrice(Number(e.target.value))} className="input-field" />
-                  <div style={{ fontSize: '0.78rem', color: '#3D6B8C', fontWeight: 700, marginTop: '4px' }}>
-                    Total Cost: ৳{(stockBags * bagPrice).toLocaleString()}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Feed Brand / Vendor Name (Optional)</label>
-                <input type="text" placeholder="e.g. Sona Feed Mills Co." value={stockVendor} onChange={(e) => setStockVendor(e.target.value)} className="input-field" />
-              </div>
-
-              <button type="submit" disabled={submittingStock} className="btn btn-primary" style={{ backgroundColor: '#D9A441', height: '44px' }}>
-                {submittingStock ? 'Adding Feed Stock...' : '🌾 Save & Add to Store Feed Stock'}
-              </button>
-            </form>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
       {/* Daily Logs Table */}
       <div className="glass-panel" style={{ padding: '24px' }}>

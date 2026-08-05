@@ -174,55 +174,10 @@ export const DailyLogScreen: React.FC = () => {
         }
       </ScrollView>
 
-      {/* Submit Log / Stock Modal */}
+      {/* Submit Log Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalCard}>
-            {/* Section Switcher Tabs */}
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-              <TouchableOpacity
-                style={[s.tabBtn, formSection === 'log' && s.tabBtnActiveLog]}
-                onPress={() => setFormSection('log')}
-              >
-                <Text style={{ color: formSection === 'log' ? colors.secondary : colors.textMuted, fontWeight: '800', fontSize: 12 }}>
-                  ⚡ Daily Log
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[s.tabBtn, formSection === 'stock' && s.tabBtnActiveStock]}
-                onPress={() => setFormSection('stock')}
-              >
-                <Text style={{ color: formSection === 'stock' ? colors.amber : colors.textMuted, fontWeight: '800', fontSize: 12 }}>
-                  🌾 Add Feed Stock
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {formSection === 'log' ? (
-              /* SECTION 1: DAILY FEEDING & PRODUCTION LOG */
-              <View>
-                <Text style={{ color: colors.textMain, fontSize: 16, fontWeight: '800', marginBottom: 12 }}>⚡ Log Daily Yield & Feeding</Text>
-
-                {/* Batch selector */}
-                <Text style={common.label}>Select Batch *</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-                  {batches.map(b => (
-                    <TouchableOpacity
-                      key={b._id}
-                      onPress={() => setSelectedBatchId(b._id)}
-                      style={[s.batchChip, selectedBatchId === b._id && s.batchChipActive]}
-                    >
-                      <Text style={{ color: selectedBatchId === b._id ? '#fff' : colors.textMuted, fontSize: 13, fontWeight: '600' }}>{b.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
-                <DatePickerInput
-                  label="📅 Log Date *"
-                  value={logDate}
-                  onChange={setLogDate}
-                  style={{ marginBottom: 14 }}
                 />
 
                 {/* Crates & Loose Eggs Collection Input */}
@@ -303,70 +258,6 @@ export const DailyLogScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
               </View>
-            ) : (
-              /* SECTION 2: STORE FEED STOCK FORM (BUY FEED BAGS) */
-              <View>
-                <Text style={{ color: colors.amber, fontSize: 16, fontWeight: '800', marginBottom: 6 }}>🌾 Buy & Add Feed Bags to Stock</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 14 }}>Add bags to farm store stock and set bag price (1 Bag = 50 kg).</Text>
-
-                <DatePickerInput
-                  label="📅 Purchase Date *"
-                  value={stockDate}
-                  onChange={setStockDate}
-                  style={{ marginBottom: 14 }}
-                />
-
-                <Text style={common.label}>Feed Category *</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-                  {[
-                    { id: 'layer_starter', label: '🥚 Layer Starter' },
-                    { id: 'layer_grower', label: '🥚 Layer Grower' },
-                    { id: 'layer_layer_1', label: '🥚 Layer Layer-1' },
-                    { id: 'broiler_starter', label: '🍗 Broiler Starter' },
-                    { id: 'broiler_grower', label: '🍗 Broiler Grower' },
-                    { id: 'broiler_finisher', label: '🍗 Broiler Finisher' },
-                  ].map(item => (
-                    <TouchableOpacity
-                      key={item.id}
-                      onPress={() => setFeedCategory(item.id)}
-                      style={[
-                        s.chip,
-                        { marginRight: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
-                        feedCategory === item.id ? { backgroundColor: colors.amber, borderColor: colors.amber } : { borderColor: colors.border }
-                      ]}
-                    >
-                      <Text style={{ color: feedCategory === item.id ? '#fff' : colors.textMain, fontWeight: '700', fontSize: 12 }}>
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
-                <Text style={common.label}>Number of Feed Bags Purchased *</Text>
-                <TextInput style={common.input} keyboardType="numeric" value={stockBags} onChangeText={setStockBags} placeholder="10" />
-                <Text style={{ color: colors.secondary, fontWeight: '700', fontSize: 12, marginBottom: 10 }}>
-                  = {(Number(stockBags || 0) * 50).toLocaleString()} kg feed added
-                </Text>
-
-                <Text style={common.label}>Price per Bag (৳) *</Text>
-                <TextInput style={common.input} keyboardType="numeric" value={bagPrice} onChangeText={setBagPrice} placeholder="2500" />
-                <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 13, marginBottom: 10 }}>
-                  Total Expense: ৳{(Number(stockBags || 0) * Number(bagPrice || 0)).toLocaleString()}
-                </Text>
-
-                <Text style={common.label}>Supplier / Vendor Name (Optional)</Text>
-                <TextInput style={common.input} value={stockVendor} onChangeText={setStockVendor} placeholder="e.g. Sona Feed Mills" />
-
-                <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 30 }}>
-                  <TouchableOpacity style={[common.btnSecondary, { flex: 1 }]} onPress={() => setModalVisible(false)}>
-                    <Text style={common.btnSecondaryText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[common.btn, { flex: 1, backgroundColor: colors.amber }]} onPress={handleAddFeedStock} disabled={submittingStock}>
-                    {submittingStock ? <ActivityIndicator color="#fff" size="small" /> : <Text style={common.btnText}>🌾 Save Feed Stock</Text>}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
           </ScrollView>
         </View>
       </Modal>

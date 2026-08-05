@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { AuthRequest, requireRole } from '../middleware/auth';
-import { FeedStockModel, DailyLogModel } from '../models/schemas';
+import { FeedStockModel, DailyLogModel, ExpenseModel } from '../models/schemas';
 import { feedStockSchema } from '@poultry-ops/validation';
 
 const router = Router();
@@ -103,6 +103,19 @@ router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res
     });
 
     await entry.save();
+
+    // Automatically record as a feed expense
+    const expense = new ExpenseModel({
+      farmId: req.farmId,
+      category: 'feed',
+      amount: totalCost,
+      currency: 'BDT',
+      date,
+      note: `Feed Stock Purchase: ${bags} Bags (${totalKg} kg) of ${category.toUpperCase().replace(/_/g, ' ')} @ ৳${bagPrice}/bag${note ? `. ${note}` : ''}`,
+      recordedBy: req.user?.userId
+    });
+    await expense.save();
+
     return res.status(201).json(entry);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
