@@ -78,26 +78,72 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
     }
   };
 
-  const handleCreate = async () => {
+  // bKash-style Password Security Verification Modal state
+  const [securityModalVisible, setSecurityModalVisible] = useState(false);
+  const [securityAction, setSecurityAction] = useState<'create' | 'delete' | null>(null);
+  const [batchToDelete, setBatchToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [securitySubmitting, setSecuritySubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleOpenCreateSecurity = () => {
     if (!name) { showAlert('Error', 'Batch name is required'); return; }
     if (!startDate) { showAlert('Error', 'Start date is required (YYYY-MM-DD)'); return; }
-    setSubmitting(true);
+    setSecurityAction('create');
+    setConfirmPassword('');
+    setSecurityModalVisible(true);
+  };
+
+  const handleOpenDeleteSecurity = (id: string, batchName: string) => {
+    if (!canManage) {
+      showAlert('Unauthorized', 'Only farm Owners and Managers are authorized to delete flocks.');
+      return;
+    }
+    setBatchToDelete({ id, name: batchName });
+    setSecurityAction('delete');
+    setConfirmPassword('');
+    setSecurityModalVisible(true);
+  };
+
+  const handleConfirmSecurityAction = async () => {
+    if (!confirmPassword) {
+      showAlert('Security Check', 'Please enter your account password');
+      return;
+    }
+
+    setSecuritySubmitting(true);
     try {
-      await apiFetch('/batches', {
-        method: 'POST',
-        body: JSON.stringify({
-          name, breed, type, startDate,
-          initialCount: Number(initialCount), shed,
-          assignedWorkerIds: selectedWorkerIds
-        })
-      }, token);
-      setModalVisible(false);
-      setName('');
-      setSelectedWorkerIds([]);
-      load();
+      if (securityAction === 'create') {
+        await apiFetch('/batches', {
+          method: 'POST',
+          body: JSON.stringify({
+            name, breed, type, startDate,
+            initialCount: Number(initialCount), shed,
+            assignedWorkerIds: selectedWorkerIds,
+            password: confirmPassword
+          })
+        }, token);
+        setSecurityModalVisible(false);
+        setModalVisible(false);
+        setName('');
+        setSelectedWorkerIds([]);
+        showAlert('Success', `Flock '${name}' created successfully!`);
+        load();
+      } else if (securityAction === 'delete' && batchToDelete) {
+        await apiFetch(`/batches/${batchToDelete.id}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ password: confirmPassword })
+        }, token);
+        setSecurityModalVisible(false);
+        showAlert('Deleted', `Flock '${batchToDelete.name}' deleted successfully.`);
+        setBatchToDelete(null);
+        load();
+      }
     } catch (err: any) {
-      showAlert('Error', err.message);
-    } finally { setSubmitting(false); }
+      showAlert('Verification Failed', err.message || 'Incorrect password! Security check failed.');
+    } finally {
+      setSecuritySubmitting(false);
+    }
   };
 
   const handleOpenAssignModal = (batch: any) => {
@@ -134,25 +180,6 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
           try {
             await apiFetch(`/batches/${id}/close`, { method: 'POST' }, token);
             load();
-          } catch (e: any) { showAlert('Error', e.message); }
-        }
-      }
-    ]);
-  };
-
-  const handleDelete = async (id: string, batchName: string) => {
-    if (!canManage) {
-      showAlert('Unauthorized', 'Only farm Owners and Managers are authorized to delete flocks.');
-      return;
-    }
-    showAlert('Delete Flock Authorization', `Are you sure you want to PERMANENTLY DELETE "${batchName}"?\n\nThis will delete all daily logs, health records, and expenses associated with this flock.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
-          try {
-            await apiFetch(`/batches/${id}`, { method: 'DELETE' }, token);
-            load();
-            showAlert('Deleted', `Flock "${batchName}" deleted successfully.`);
           } catch (e: any) { showAlert('Error', e.message); }
         }
       }
@@ -257,7 +284,7 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                   )}
                   <TouchableOpacity
                     style={{ backgroundColor: 'rgba(244,63,94,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 'auto' }}
-                    onPress={() => handleDelete(batch._id, batch.name)}
+                    onPress={() => handleOpenDeleteSecurity(batch._id, batch.name)}
                   >
                     <Text style={{ color: colors.rose, fontSize: 12, fontWeight: '800' }}>🗑️ Delete Flock</Text>
                   </TouchableOpacity>
@@ -439,8 +466,67 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
               <TouchableOpacity style={s.cancelBtn} onPress={() => setModalVisible(false)}>
                 <Text style={s.btnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.submitBtn} onPress={handleCreate} disabled={submitting}>
-                <Text style={s.btnText}>{submitting ? 'Creating...' : 'Create Batch'}</Text>
+              <TouchableOpacity style={s.submitBtn} onPress={handleOpenCreateSecurity}>
+                <Text style={s.btnText}>Create Batch</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 🔐 BKASH-STYLE PASSWORD SECURITY VERIFICATION MODAL FOR MOBILE */}
+      <Modal visible={securityModalVisible} animationType="fade" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContainer, { borderLeftWidth: 6, borderLeftColor: '#E2136E', padding: 22 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 10 }}>
+              <View style={{ backgroundColor: '#E2136E', padding: 8, borderRadius: 10 }}>
+                <Text style={{ color: '#fff', fontSize: 18 }}>🔐</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#E2136E', textTransform: 'uppercase' }}>bKash-Style Security Check</Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textMain }}>Password Verification</Text>
+              </View>
+            </View>
+
+            <View style={{ backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '700' }}>ACCOUNT USER</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain, marginBottom: 6 }}>👤 {user?.name} ({user?.email})</Text>
+
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '700' }}>TARGET ACTION</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: securityAction === 'delete' ? colors.rose : colors.brand }}>
+                {securityAction === 'create' ? `➕ Create Flock '${name}'` : `🗑️ Delete Flock '${batchToDelete?.name}'`}
+              </Text>
+            </View>
+
+            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain, marginBottom: 6 }}>🔑 Enter Account Password *</Text>
+            <View style={{ position: 'relative', marginBottom: 16 }}>
+              <TextInput
+                style={[common.input, { borderColor: '#E2136E', borderWidth: 2, fontSize: 15, paddingRight: 40 }]}
+                secureTextEntry={!showPassword}
+                placeholder="Enter login password"
+                placeholderTextColor={colors.textMuted}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 12, top: 12 }}
+              >
+                <Text style={{ fontSize: 14, color: colors.textMuted }}>{showPassword ? '👁️' : '🙈'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={s.cancelBtn} onPress={() => setSecurityModalVisible(false)}>
+                <Text style={[s.btnText, { color: colors.textMain }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.submitBtn, { backgroundColor: securityAction === 'delete' ? colors.rose : '#E2136E' }]}
+                onPress={handleConfirmSecurityAction}
+                disabled={securitySubmitting}
+              >
+                <Text style={s.btnText}>{securitySubmitting ? 'Verifying...' : '⚡ Confirm & Proceed'}</Text>
               </TouchableOpacity>
             </View>
           </View>

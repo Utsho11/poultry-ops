@@ -4,7 +4,7 @@ import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchWithAuth } from '../services/api';
 import { IBatch, IUser } from '@poultry-ops/types';
-import { Layers, Plus, Calendar, Bird, Home, Users, DollarSign, Egg, AlertTriangle, Scale, ShoppingCart, TrendingUp, BarChart2, ArrowLeft } from 'lucide-react';
+import { Layers, Plus, Calendar, Bird, Home, Users, DollarSign, Egg, AlertTriangle, Scale, ShoppingCart, TrendingUp, BarChart2, ArrowLeft, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { formatEggCount } from '../utils/crates';
 
 function getBatchAgeText(startDateStr: string) {
@@ -90,28 +90,86 @@ export const BatchesPage: React.FC = () => {
     }
   };
 
-  const handleCreateBatch = async (e: React.FormEvent) => {
+  // bKash-style Password Security Verification Modal state
+  const [securityModalOpen, setSecurityModalOpen] = useState(false);
+  const [securityAction, setSecurityAction] = useState<'create' | 'delete' | null>(null);
+  const [batchToDelete, setBatchToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [securityError, setSecurityError] = useState('');
+  const [verifyingSecurity, setVerifyingSecurity] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Trigger Create Security Verification Modal
+  const handleOpenCreateSecurity = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    if (!name || !breed || !initialCount || Number(initialCount) <= 0) {
+      setError('Please fill in all required fields');
+      return;
+    }
     setError('');
+    setSecurityAction('create');
+    setConfirmPassword('');
+    setSecurityError('');
+    setSecurityModalOpen(true);
+  };
+
+  // Trigger Delete Security Verification Modal
+  const handleOpenDeleteSecurity = (id: string, batchName: string) => {
+    if (!canManage) {
+      alert('Unauthorized! Only farm Owners and Managers can delete flocks.');
+      return;
+    }
+    setBatchToDelete({ id, name: batchName });
+    setSecurityAction('delete');
+    setConfirmPassword('');
+    setSecurityError('');
+    setSecurityModalOpen(true);
+  };
+
+  // Confirm and Execute Action with Password Verification (bKash Style)
+  const handleConfirmSecurityAction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!confirmPassword) {
+      setSecurityError('Please enter your account password to verify');
+      return;
+    }
+
+    setVerifyingSecurity(true);
+    setSecurityError('');
 
     try {
-      await fetchWithAuth('/batches', {
-        method: 'POST',
-        body: JSON.stringify({
-          name, breed, type, startDate,
-          initialCount: Number(initialCount), shed,
-          assignedWorkerIds: selectedWorkerIds
-        })
-      });
-      setShowModal(false);
-      setName('');
-      setSelectedWorkerIds([]);
-      loadData();
+      if (securityAction === 'create') {
+        await fetchWithAuth('/batches', {
+          method: 'POST',
+          body: JSON.stringify({
+            name, breed, type, startDate,
+            initialCount: Number(initialCount), shed,
+            assignedWorkerIds: selectedWorkerIds,
+            password: confirmPassword
+          })
+        });
+        setSecurityModalOpen(false);
+        setShowModal(false);
+        setName('');
+        setSelectedWorkerIds([]);
+        loadData();
+      } else if (securityAction === 'delete' && batchToDelete) {
+        await fetchWithAuth(`/batches/${batchToDelete.id}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ password: confirmPassword })
+        });
+        setSecurityModalOpen(false);
+        if (activeBatchId === batchToDelete.id) {
+          setActiveBatchId(null);
+          setBatchDashboardData(null);
+        }
+        setBatchToDelete(null);
+        loadData();
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to create batch');
+      setSecurityError(err.message || 'Security verification failed. Check your password.');
     } finally {
-      setSubmitting(false);
+      setVerifyingSecurity(false);
     }
   };
 
@@ -149,27 +207,6 @@ export const BatchesPage: React.FC = () => {
       if (activeBatchId === id) loadBatchDashboard(id);
     } catch (err: any) {
       alert(err.message);
-    }
-  };
-
-  const handleDeleteBatch = async (id: string, batchName: string) => {
-    if (!canManage) {
-      alert('Unauthorized! Only farm Owners and Managers can delete flocks.');
-      return;
-    }
-    if (!window.confirm(`⚠️ SECURITY AUTHORIZATION REQUIRED:\n\nAre you sure you want to PERMANENTLY DELETE flock '${batchName}'?\n\nThis will permanently delete all associated daily logs, health records, and expenses. This action CANNOT be undone.`)) {
-      return;
-    }
-    try {
-      await fetchWithAuth(`/batches/${id}`, { method: 'DELETE' });
-      loadData();
-      if (activeBatchId === id) {
-        setActiveBatchId(null);
-        setBatchDashboardData(null);
-      }
-      alert(`Flock '${batchName}' deleted successfully.`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete batch');
     }
   };
 
@@ -495,9 +532,9 @@ export const BatchesPage: React.FC = () => {
                       </button>
                     )}
                     <button
-                      onClick={() => handleDeleteBatch(batch._id, batch.name)}
+                      onClick={() => handleOpenDeleteSecurity(batch._id, batch.name)}
                       style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#EF4444', fontSize: '0.78rem', fontWeight: 800, padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', marginLeft: 'auto' }}
-                      title="Delete Flock with Auth Confirmation"
+                      title="Delete Flock with Password Verification"
                     >
                       🗑️ Delete Flock
                     </button>
@@ -516,7 +553,7 @@ export const BatchesPage: React.FC = () => {
             <h2 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '16px' }}>{t('addBatch')}</h2>
             {error && <div style={{ color: '#B23A2F', marginBottom: '12px', fontSize: '0.85rem' }}>{error}</div>}
 
-            <form onSubmit={handleCreateBatch} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form onSubmit={handleOpenCreateSecurity} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#6B655C', marginBottom: '6px' }}>Batch / Flock Name *</label>
                 <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Batch 2026-A" className="input-field" />
@@ -626,6 +663,90 @@ export const BatchesPage: React.FC = () => {
               <button onClick={() => setAssignModalBatch(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
               <button onClick={handleSaveAssignments} className="btn btn-primary" style={{ flex: 1, backgroundColor: '#4A7C59' }}>Save Assignments</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔐 BKASH-STYLE PASSWORD SECURITY VERIFICATION MODAL */}
+      {securityModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(45, 42, 38, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '440px', padding: '28px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '2px solid #E2136E', boxShadow: '0 20px 40px rgba(226, 19, 110, 0.2)' }}>
+            
+            {/* Header with bKash Security Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid #E8E2D8' }}>
+              <div style={{ backgroundColor: '#E2136E', color: '#FFFFFF', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldCheck size={26} />
+              </div>
+              <div>
+                <span className="badge" style={{ backgroundColor: 'rgba(226, 19, 110, 0.12)', color: '#E2136E', fontWeight: 800, fontSize: '0.75rem' }}>
+                  bKash-Style Security Verification
+                </span>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2D2A26', marginTop: '2px' }}>Enter Password to Authorize</h2>
+              </div>
+            </div>
+
+            {/* Account & Action Card */}
+            <div style={{ backgroundColor: '#F4EFE6', padding: '14px', borderRadius: '10px', marginBottom: '16px', border: '1px solid #E8E2D8' }}>
+              <div style={{ fontSize: '0.78rem', color: '#6B655C', fontWeight: 700, textTransform: 'uppercase' }}>Account User</div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#2D2A26', marginBottom: '8px' }}>👤 {user?.name} ({user?.email})</div>
+              
+              <div style={{ fontSize: '0.78rem', color: '#6B655C', fontWeight: 700, textTransform: 'uppercase' }}>Target Action</div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: securityAction === 'delete' ? '#B23A2F' : '#4A7C59' }}>
+                {securityAction === 'create' ? `➕ Create New Flock '${name}'` : `🗑️ Delete Flock '${batchToDelete?.name}'`}
+              </div>
+            </div>
+
+            {securityError && (
+              <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.85rem', fontWeight: 700, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                {securityError}
+              </div>
+            )}
+
+            <form onSubmit={handleConfirmSecurityAction}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#2D2A26', marginBottom: '6px' }}>
+                  🔑 Enter Your Account Password *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoFocus
+                    placeholder="Enter login password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input-field"
+                    style={{ paddingRight: '40px', fontSize: '1rem', border: '2px solid #E2136E' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B655C', cursor: 'pointer' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSecurityModalOpen(false)}
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={verifyingSecurity}
+                  className="btn btn-primary"
+                  style={{ flex: 1, backgroundColor: securityAction === 'delete' ? '#B23A2F' : '#E2136E', fontWeight: 800 }}
+                >
+                  {verifyingSecurity ? 'Verifying...' : '⚡ Confirm & Proceed'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { createBatchSchema } from '@poultry-ops/validation';
-import { BatchModel, DailyLogModel, HealthRecordModel, ExpenseModel, SaleModel } from '../models/schemas';
+import { BatchModel, UserModel, DailyLogModel, HealthRecordModel, ExpenseModel, SaleModel } from '../models/schemas';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -34,12 +35,28 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Create new batch (Owner/Manager only)
+// Create new batch (Owner/Manager only - Password verification required)
 router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
   try {
     const parseResult = createBatchSchema.safeParse(req.body);
     if (!parseResult.success) {
       return res.status(400).json({ error: 'Validation failed', details: parseResult.error.format() });
+    }
+
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: 'Password verification required to create a batch' });
+    }
+
+    // Verify Password
+    const currentUser = await UserModel.findById(req.user?.userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User account not found' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, currentUser.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Incorrect password! Security verification failed.' });
     }
 
     const { name, breed, type, startDate, initialCount, shed } = parseResult.data;
@@ -103,9 +120,25 @@ router.post('/:id/close', requireRole(['owner', 'manager']), async (req: AuthReq
   }
 });
 
-// Delete batch and clean up associated records (Owner/Manager only)
+// Delete batch and clean up associated records (Owner/Manager only - Password verification required)
 router.delete('/:id', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
   try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: 'Password security verification required to delete a batch' });
+    }
+
+    // Verify Password
+    const currentUser = await UserModel.findById(req.user?.userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User account not found' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, currentUser.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Incorrect password! Security verification failed.' });
+    }
+
     const batchId = req.params.id;
     const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
     if (!batch) {

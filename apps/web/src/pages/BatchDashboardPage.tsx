@@ -6,7 +6,8 @@ import { fetchWithAuth } from '../services/api';
 import { IBatch } from '@poultry-ops/types';
 import {
   Egg, AlertTriangle, DollarSign, ShoppingCart, TrendingUp,
-  Scale, ArrowLeft, Zap, PlusCircle, Calendar, Bird, Home, Layers, RefreshCw
+  Scale, ArrowLeft, Zap, PlusCircle, Calendar, Bird, Home, Layers, RefreshCw,
+  ShieldCheck, Eye, EyeOff
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
@@ -45,6 +46,36 @@ export const BatchDashboardPage: React.FC = () => {
   const [submittingSale, setSubmittingSale] = useState(false);
 
   const isOwner = user?.role === 'owner';
+
+  // bKash-style Password Security Verification Modal state
+  const [securityModalOpen, setSecurityModalOpen] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [securityError, setSecurityError] = useState('');
+  const [verifyingSecurity, setVerifyingSecurity] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleDeleteBatchWithPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!confirmPassword) {
+      setSecurityError('Please enter your account password');
+      return;
+    }
+    setVerifyingSecurity(true);
+    setSecurityError('');
+    try {
+      await fetchWithAuth(`/batches/${batchId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ password: confirmPassword })
+      });
+      setSecurityModalOpen(false);
+      alert(`Flock '${data?.batch.name}' deleted successfully.`);
+      navigate('/batches');
+    } catch (err: any) {
+      setSecurityError(err.message || 'Incorrect password! Security check failed.');
+    } finally {
+      setVerifyingSecurity(false);
+    }
+  };
 
   const loadData = async () => {
     if (!batchId) return;
@@ -205,19 +236,14 @@ export const BatchDashboardPage: React.FC = () => {
 
           {isOwner && (
             <button
-              onClick={async () => {
-                if (!window.confirm(`⚠️ SECURITY AUTHORIZATION REQUIRED:\n\nAre you sure you want to PERMANENTLY DELETE flock '${batch.name}'?\n\nThis will permanently delete all associated daily logs, health records, and expenses. This action CANNOT be undone.`)) return;
-                try {
-                  await fetchWithAuth(`/batches/${batch._id}`, { method: 'DELETE' });
-                  alert(`Flock '${batch.name}' deleted successfully.`);
-                  navigate('/batches');
-                } catch (err: any) {
-                  alert(err.message || 'Failed to delete batch');
-                }
+              onClick={() => {
+                setConfirmPassword('');
+                setSecurityError('');
+                setSecurityModalOpen(true);
               }}
               className="btn btn-secondary"
               style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-              title="Delete Flock with Auth Confirmation"
+              title="Delete Flock with Password Verification"
             >
               🗑️ Delete Flock
             </button>
@@ -739,6 +765,90 @@ export const BatchDashboardPage: React.FC = () => {
                 <button type="button" onClick={() => setSaleModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
                 <button type="submit" disabled={submittingSale} className="btn btn-primary" style={{ flex: 1, backgroundColor: '#3D6B8C' }}>
                   {submittingSale ? 'Recording...' : '💰 Record Income'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🔐 BKASH-STYLE PASSWORD SECURITY VERIFICATION MODAL */}
+      {securityModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(45, 42, 38, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '440px', padding: '28px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '2px solid #E2136E', boxShadow: '0 20px 40px rgba(226, 19, 110, 0.2)' }}>
+            
+            {/* Header with bKash Security Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid #E8E2D8' }}>
+              <div style={{ backgroundColor: '#E2136E', color: '#FFFFFF', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldCheck size={26} />
+              </div>
+              <div>
+                <span className="badge" style={{ backgroundColor: 'rgba(226, 19, 110, 0.12)', color: '#E2136E', fontWeight: 800, fontSize: '0.75rem' }}>
+                  bKash-Style Security Verification
+                </span>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#2D2A26', marginTop: '2px' }}>Enter Password to Authorize</h2>
+              </div>
+            </div>
+
+            {/* Account & Action Card */}
+            <div style={{ backgroundColor: '#F4EFE6', padding: '14px', borderRadius: '10px', marginBottom: '16px', border: '1px solid #E8E2D8' }}>
+              <div style={{ fontSize: '0.78rem', color: '#6B655C', fontWeight: 700, textTransform: 'uppercase' }}>Account User</div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#2D2A26', marginBottom: '8px' }}>👤 {user?.name} ({user?.email})</div>
+              
+              <div style={{ fontSize: '0.78rem', color: '#6B655C', fontWeight: 700, textTransform: 'uppercase' }}>Target Action</div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#B23A2F' }}>
+                🗑️ Delete Flock '{data?.batch.name}'
+              </div>
+            </div>
+
+            {securityError && (
+              <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.85rem', fontWeight: 700, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                {securityError}
+              </div>
+            )}
+
+            <form onSubmit={handleDeleteBatchWithPassword}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#2D2A26', marginBottom: '6px' }}>
+                  🔑 Enter Your Account Password *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoFocus
+                    placeholder="Enter login password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input-field"
+                    style={{ paddingRight: '40px', fontSize: '1rem', border: '2px solid #E2136E' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B655C', cursor: 'pointer' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSecurityModalOpen(false)}
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={verifyingSecurity}
+                  className="btn btn-primary"
+                  style={{ flex: 1, backgroundColor: '#B23A2F', fontWeight: 800 }}
+                >
+                  {verifyingSecurity ? 'Verifying...' : '⚡ Confirm & Proceed'}
                 </button>
               </div>
             </form>
