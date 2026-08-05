@@ -4,6 +4,7 @@ import {
   TextInput, Modal, RefreshControl,
   StyleSheet, ActivityIndicator
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
@@ -240,16 +241,21 @@ export const ExpensesScreen: React.FC = () => {
             </Text>
 
             <Text style={common.label}>Expense Category *</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-              {CATEGORIES.map(cat => (
-                <TouchableOpacity key={cat} onPress={() => setExpCategory(cat)}
-                  style={[s.catChip, expCategory === cat && { backgroundColor: categoryColor[cat] || colors.brand, borderColor: categoryColor[cat] || colors.brand }]}>
-                  <Text style={{ color: expCategory === cat ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'capitalize' }}>
-                    {cat === 'feed' ? '🌾 feed stock' : cat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={s.pickerWrapper}>
+              <Picker
+                selectedValue={expCategory}
+                onValueChange={(val) => setExpCategory(val)}
+                dropdownIconColor={colors.textMain}
+                style={s.pickerStyle}
+              >
+                <Picker.Item label="🌾 Feed Stock (খাবার Stock)" value="feed" />
+                <Picker.Item label="💊 Medicine (ঔষধ / ভ্যাকসিন)" value="medicine" />
+                <Picker.Item label="👷 Labor (শ্রমিক বেতন)" value="labor" />
+                <Picker.Item label="💡 Utility (বিদ্যুৎ / পানি)" value="utility" />
+                <Picker.Item label="🔧 Equipment (যন্ত্রপাতি)" value="equipment" />
+                <Picker.Item label="📝 Other (অন্যান্য)" value="other" />
+              </Picker>
+            </View>
 
             <DatePickerInput
               label="Purchase / Expense Date *"
@@ -261,30 +267,21 @@ export const ExpensesScreen: React.FC = () => {
             {expCategory === 'feed' ? (
               <View>
                 <Text style={common.label}>Feed Category *</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-                  {[
-                    { id: 'layer_starter', label: '🥚 Layer Starter' },
-                    { id: 'layer_grower', label: '🥚 Layer Grower' },
-                    { id: 'layer_layer_1', label: '🥚 Layer Layer-1' },
-                    { id: 'broiler_starter', label: '🍗 Broiler Starter' },
-                    { id: 'broiler_grower', label: '🍗 Broiler Grower' },
-                    { id: 'broiler_finisher', label: '🍗 Broiler Finisher' },
-                  ].map(item => (
-                    <TouchableOpacity
-                      key={item.id}
-                      onPress={() => setFeedCategory(item.id)}
-                      style={[
-                        s.catChip,
-                        { marginRight: 8 },
-                        feedCategory === item.id ? { backgroundColor: colors.amber, borderColor: colors.amber } : { borderColor: colors.border }
-                      ]}
-                    >
-                      <Text style={{ color: feedCategory === item.id ? '#fff' : colors.textMain, fontWeight: '700', fontSize: 12 }}>
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                <View style={[s.pickerWrapper, { borderColor: colors.amber }]}>
+                  <Picker
+                    selectedValue={feedCategory}
+                    onValueChange={(val) => setFeedCategory(val)}
+                    dropdownIconColor={colors.amber}
+                    style={s.pickerStyle}
+                  >
+                    <Picker.Item label="🥚 Layer Starter" value="layer_starter" />
+                    <Picker.Item label="🥚 Layer Grower" value="layer_grower" />
+                    <Picker.Item label="🥚 Layer Layer-1" value="layer_layer_1" />
+                    <Picker.Item label="🍗 Broiler Starter" value="broiler_starter" />
+                    <Picker.Item label="🍗 Broiler Grower" value="broiler_grower" />
+                    <Picker.Item label="🍗 Broiler Finisher" value="broiler_finisher" />
+                  </Picker>
+                </View>
 
                 <Text style={common.label}>Number of Bags (50kg/bag) *</Text>
                 <TextInput style={common.input} keyboardType="numeric" placeholder="10" placeholderTextColor="#64748b" value={stockBags} onChangeText={setStockBags} />
@@ -301,14 +298,18 @@ export const ExpensesScreen: React.FC = () => {
             ) : (
               <View>
                 <Text style={common.label}>Select Flock / Batch *</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-                  {batches.map(b => (
-                    <TouchableOpacity key={b._id} onPress={() => setExpBatchId(b._id)}
-                      style={[s.catChip, expBatchId === b._id && { backgroundColor: colors.brand, borderColor: colors.brand }]}>
-                      <Text style={{ color: expBatchId === b._id ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: '600' }}>🐔 {b.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                <View style={s.pickerWrapper}>
+                  <Picker
+                    selectedValue={expBatchId}
+                    onValueChange={(val) => setExpBatchId(val)}
+                    dropdownIconColor={colors.textMain}
+                    style={s.pickerStyle}
+                  >
+                    {batches.map(b => (
+                      <Picker.Item key={b._id} label={`🐔 ${b.name} (${b.breed})`} value={b._id} />
+                    ))}
+                  </Picker>
+                </View>
 
                 <Text style={common.label}>Amount (BDT ৳) *</Text>
                 <TextInput style={common.input} keyboardType="numeric" placeholder="5000" placeholderTextColor="#64748b" value={expAmount} onChangeText={setExpAmount} />
@@ -337,14 +338,18 @@ export const ExpensesScreen: React.FC = () => {
             <Text style={{ color: colors.textMain, fontSize: 18, fontWeight: '800', marginBottom: 16 }}>Add Health Record</Text>
             
             <Text style={common.label}>Select Flock / Batch *</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-              {batches.map(b => (
-                <TouchableOpacity key={b._id} onPress={() => setHealthBatchId(b._id)}
-                  style={[s.catChip, healthBatchId === b._id && { backgroundColor: colors.brand, borderColor: colors.brand }]}>
-                  <Text style={{ color: healthBatchId === b._id ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: '600' }}>🐔 {b.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={s.pickerWrapper}>
+              <Picker
+                selectedValue={healthBatchId}
+                onValueChange={(val) => setHealthBatchId(val)}
+                dropdownIconColor={colors.textMain}
+                style={s.pickerStyle}
+              >
+                {batches.map(b => (
+                  <Picker.Item key={b._id} label={`🐔 ${b.name} (${b.breed})`} value={b._id} />
+                ))}
+              </Picker>
+            </View>
 
             <DatePickerInput
               label="Record Date *"
@@ -353,15 +358,20 @@ export const ExpensesScreen: React.FC = () => {
               style={{ marginBottom: 14 }}
             />
 
-            <Text style={common.label}>Type</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-              {HEALTH_TYPES.map(t => (
-                <TouchableOpacity key={t} onPress={() => setHealthType(t)}
-                  style={[s.catChip, healthType === t && { backgroundColor: colors.brand, borderColor: colors.brand }]}>
-                  <Text style={{ color: healthType === t ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: '600', textTransform: 'capitalize' }}>{t}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <Text style={common.label}>Health Record Type *</Text>
+            <View style={s.pickerWrapper}>
+              <Picker
+                selectedValue={healthType}
+                onValueChange={(val) => setHealthType(val)}
+                dropdownIconColor={colors.textMain}
+                style={s.pickerStyle}
+              >
+                <Picker.Item label="💉 Vaccination (টিকা)" value="vaccination" />
+                <Picker.Item label="🩺 Checkup (চিকিৎসা পরীক্ষা)" value="checkup" />
+                <Picker.Item label="💉 Injection (ইনজেকশন)" value="injection" />
+                <Picker.Item label="💊 Treatment (চিকিৎসা)" value="treatment" />
+              </Picker>
+            </View>
 
             <Text style={common.label}>Description *</Text>
             <TextInput style={common.input} placeholder="e.g. Gumboro Vaccine 1st Dose" placeholderTextColor="#64748b" value={healthDesc} onChangeText={setHealthDesc} />
@@ -398,4 +408,17 @@ const s = StyleSheet.create({
   catChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
   modalCard: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '85%' },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceElevated,
+    marginBottom: 14,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  pickerStyle: {
+    color: colors.textMain,
+    height: 50,
+  },
 });

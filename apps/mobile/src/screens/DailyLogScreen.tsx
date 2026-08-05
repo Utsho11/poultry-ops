@@ -4,6 +4,7 @@ import {
   TextInput, Modal, RefreshControl,
   StyleSheet, ActivityIndicator
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
@@ -178,9 +179,29 @@ export const DailyLogScreen: React.FC = () => {
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalCard}>
-                />
+            <Text style={{ color: colors.textMain, fontSize: 16, fontWeight: '800', marginBottom: 12 }}>⚡ Log Daily Yield & Feeding</Text>
 
-                {/* Crates & Loose Eggs Collection Input */}
+            {/* Batch selector */}
+            <Text style={common.label}>Select Batch *</Text>
+            <View style={s.pickerWrapper}>
+              <Picker
+                selectedValue={selectedBatchId}
+                onValueChange={(val) => setSelectedBatchId(val)}
+                dropdownIconColor={colors.brand}
+                style={s.pickerStyle}
+              >
+                {batches.map(b => (
+                  <Picker.Item key={b._id} label={`🐔 ${b.name} (${b.breed})`} value={b._id} />
+                ))}
+              </Picker>
+            </View>
+
+            <DatePickerInput
+              label="📅 Log Date *"
+              value={logDate}
+              onChange={setLogDate}
+              style={{ marginBottom: 14 }}
+            />
                 <View style={s.crateBox}>
                   <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 14, marginBottom: 8 }}>🥚 Eggs Collected (1 Crate = 30 Eggs)</Text>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -257,7 +278,6 @@ export const DailyLogScreen: React.FC = () => {
                     {submitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={common.btnText}>Save Log</Text>}
                   </TouchableOpacity>
                 </View>
-              </View>
           </ScrollView>
         </View>
       </Modal>
@@ -279,5 +299,18 @@ const s = StyleSheet.create({
   feedBox: { backgroundColor: 'rgba(217, 164, 65, 0.1)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(217, 164, 65, 0.3)', marginBottom: 14 },
   tabBtn: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.surfaceElevated },
   tabBtnActiveLog: { borderColor: colors.secondary, backgroundColor: 'rgba(74, 124, 89, 0.15)' },
-  tabBtnActiveStock: { borderColor: colors.amber, backgroundColor: 'rgba(217, 164, 65, 0.15)' }
+  tabBtnActiveStock: { borderColor: colors.amber, backgroundColor: 'rgba(217, 164, 65, 0.15)' },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceElevated,
+    marginBottom: 14,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  pickerStyle: {
+    color: colors.textMain,
+    height: 50,
+  },
 });
