@@ -40,13 +40,30 @@ export const dailyLogSchema = z.object({
 });
 
 export const expenseSchema = z.object({
-  batchId: z.string().min(1, 'Batch ID is required'),
-  category: z.enum(['feed', 'medicine', 'labor', 'utility', 'equipment', 'other']),
+  batchId: z.string().min(1, 'Batch ID is required').optional(),
+  category: z.enum(['medicine', 'labor', 'utility', 'equipment', 'other']),
   amount: z.number().positive('Expense amount must be positive'),
   currency: z.string().default('BDT'),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   note: z.string().optional(),
   receiptUrl: z.string().optional()
+});
+
+export const feedCategoryEnum = z.enum([
+  'layer_starter',
+  'layer_grower',
+  'layer_layer_1',
+  'broiler_starter',
+  'broiler_grower',
+  'broiler_finisher'
+]);
+
+export const feedStockSchema = z.object({
+  category: feedCategoryEnum,
+  bagPrice: z.coerce.number().positive('Bag price must be greater than 0'),
+  bags: z.coerce.number().positive('Number of bags must be greater than 0'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  note: z.string().optional()
 });
 
 export const customerSchema = z.object({
@@ -119,3 +136,4 @@ export type SaleInput = z.infer<typeof saleSchema>;
 export type PaymentInput = z.infer<typeof paymentSchema>;
 export type HealthRecordInput = z.infer<typeof healthRecordSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type FeedStockInput = z.infer<typeof feedStockSchema>;

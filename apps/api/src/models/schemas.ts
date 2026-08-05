@@ -123,14 +123,12 @@ export const DailyLogModel = model<IDailyLogDoc>('DailyLog', dailyLogSchema);
 export interface IExpenseDoc extends Document {
   farmId: Schema.Types.ObjectId;
   batchId?: Schema.Types.ObjectId;
-  category: 'feed' | 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
+  category: 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
   amount: number;
   currency: string;
   date: string;
   note?: string;
   receiptUrl?: string;
-  feedBags?: number;
-  feedKg?: number;
   recordedBy: Schema.Types.ObjectId;
   createdAt: Date;
 }
@@ -138,20 +136,67 @@ export interface IExpenseDoc extends Document {
 const expenseSchema = new Schema<IExpenseDoc>({
   farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
   batchId: { type: Schema.Types.ObjectId, ref: 'Batch' },
-  category: { type: String, enum: ['feed', 'medicine', 'labor', 'utility', 'equipment', 'other'], required: true },
+  category: { type: String, enum: ['medicine', 'labor', 'utility', 'equipment', 'other'], required: true },
   amount: { type: Number, required: true, min: 0 },
   currency: { type: String, default: 'BDT' },
   date: { type: String, required: true },
   note: { type: String },
   receiptUrl: { type: String },
-  feedBags: { type: Number, min: 0 },
-  feedKg: { type: Number, min: 0 },
   recordedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }
 });
 
 expenseSchema.index({ farmId: 1, date: -1 });
 export const ExpenseModel = model<IExpenseDoc>('Expense', expenseSchema);
+
+// Feed Stock Schema
+export type FeedCategoryType =
+  | 'layer_starter'
+  | 'layer_grower'
+  | 'layer_layer_1'
+  | 'broiler_starter'
+  | 'broiler_grower'
+  | 'broiler_finisher';
+
+export interface IFeedStockDoc extends Document {
+  farmId: Schema.Types.ObjectId;
+  category: FeedCategoryType;
+  bagPrice: number;
+  bags: number;
+  totalKg: number;
+  totalCost: number;
+  date: string;
+  note?: string;
+  recordedBy: Schema.Types.ObjectId;
+  createdAt: Date;
+}
+
+const feedStockSchema = new Schema<IFeedStockDoc>({
+  farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
+  category: {
+    type: String,
+    enum: [
+      'layer_starter',
+      'layer_grower',
+      'layer_layer_1',
+      'broiler_starter',
+      'broiler_grower',
+      'broiler_finisher'
+    ],
+    required: true
+  },
+  bagPrice: { type: Number, required: true, min: 0 },
+  bags: { type: Number, required: true, min: 0 },
+  totalKg: { type: Number, required: true, min: 0 },
+  totalCost: { type: Number, required: true, min: 0 },
+  date: { type: String, required: true },
+  note: { type: String },
+  recordedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+feedStockSchema.index({ farmId: 1, date: -1 });
+export const FeedStockModel = model<IFeedStockDoc>('FeedStock', feedStockSchema);
 
 // Customer Schema
 export interface ICustomerDoc extends Document {

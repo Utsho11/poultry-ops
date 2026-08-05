@@ -9,11 +9,10 @@ import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
 import { DatePickerInput } from '../components/DatePickerInput';
 
-const CATEGORIES = ['feed', 'medicine', 'labor', 'utility', 'equipment', 'other'];
+const CATEGORIES = ['medicine', 'labor', 'utility', 'equipment', 'other'];
 const HEALTH_TYPES = ['vaccination', 'checkup', 'injection', 'treatment'];
 
 const categoryColor: Record<string, string> = {
-  feed: colors.brand,
   medicine: colors.blue,
   labor: colors.amber,
   utility: colors.purple,
@@ -33,7 +32,7 @@ export const ExpensesScreen: React.FC = () => {
   // Expense form
   const [expModal, setExpModal] = useState(false);
   const [expBatchId, setExpBatchId] = useState('');
-  const [expCategory, setExpCategory] = useState('feed');
+  const [expCategory, setExpCategory] = useState('medicine');
   const [expAmount, setExpAmount] = useState('');
   const [expDate, setExpDate] = useState(new Date().toISOString().split('T')[0]);
   const [expNote, setExpNote] = useState('');

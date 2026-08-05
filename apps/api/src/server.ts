@@ -12,6 +12,7 @@ import paymentRoutes from './routes/payments';
 import healthRoutes from './routes/health';
 import reportRoutes from './routes/reports';
 import userRoutes from './routes/users';
+import feedStockRoutes from './routes/feedStock';
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use('/api/health-records', healthRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/team', userRoutes); // Alias for team management
+app.use('/api/feed-stock', feedStockRoutes);
 
 // Error Handler
 app.use((err: any, req: Request, res: Response, next: any) => {

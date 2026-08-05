@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { dailyLogSchema } from '@poultry-ops/validation';
-import { DailyLogModel, BatchModel, ExpenseModel } from '../models/schemas';
+import { DailyLogModel, BatchModel, FeedStockModel } from '../models/schemas';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -18,8 +18,8 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     if (batchId) query.batchId = batchId;
     if (from || to) {
       query.date = {};
-      if (from) query.date.$gte = from;
-      if (to) query.date.$lte = to;
+      if (from) query.date.$gte = from as string;
+      if (to) query.date.$lte = to as string;
     }
 
     const logs = await DailyLogModel.find(query).sort({ date: -1 }).populate('recordedBy', 'name role');
@@ -29,7 +29,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Submit daily log
+// Create daily log entry
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     const parseResult = dailyLogSchema.safeParse(req.body);
@@ -39,34 +39,30 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 
     const { batchId, date, eggCount, brokenEggCount, deadCount, feedGivenKg, waterGivenLiters, medicineGiven, notes } = parseResult.data;
 
-    // Verify batch belongs to tenant
+    // Verify batch belongs to farm
     const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
     if (!batch) {
-      return res.status(404).json({ error: 'Batch not found or unauthorized' });
+      return res.status(404).json({ error: 'Batch not found' });
     }
 
-    // Check if log already exists for this date + batch
+    // Check if log already exists for this date and batch
     const existingLog = await DailyLogModel.findOne({ farmId: req.farmId, batchId, date });
     if (existingLog) {
       return res.status(409).json({ error: `A daily log entry already exists for batch '${batch.name}' on ${date}` });
     }
 
-    // Check Feed Stock availability limit
+    // Check Feed Stock availability limit from FeedStockModel
     if (feedGivenKg > 0) {
-      const feedStockAgg = await ExpenseModel.aggregate([
-        { $match: { farmId: req.farmId, category: 'feed' } },
+      const feedStockAgg = await FeedStockModel.aggregate([
+        { $match: { farmId: req.farmId } },
         {
           $group: {
             _id: null,
-            totalKg: { $sum: '$feedKg' },
-            totalAmount: { $sum: '$amount' }
+            totalKg: { $sum: '$totalKg' }
           }
         }
       ]);
-      let totalStockKg = feedStockAgg[0]?.totalKg || 0;
-      if (totalStockKg === 0 && (feedStockAgg[0]?.totalAmount || 0) > 0) {
-        totalStockKg = Math.round((feedStockAgg[0].totalAmount / 2500) * 50);
-      }
+      const totalStockKg = feedStockAgg[0]?.totalKg || 0;
 
       // Sum all previously logged feed
       const loggedFeedAgg = await DailyLogModel.aggregate([
@@ -79,7 +75,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       if (totalStockKg > 0 && feedGivenKg > availableStockKg) {
         const availBags = (availableStockKg / 50).toFixed(1);
         return res.status(400).json({
-          error: `Invalid Feed Amount! You entered ${feedGivenKg} kg feed, but available Store Feed Stock is only ${availableStockKg.toLocaleString()} kg (${availBags} Bags). Please buy/add feed stock first.`
+          error: `Invalid Feed Amount! You entered ${feedGivenKg} kg feed, but available Store Feed Stock is only ${availableStockKg.toLocaleString()} kg (${availBags} Bags). Please add feed stock first.`
         });
       }
     }

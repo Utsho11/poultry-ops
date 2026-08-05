@@ -32,6 +32,7 @@ export const DailyLogPage: React.FC = () => {
 
   // Store Feed Stock Form fields
   const [stockDate, setStockDate] = useState(new Date().toISOString().split('T')[0]);
+  const [feedCategory, setFeedCategory] = useState<'layer_starter' | 'layer_grower' | 'layer_layer_1' | 'broiler_starter' | 'broiler_grower' | 'broiler_finisher'>('layer_layer_1');
   const [stockBags, setStockBags] = useState<number>(10);
   const [bagPrice, setBagPrice] = useState<number>(2500);
   const [stockBatchId, setStockBatchId] = useState('');
@@ -91,19 +92,24 @@ export const DailyLogPage: React.FC = () => {
           eggCount: totalCalculatedEggs,
           brokenEggCount: Number(brokenEggCount),
           deadCount: Number(deadCount),
-          feedGivenKg: totalFeedGivenKg,
+          feedGivenKg: Number(totalFeedGivenKg),
           waterGivenLiters: Number(waterGivenLiters),
           notes
         })
       });
 
-      setSuccessMsg(`Daily log saved! Recorded ${formatEggCount(totalCalculatedEggs)} and ${totalFeedGivenKg} kg (${feedBags} Bags + ${feedLooseKg} kg) feed given.`);
+      setSuccessMsg(`Daily log for batch saved! Egg Yield: ${formatEggCount(totalCalculatedEggs)}, Feed: ${totalFeedGivenKg} kg (${feedBags} Bags + ${feedLooseKg} kg).`);
       setShowForm(false);
       setCrates(0);
       setLooseEggs(0);
+      setBrokenEggCount(0);
+      setDeadCount(0);
+      setFeedBags(1);
+      setFeedLooseKg(0);
+      setNotes('');
       loadData();
     } catch (err: any) {
-      setError(err.message || 'Failed to submit log entry');
+      setError(err.message || 'Failed to save daily log');
     } finally {
       setSubmitting(false);
     }
@@ -111,32 +117,25 @@ export const DailyLogPage: React.FC = () => {
 
   const handleSubmitStoreFeedStock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (stockBags <= 0 || bagPrice <= 0) {
-      setError('Please enter valid Bags and Price per Bag');
-      return;
-    }
-
     setSubmittingStock(true);
     setError('');
     setSuccessMsg('');
 
     const totalKgAdded = stockBags * 50;
-    const totalExpenseAmount = stockBags * bagPrice;
-    const expenseNote = `Purchased ${stockBags} Bags (${totalKgAdded.toLocaleString()} kg) of Feed @ ৳${bagPrice.toLocaleString()}/bag${stockVendor ? ` from ${stockVendor}` : ''}`;
 
     try {
-      await fetchWithAuth('/expenses', {
+      await fetchWithAuth('/feed-stock', {
         method: 'POST',
         body: JSON.stringify({
-          batchId: stockBatchId || undefined,
-          category: 'feed',
-          amount: totalExpenseAmount,
+          category: feedCategory,
+          bagPrice: Number(bagPrice),
+          bags: Number(stockBags),
           date: stockDate,
-          note: expenseNote
+          note: stockVendor ? `Vendor: ${stockVendor}` : undefined
         })
       });
 
-      setSuccessMsg(`🌾 Success! Added ${stockBags} Bags (${totalKgAdded.toLocaleString()} kg) to Feed Stock & recorded ৳${totalExpenseAmount.toLocaleString()} expense.`);
+      setSuccessMsg(`🌾 Success! Added ${stockBags} Bags (${totalKgAdded.toLocaleString()} kg) to Store Feed Stock (${feedCategory.toUpperCase().replace('_', ' ')})!`);
       setShowForm(false);
       setStockBags(10);
       setBagPrice(2500);
@@ -322,12 +321,18 @@ export const DailyLogPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Assign Batch (Optional)</label>
-                  <select value={stockBatchId} onChange={(e) => setStockBatchId(e.target.value)} className="input-field">
-                    <option value="">-- All / General Stock --</option>
-                    {batches.map(b => (
-                      <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>
-                    ))}
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>Feed Category *</label>
+                  <select value={feedCategory} onChange={(e: any) => setFeedCategory(e.target.value)} className="input-field" required>
+                    <optgroup label="🥚 Layer Feed Categories">
+                      <option value="layer_starter">Layer Starter</option>
+                      <option value="layer_grower">Layer Grower</option>
+                      <option value="layer_layer_1">Layer Layer-1</option>
+                    </optgroup>
+                    <optgroup label="🍗 Broiler Feed Categories">
+                      <option value="broiler_starter">Broiler Starter</option>
+                      <option value="broiler_grower">Broiler Grower</option>
+                      <option value="broiler_finisher">Broiler Finisher</option>
+                    </optgroup>
                   </select>
                 </div>
               </div>

@@ -18,7 +18,7 @@ export const ExpensesHealthPage: React.FC = () => {
   // Expense form state
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [expBatchId, setExpBatchId] = useState('');
-  const [expCategory, setExpCategory] = useState<'feed' | 'medicine' | 'labor' | 'utility' | 'equipment' | 'other'>('feed');
+  const [expCategory, setExpCategory] = useState<'medicine' | 'labor' | 'utility' | 'equipment' | 'other'>('medicine');
   const [expAmount, setExpAmount] = useState<number>(5000);
   const [expDate, setExpDate] = useState(new Date().toISOString().split('T')[0]);
   const [expNote, setExpNote] = useState('');
@@ -307,7 +307,6 @@ export const ExpensesHealthPage: React.FC = () => {
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Category</label>
                 <select value={expCategory} onChange={(e) => setExpCategory(e.target.value as any)} className="input-field">
-                  <option value="feed">Feed (খাবার)</option>
                   <option value="medicine">Medicine (ঔষধ / ভ্যাকসিন)</option>
                   <option value="labor">Labor (শ্রমিক বেতন)</option>
                   <option value="utility">Utility (বিদ্যুৎ / পানি)</option>

@@ -36,6 +36,7 @@ export const DailyLogScreen: React.FC = () => {
 
   // Store Feed Stock form states
   const [stockDate, setStockDate] = useState(new Date().toISOString().split('T')[0]);
+  const [feedCategory, setFeedCategory] = useState<string>('layer_layer_1');
   const [stockBags, setStockBags] = useState('10');
   const [bagPrice, setBagPrice] = useState('2500');
   const [stockVendor, setStockVendor] = useState('');
@@ -65,14 +66,10 @@ export const DailyLogScreen: React.FC = () => {
   const isFeedExceeded = (summaryData?.purchasedFeedKg || 0) > 0 && totalFeedGivenKg > availableStockKg;
 
   const handleSubmit = async () => {
-    if (!selectedBatchId) { showAlert('Error', 'Select a batch first'); return; }
-    if (!logDate) { showAlert('Error', 'Please enter a valid date (YYYY-MM-DD)'); return; }
-
-    if (isFeedExceeded) {
-      showAlert('Invalid Feed Amount', `Total feed (${totalFeedGivenKg} kg) exceeds available stock (${availableStockKg} kg / ${summaryData?.availableFeedStockBags} Bags).`);
+    if (!selectedBatchId) {
+      showAlert('Validation Error', 'Please select an active flock/batch');
       return;
     }
-
     setSubmitting(true);
     try {
       await apiFetch('/logs', {
@@ -81,10 +78,10 @@ export const DailyLogScreen: React.FC = () => {
           batchId: selectedBatchId,
           date: logDate,
           eggCount: totalCalculatedEggs,
-          brokenEggCount: Number(brokenEggCount),
-          deadCount: Number(deadCount),
-          feedGivenKg: totalFeedGivenKg,
-          waterGivenLiters: Number(waterGivenLiters),
+          brokenEggCount: Number(brokenEggCount || 0),
+          deadCount: Number(deadCount || 0),
+          feedGivenKg: Number(totalFeedGivenKg || 0),
+          waterGivenLiters: Number(waterGivenLiters || 0),
           notes
         })
       }, token);
@@ -108,21 +105,20 @@ export const DailyLogScreen: React.FC = () => {
     }
     setSubmittingStock(true);
     const totalKg = numBags * 50;
-    const totalCost = numBags * numPrice;
     try {
-      await apiFetch('/expenses', {
+      await apiFetch('/feed-stock', {
         method: 'POST',
         body: JSON.stringify({
-          batchId: selectedBatchId || undefined,
-          category: 'feed',
-          amount: totalCost,
+          category: feedCategory,
+          bagPrice: numPrice,
+          bags: numBags,
           date: stockDate,
-          note: `Purchased ${numBags} Bags (${totalKg} kg) of Feed @ ৳${numPrice}/bag${stockVendor ? ` from ${stockVendor}` : ''}`
+          note: stockVendor ? `Vendor: ${stockVendor}` : undefined
         })
       }, token);
       setModalVisible(false);
       load();
-      showAlert('Success', `🌾 Added ${numBags} Bags (${totalKg} kg) to Feed Stock & logged ৳${totalCost.toLocaleString()} expense!`);
+      showAlert('Success', `🌾 Added ${numBags} Bags (${totalKg} kg) to Store Feed Stock (${feedCategory.toUpperCase().replace('_', ' ')})!`);
     } catch (err: any) {
       showAlert('Error', err.message || 'Failed to add feed stock');
     } finally { setSubmittingStock(false); }
@@ -319,6 +315,32 @@ export const DailyLogScreen: React.FC = () => {
                   onChange={setStockDate}
                   style={{ marginBottom: 14 }}
                 />
+
+                <Text style={common.label}>Feed Category *</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+                  {[
+                    { id: 'layer_starter', label: '🥚 Layer Starter' },
+                    { id: 'layer_grower', label: '🥚 Layer Grower' },
+                    { id: 'layer_layer_1', label: '🥚 Layer Layer-1' },
+                    { id: 'broiler_starter', label: '🍗 Broiler Starter' },
+                    { id: 'broiler_grower', label: '🍗 Broiler Grower' },
+                    { id: 'broiler_finisher', label: '🍗 Broiler Finisher' },
+                  ].map(item => (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => setFeedCategory(item.id)}
+                      style={[
+                        s.chip,
+                        { marginRight: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+                        feedCategory === item.id ? { backgroundColor: colors.amber, borderColor: colors.amber } : { borderColor: colors.border }
+                      ]}
+                    >
+                      <Text style={{ color: feedCategory === item.id ? '#fff' : colors.textMain, fontWeight: '700', fontSize: 12 }}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
 
                 <Text style={common.label}>Number of Feed Bags Purchased *</Text>
                 <TextInput style={common.input} keyboardType="numeric" value={stockBags} onChangeText={setStockBags} placeholder="10" />

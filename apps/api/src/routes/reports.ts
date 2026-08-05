@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import mongoose from 'mongoose';
-import { DailyLogModel, ExpenseModel, BatchModel, HealthRecordModel, SaleModel, CustomerModel } from '../models/schemas';
+import { DailyLogModel, ExpenseModel, BatchModel, HealthRecordModel, SaleModel, CustomerModel, FeedStockModel } from '../models/schemas';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -88,7 +88,7 @@ router.get('/summary', async (req: AuthRequest, res: Response) => {
     ]);
 
     const costByCategory: Record<string, number> = {
-      feed: 0, medicine: 0, labor: 0, utility: 0, equipment: 0, other: 0
+      medicine: 0, labor: 0, utility: 0, equipment: 0, other: 0
     };
 
     let totalCost = 0;
@@ -180,21 +180,17 @@ router.get('/summary', async (req: AuthRequest, res: Response) => {
 
     const feedPerChickenPercentage = Number(((feedPerChickenGrams / 110) * 100).toFixed(1));
 
-    // Calculate Total Purchased Feed Stock
-    const feedStockAgg = await ExpenseModel.aggregate([
-      { $match: { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }], category: 'feed' } },
+    // Calculate Total Purchased Feed Stock from FeedStockModel
+    const feedStockAgg = await FeedStockModel.aggregate([
+      { $match: { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] } },
       {
         $group: {
           _id: null,
-          totalKg: { $sum: '$feedKg' },
-          totalAmount: { $sum: '$amount' }
+          totalKg: { $sum: '$totalKg' }
         }
       }
     ]);
-    let purchasedFeedKg = feedStockAgg[0]?.totalKg || 0;
-    if (purchasedFeedKg === 0 && (feedStockAgg[0]?.totalAmount || 0) > 0) {
-      purchasedFeedKg = Math.round((feedStockAgg[0].totalAmount / 2500) * 50);
-    }
+    const purchasedFeedKg = feedStockAgg[0]?.totalKg || 0;
     const availableFeedStockKg = Math.max(0, purchasedFeedKg - logMetrics.totalFeedKg);
     const availableFeedStockBags = Number((availableFeedStockKg / 50).toFixed(1));
 
@@ -665,7 +661,7 @@ router.get('/batch-dashboard/:batchId', async (req: AuthRequest, res: Response) 
     ]);
 
     const costByCategory: Record<string, number> = {
-      feed: 0, medicine: 0, labor: 0, utility: 0, equipment: 0, other: 0
+      medicine: 0, labor: 0, utility: 0, equipment: 0, other: 0
     };
     let totalExpenses = 0;
     expenseAgg.forEach((item) => {

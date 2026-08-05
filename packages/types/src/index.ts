@@ -1,7 +1,15 @@
 export type UserRole = 'owner' | 'manager' | 'worker';
 export type BatchType = 'layer' | 'broiler';
 export type BatchStatus = 'active' | 'closed';
-export type ExpenseCategory = 'feed' | 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
+export type FeedCategory =
+  | 'layer_starter'
+  | 'layer_grower'
+  | 'layer_layer_1'
+  | 'broiler_starter'
+  | 'broiler_grower'
+  | 'broiler_finisher';
+
+export type ExpenseCategory = 'medicine' | 'labor' | 'utility' | 'equipment' | 'other';
 export type HealthRecordType = 'checkup' | 'vaccination' | 'injection' | 'treatment';
 export type SubscriptionPlan = 'free' | 'pro';
 export type SaleItemType = 'egg' | 'chicken';
@@ -91,6 +99,20 @@ export interface IExpense {
   date: string;
   note?: string;
   receiptUrl?: string;
+  recordedBy: string;
+  createdAt?: string | Date;
+}
+
+export interface IFeedStock {
+  _id: string;
+  farmId: string;
+  category: FeedCategory;
+  bagPrice: number;
+  bags: number;
+  totalKg: number;
+  totalCost: number;
+  date: string;
+  note?: string;
   recordedBy: string;
   createdAt?: string | Date;
 }
