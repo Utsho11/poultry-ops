@@ -89,9 +89,12 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
   const handleOpenCreateSecurity = () => {
     if (!name) { showAlert('Error', 'Batch name is required'); return; }
     if (!startDate) { showAlert('Error', 'Start date is required (YYYY-MM-DD)'); return; }
+    // Close the create modal first (Android can't stack two Modals)
+    setModalVisible(false);
     setSecurityAction('create');
     setConfirmPassword('');
-    setSecurityModalVisible(true);
+    // Use setTimeout so the first modal fully closes before the second opens
+    setTimeout(() => setSecurityModalVisible(true), 300);
   };
 
   const handleOpenDeleteSecurity = (id: string, batchName: string) => {
@@ -116,6 +119,14 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
     setSecurityModalVisible(true);
   };
 
+  const handleCancelSecurity = () => {
+    setSecurityModalVisible(false);
+    // If the user was creating a batch, re-open the create form so they don't lose their inputs
+    if (securityAction === 'create') {
+      setTimeout(() => setModalVisible(true), 300);
+    }
+  };
+
   const handleConfirmSecurityAction = async () => {
     if (!confirmPassword) {
       showAlert('Security Check', 'Please enter your account password');
@@ -135,10 +146,9 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
           })
         }, token);
         setSecurityModalVisible(false);
-        setModalVisible(false);
         setName('');
         setSelectedWorkerIds([]);
-        showAlert('Success', `Flock '${name}' created successfully!`);
+        showAlert('Success', `Flock created successfully!`);
         load();
       } else if (securityAction === 'delete' && batchTarget) {
         await apiFetch(`/batches/${batchTarget.id}`, {
@@ -538,7 +548,7 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
             </View>
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity style={s.cancelBtn} onPress={() => setSecurityModalVisible(false)}>
+              <TouchableOpacity style={s.cancelBtn} onPress={handleCancelSecurity}>
                 <Text style={[s.btnText, { color: colors.textMain }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
