@@ -63,6 +63,8 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleDateChange}
+          onValueChange={handleDateChange}
+          onDismiss={() => setShowPicker(false)}
         />
       )}
     </View>
