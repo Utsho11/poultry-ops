@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { dailyLogSchema } from '@poultry-ops/validation';
-import { DailyLogModel, BatchModel } from '../models/schemas';
+import { DailyLogModel, BatchModel, ExpenseModel } from '../models/schemas';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -49,6 +49,39 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     const existingLog = await DailyLogModel.findOne({ farmId: req.farmId, batchId, date });
     if (existingLog) {
       return res.status(409).json({ error: `A daily log entry already exists for batch '${batch.name}' on ${date}` });
+    }
+
+    // Check Feed Stock availability limit
+    if (feedGivenKg > 0) {
+      const feedStockAgg = await ExpenseModel.aggregate([
+        { $match: { farmId: req.farmId, category: 'feed' } },
+        {
+          $group: {
+            _id: null,
+            totalKg: { $sum: '$feedKg' },
+            totalAmount: { $sum: '$amount' }
+          }
+        }
+      ]);
+      let totalStockKg = feedStockAgg[0]?.totalKg || 0;
+      if (totalStockKg === 0 && (feedStockAgg[0]?.totalAmount || 0) > 0) {
+        totalStockKg = Math.round((feedStockAgg[0].totalAmount / 2500) * 50);
+      }
+
+      // Sum all previously logged feed
+      const loggedFeedAgg = await DailyLogModel.aggregate([
+        { $match: { farmId: req.farmId } },
+        { $group: { _id: null, sum: { $sum: '$feedGivenKg' } } }
+      ]);
+      const totalUsedKg = loggedFeedAgg[0]?.sum || 0;
+      const availableStockKg = Math.max(0, totalStockKg - totalUsedKg);
+
+      if (totalStockKg > 0 && feedGivenKg > availableStockKg) {
+        const availBags = (availableStockKg / 50).toFixed(1);
+        return res.status(400).json({
+          error: `Invalid Feed Amount! You entered ${feedGivenKg} kg feed, but available Store Feed Stock is only ${availableStockKg.toLocaleString()} kg (${availBags} Bags). Please buy/add feed stock first.`
+        });
+      }
     }
 
     // Create log

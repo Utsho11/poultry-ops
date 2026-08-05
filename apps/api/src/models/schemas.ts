@@ -129,6 +129,8 @@ export interface IExpenseDoc extends Document {
   date: string;
   note?: string;
   receiptUrl?: string;
+  feedBags?: number;
+  feedKg?: number;
   recordedBy: Schema.Types.ObjectId;
   createdAt: Date;
 }
@@ -142,6 +144,8 @@ const expenseSchema = new Schema<IExpenseDoc>({
   date: { type: String, required: true },
   note: { type: String },
   receiptUrl: { type: String },
+  feedBags: { type: Number, min: 0 },
+  feedKg: { type: Number, min: 0 },
   recordedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }
 });

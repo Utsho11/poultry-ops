@@ -29,7 +29,7 @@ export const BatchDashboardPage: React.FC = () => {
   const [brokenEggCount, setBrokenEggCount] = useState('0');
   const [deadCount, setDeadCount] = useState('0');
   const [feedBags, setFeedBags] = useState('1');
-  const [feedGivenKg, setFeedGivenKg] = useState('50');
+  const [feedLooseKg, setFeedLooseKg] = useState('0');
   const [waterGivenLiters, setWaterGivenLiters] = useState('');
   const [submittingLog, setSubmittingLog] = useState(false);
 
@@ -68,9 +68,11 @@ export const BatchDashboardPage: React.FC = () => {
   const totalLogEggs = cratesAndLooseToTotal(crates, looseEggs);
   const totalSaleEggQty = saleItemType === 'egg' ? cratesAndLooseToTotal(saleCrates, saleLooseEggs) : Number(saleChickenQty || 0);
 
+  const totalFeedKg = (Number(feedBags || 0) * 50) + Number(feedLooseKg || 0);
+
   const handleSubmitQuickLog = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (totalLogEggs <= 0 || !feedGivenKg || !waterGivenLiters) {
+    if (totalLogEggs <= 0 || totalFeedKg <= 0 || !waterGivenLiters) {
       alert('Please enter Egg count (Crates/Loose), Feed, and Water values');
       return;
     }
@@ -85,12 +87,12 @@ export const BatchDashboardPage: React.FC = () => {
           eggCount: totalLogEggs,
           brokenEggCount: Number(brokenEggCount || 0),
           deadCount: Number(deadCount || 0),
-          feedGivenKg: Number(feedGivenKg),
+          feedGivenKg: totalFeedKg,
           waterGivenLiters: Number(waterGivenLiters),
         })
       });
       setQuickLogOpen(false);
-      setCrates(''); setLooseEggs(''); setFeedGivenKg(''); setWaterGivenLiters('');
+      setCrates(''); setLooseEggs(''); setFeedBags('1'); setFeedLooseKg('0'); setWaterGivenLiters('');
       loadData();
     } catch (err: any) {
       alert(err.message);
@@ -589,16 +591,19 @@ export const BatchDashboardPage: React.FC = () => {
               </div>
 
               <div style={{ backgroundColor: 'rgba(217, 164, 65, 0.08)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(217, 164, 65, 0.25)' }}>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#D9A441', marginBottom: '6px' }}>🌾 Feed Given (Bags & kg) *</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#D9A441', marginBottom: '6px' }}>🌾 Feed Given (Full Bags + Loose kg) *</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#6B655C', marginBottom: '2px' }}>Feed Bags</label>
-                    <input type="number" step="0.1" placeholder="1" value={feedBags} onChange={(e) => { const b = e.target.value; setFeedBags(b); setFeedGivenKg(String(Number(b || 0) * 50)); }} className="input-field" />
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#6B655C', marginBottom: '2px' }}>Full Bags (50kg/bag)</label>
+                    <input type="number" min="0" placeholder="1" value={feedBags} onChange={(e) => setFeedBags(e.target.value)} className="input-field" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#6B655C', marginBottom: '2px' }}>Feed kg (1 Bag = 50kg)</label>
-                    <input type="number" step="0.1" required placeholder="50" value={feedGivenKg} onChange={(e) => { const k = e.target.value; setFeedGivenKg(k); setFeedBags(String((Number(k || 0) / 50).toFixed(1))); }} className="input-field" />
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#6B655C', marginBottom: '2px' }}>Loose kg</label>
+                    <input type="number" min="0" placeholder="0" value={feedLooseKg} onChange={(e) => setFeedLooseKg(e.target.value)} className="input-field" />
                   </div>
+                </div>
+                <div style={{ marginTop: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#D9A441' }}>
+                  Total: {totalFeedKg} kg ({feedBags || 0} Bags + {feedLooseKg || 0} kg)
                 </div>
               </div>
 

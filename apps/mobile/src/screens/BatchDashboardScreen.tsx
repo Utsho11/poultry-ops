@@ -25,7 +25,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
   const [brokenEggCount, setBrokenEggCount] = useState('0');
   const [deadCount, setDeadCount] = useState('0');
   const [feedBags, setFeedBags] = useState('1');
-  const [feedGivenKg, setFeedGivenKg] = useState('50');
+  const [feedLooseKg, setFeedLooseKg] = useState('0');
   const [waterGivenLiters, setWaterGivenLiters] = useState('');
   const [submittingLog, setSubmittingLog] = useState(false);
 
@@ -66,8 +66,10 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
   const totalLogEggs = cratesAndLooseToTotal(crates, looseEggs);
   const totalSaleEggQty = saleItemType === 'egg' ? cratesAndLooseToTotal(saleCrates, saleLooseEggs) : Number(saleChickenQty || 0);
 
+  const totalLogFeedKg = (Number(feedBags || 0) * 50) + Number(feedLooseKg || 0);
+
   const handleQuickLog = async () => {
-    if (totalLogEggs <= 0 || !feedGivenKg || !waterGivenLiters) {
+    if (totalLogEggs <= 0 || totalLogFeedKg <= 0 || !waterGivenLiters) {
       showAlert('Error', 'Please enter Egg count (Crates/Loose), Feed, and Water');
       return;
     }
@@ -82,12 +84,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
           eggCount: totalLogEggs,
           brokenEggCount: Number(brokenEggCount || 0),
           deadCount: Number(deadCount || 0),
-          feedGivenKg: Number(feedGivenKg),
+          feedGivenKg: totalLogFeedKg,
           waterGivenLiters: Number(waterGivenLiters),
         })
       }, token);
       setQuickLogOpen(false);
-      setCrates('0'); setLooseEggs('0'); setFeedGivenKg(''); setWaterGivenLiters('');
+      setCrates('0'); setLooseEggs('0'); setFeedBags('1'); setFeedLooseKg('0'); setWaterGivenLiters('');
       loadData();
       showAlert('Success', `Logged ${formatEggCount(totalLogEggs)} successfully!`);
     } catch (err: any) {
@@ -446,18 +448,21 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
 
               <View style={[s.eggInputBox, { borderColor: 'rgba(217, 164, 65, 0.3)', backgroundColor: 'rgba(217, 164, 65, 0.08)' }]}>
                 <Text style={{ color: colors.amber, fontWeight: '800', fontSize: 13, marginBottom: 6 }}>
-                  🌾 Feed Given (Bags & kg)
+                  🌾 Feed Given (Full Bags + Loose kg)
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={common.label}>Feed Bags</Text>
-                    <TextInput style={common.input} keyboardType="numeric" value={feedBags} onChangeText={(txt) => { setFeedBags(txt); setFeedGivenKg(String(Number(txt || 0) * 50)); }} />
+                    <Text style={common.label}>Full Bags (50kg/bag)</Text>
+                    <TextInput style={common.input} keyboardType="numeric" value={feedBags} onChangeText={setFeedBags} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={common.label}>Feed kg (1 Bag=50kg)</Text>
-                    <TextInput style={common.input} keyboardType="numeric" value={feedGivenKg} onChangeText={(txt) => { setFeedGivenKg(txt); setFeedBags(String((Number(txt || 0) / 50).toFixed(1))); }} />
+                    <Text style={common.label}>Loose kg</Text>
+                    <TextInput style={common.input} keyboardType="numeric" value={feedLooseKg} onChangeText={setFeedLooseKg} />
                   </View>
                 </View>
+                <Text style={{ color: colors.amber, fontWeight: '700', fontSize: 12, marginTop: 6 }}>
+                  Total: {totalLogFeedKg} kg ({feedBags || 0} Bags + {feedLooseKg || 0} kg)
+                </Text>
               </View>
 
               <Text style={common.label}>Water Given (L)</Text>

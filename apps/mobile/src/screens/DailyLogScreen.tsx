@@ -20,6 +20,7 @@ export const DailyLogScreen: React.FC = () => {
 
   // Form Section: 'log' vs 'stock'
   const [formSection, setFormSection] = useState<'log' | 'stock'>('log');
+  const [summaryData, setSummaryData] = useState<any>(null);
 
   const [selectedBatchId, setSelectedBatchId] = useState('');
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
@@ -28,7 +29,7 @@ export const DailyLogScreen: React.FC = () => {
   const [brokenEggCount, setBrokenEggCount] = useState('0');
   const [deadCount, setDeadCount] = useState('0');
   const [feedBags, setFeedBags] = useState('1');
-  const [feedGivenKg, setFeedGivenKg] = useState('50');
+  const [feedLooseKg, setFeedLooseKg] = useState('5');
   const [waterGivenLiters, setWaterGivenLiters] = useState('100');
   const [notes, setNotes] = useState('');
 
@@ -41,13 +42,15 @@ export const DailyLogScreen: React.FC = () => {
 
   const load = useCallback(async () => {
     try {
-      const [batchData, logData] = await Promise.all([
+      const [batchData, logData, summaryRes] = await Promise.all([
         apiFetch('/batches?status=active', {}, token),
         apiFetch('/logs', {}, token),
+        apiFetch('/reports/summary', {}, token)
       ]);
       setBatches(batchData);
       if (batchData.length > 0 && !selectedBatchId) setSelectedBatchId(batchData[0]._id);
       setLogs(logData);
+      setSummaryData(summaryRes);
     } catch (e) {}
     finally { setRefreshing(false); }
   }, [token, selectedBatchId]);
@@ -55,22 +58,20 @@ export const DailyLogScreen: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const totalCalculatedEggs = cratesAndLooseToTotal(crates, looseEggs);
+  const totalFeedGivenKg = (Number(feedBags || 0) * 50) + Number(feedLooseKg || 0);
 
-  const handleBagsChange = (txt: string) => {
-    setFeedBags(txt);
-    const numBags = Number(txt || 0);
-    setFeedGivenKg(String(numBags * 50));
-  };
-
-  const handleKgChange = (txt: string) => {
-    setFeedGivenKg(txt);
-    const numKg = Number(txt || 0);
-    setFeedBags(String((numKg / 50).toFixed(1)));
-  };
+  const availableStockKg = summaryData?.availableFeedStockKg ?? Infinity;
+  const isFeedExceeded = (summaryData?.purchasedFeedKg || 0) > 0 && totalFeedGivenKg > availableStockKg;
 
   const handleSubmit = async () => {
     if (!selectedBatchId) { showAlert('Error', 'Select a batch first'); return; }
     if (!logDate) { showAlert('Error', 'Please enter a valid date (YYYY-MM-DD)'); return; }
+
+    if (isFeedExceeded) {
+      showAlert('Invalid Feed Amount', `Total feed (${totalFeedGivenKg} kg) exceeds available stock (${availableStockKg} kg / ${summaryData?.availableFeedStockBags} Bags).`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       await apiFetch('/logs', {
@@ -81,7 +82,7 @@ export const DailyLogScreen: React.FC = () => {
           eggCount: totalCalculatedEggs,
           brokenEggCount: Number(brokenEggCount),
           deadCount: Number(deadCount),
-          feedGivenKg: Number(feedGivenKg),
+          feedGivenKg: totalFeedGivenKg,
           waterGivenLiters: Number(waterGivenLiters),
           notes
         })
@@ -253,19 +254,36 @@ export const DailyLogScreen: React.FC = () => {
                 <Text style={common.label}>☠️ Dead Birds</Text>
                 <TextInput style={common.input} keyboardType="numeric" value={deadCount} onChangeText={setDeadCount} />
 
-                {/* DUAL FEED INPUT (BAGS & KG) */}
-                <View style={s.feedBox}>
-                  <Text style={{ color: colors.amber, fontWeight: '800', fontSize: 13, marginBottom: 6 }}>🌾 Feed Given (Bags & kg)</Text>
+                {/* DUAL FEED INPUT (Full Bags + Loose kg) WITH STOCK LIMIT CHECK */}
+                <View style={[s.feedBox, isFeedExceeded && { borderColor: colors.rose, backgroundColor: 'rgba(244,63,94,0.1)' }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <Text style={{ color: isFeedExceeded ? colors.rose : colors.amber, fontWeight: '800', fontSize: 13 }}>
+                      🌾 Feed Given (Full Bags + Loose kg) *
+                    </Text>
+                  </View>
+                  <Text style={{ color: colors.secondary, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>
+                    🌾 Stock Available: {(summaryData?.availableFeedStockKg || 0).toLocaleString()} kg ({summaryData?.availableFeedStockBags || 0} Bags)
+                  </Text>
+
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Feed Bags</Text>
-                      <TextInput style={common.input} keyboardType="numeric" placeholder="1" value={feedBags} onChangeText={handleBagsChange} />
+                      <Text style={common.label}>Full Bags (50kg/bag)</Text>
+                      <TextInput style={common.input} keyboardType="numeric" placeholder="1" value={feedBags} onChangeText={setFeedBags} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Feed kg (1 Bag = 50kg)</Text>
-                      <TextInput style={common.input} keyboardType="numeric" placeholder="50" value={feedGivenKg} onChangeText={handleKgChange} />
+                      <Text style={common.label}>Loose kg</Text>
+                      <TextInput style={common.input} keyboardType="numeric" placeholder="5" value={feedLooseKg} onChangeText={setFeedLooseKg} />
                     </View>
                   </View>
+
+                  <Text style={{ color: isFeedExceeded ? colors.rose : colors.textMain, fontWeight: '800', fontSize: 13, marginTop: 8 }}>
+                    Total: {totalFeedGivenKg.toLocaleString()} kg ({feedBags || 0} Bags + {feedLooseKg || 0} kg)
+                  </Text>
+                  {isFeedExceeded && (
+                    <Text style={{ color: colors.rose, fontWeight: '800', fontSize: 11, marginTop: 4 }}>
+                      ❌ Exceeds store feed stock ({availableStockKg.toLocaleString()} kg max)!
+                    </Text>
+                  )}
                 </View>
 
                 <Text style={common.label}>💧 Water Given (Liters)</Text>

@@ -16,6 +16,7 @@ export const DailyLogPage: React.FC = () => {
 
   // Form Sections: 'log' (Daily Feeding & Production) vs 'stock' (Store Feed Stock Entry)
   const [activeFormTab, setActiveFormTab] = useState<'log' | 'stock'>('log');
+  const [summaryData, setSummaryData] = useState<any>(null);
 
   // Daily Log Form fields
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -24,7 +25,7 @@ export const DailyLogPage: React.FC = () => {
   const [brokenEggCount, setBrokenEggCount] = useState<number>(0);
   const [deadCount, setDeadCount] = useState<number>(0);
   const [feedBags, setFeedBags] = useState<number>(1);
-  const [feedGivenKg, setFeedGivenKg] = useState<number>(50);
+  const [feedLooseKg, setFeedLooseKg] = useState<number>(0);
   const [waterGivenLiters, setWaterGivenLiters] = useState<number>(100);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -39,13 +40,17 @@ export const DailyLogPage: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const batchesData = await fetchWithAuth('/batches?status=active');
+      const [batchesData, logsData, summaryRes] = await Promise.all([
+        fetchWithAuth('/batches?status=active'),
+        fetchWithAuth('/logs'),
+        fetchWithAuth('/reports/summary')
+      ]);
       setBatches(batchesData);
       if (batchesData.length > 0 && !selectedBatchId) {
         setSelectedBatchId(batchesData[0]._id);
       }
-      const logsData = await fetchWithAuth('/logs');
       setLogs(logsData);
+      setSummaryData(summaryRes);
     } catch (err) {
       console.error(err);
     }
@@ -56,21 +61,20 @@ export const DailyLogPage: React.FC = () => {
   }, []);
 
   const totalCalculatedEggs = cratesAndLooseToTotal(crates, looseEggs);
+  const totalFeedGivenKg = (Number(feedBags || 0) * 50) + Number(feedLooseKg || 0);
 
-  const handleFeedBagsChange = (val: number) => {
-    setFeedBags(val);
-    setFeedGivenKg(val * 50);
-  };
-
-  const handleFeedKgChange = (val: number) => {
-    setFeedGivenKg(val);
-    setFeedBags(Number((val / 50).toFixed(2)));
-  };
+  const availableStockKg = summaryData?.availableFeedStockKg ?? Infinity;
+  const isFeedExceeded = (summaryData?.purchasedFeedKg || 0) > 0 && totalFeedGivenKg > availableStockKg;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBatchId) {
       setError('Please select an active batch');
+      return;
+    }
+
+    if (isFeedExceeded) {
+      setError(`Invalid Feed Amount! Total feed (${totalFeedGivenKg} kg) exceeds available Feed Stock (${availableStockKg} kg / ${summaryData?.availableFeedStockBags} Bags).`);
       return;
     }
 
@@ -87,13 +91,13 @@ export const DailyLogPage: React.FC = () => {
           eggCount: totalCalculatedEggs,
           brokenEggCount: Number(brokenEggCount),
           deadCount: Number(deadCount),
-          feedGivenKg: Number(feedGivenKg),
+          feedGivenKg: totalFeedGivenKg,
           waterGivenLiters: Number(waterGivenLiters),
           notes
         })
       });
 
-      setSuccessMsg(`Daily log saved! Recorded ${formatEggCount(totalCalculatedEggs)} and ${feedGivenKg} kg (${feedBags} Bags) feed given.`);
+      setSuccessMsg(`Daily log saved! Recorded ${formatEggCount(totalCalculatedEggs)} and ${totalFeedGivenKg} kg (${feedBags} Bags + ${feedLooseKg} kg) feed given.`);
       setShowForm(false);
       setCrates(0);
       setLooseEggs(0);
@@ -252,20 +256,37 @@ export const DailyLogPage: React.FC = () => {
                   <input type="number" min="0" value={deadCount} onChange={(e) => setDeadCount(Number(e.target.value))} className="input-field" />
                 </div>
 
-                {/* Feed Given Dual Input (Bags & kg) */}
-                <div style={{ background: 'rgba(217, 164, 65, 0.1)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(217, 164, 65, 0.3)' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                    <Scale size={16} color="#D9A441" /> Feed Given (Bags & kg)
-                  </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {/* Feed Given Additive Input (Full Bags + Loose kg) with Stock Validation */}
+                <div style={{ background: isFeedExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(217, 164, 65, 0.1)', padding: '16px', borderRadius: '12px', border: `1px solid ${isFeedExceeded ? '#EF4444' : 'rgba(217, 164, 65, 0.3)'}`, gridColumn: 'span 2' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '0.88rem', fontWeight: 800, color: isFeedExceeded ? '#EF4444' : '#D9A441', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Scale size={18} color={isFeedExceeded ? '#EF4444' : '#D9A441'} /> Feed Given (Full Bags + Loose kg) *
+                    </label>
+                    <span className="badge" style={{ backgroundColor: 'rgba(74, 124, 89, 0.15)', color: '#4A7C59', fontSize: '0.78rem', fontWeight: 800 }}>
+                      🌾 Available Stock: {(summaryData?.availableFeedStockKg || 0).toLocaleString()} kg ({summaryData?.availableFeedStockBags || 0} Bags)
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#6B655C' }}>Feed Bags</label>
-                      <input type="number" min="0" step="0.1" value={feedBags} onChange={(e) => handleFeedBagsChange(Number(e.target.value))} className="input-field" placeholder="1 Bag" />
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#6B655C', marginBottom: '4px', display: 'block' }}>Full Bags (50 kg / bag)</label>
+                      <input type="number" min="0" placeholder="e.g. 1" value={feedBags} onChange={(e) => setFeedBags(Number(e.target.value))} className="input-field" />
                     </div>
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#6B655C' }}>Feed kg (1 Bag = 50kg)</label>
-                      <input type="number" min="0" step="0.1" value={feedGivenKg} onChange={(e) => handleFeedKgChange(Number(e.target.value))} className="input-field" placeholder="50 kg" />
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#6B655C', marginBottom: '4px', display: 'block' }}>Loose Feed (kg)</label>
+                      <input type="number" min="0" placeholder="e.g. 5" value={feedLooseKg} onChange={(e) => setFeedLooseKg(Number(e.target.value))} className="input-field" />
                     </div>
+                  </div>
+
+                  <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isFeedExceeded ? '#EF4444' : '#2D2A26' }}>
+                      Total Feed Given: <strong>{totalFeedGivenKg.toLocaleString()} kg</strong> <span style={{ fontSize: '0.8rem', color: '#6B655C' }}>({feedBags} Bags + {feedLooseKg} kg)</span>
+                    </div>
+                    {isFeedExceeded && (
+                      <div style={{ color: '#EF4444', fontSize: '0.82rem', fontWeight: 800 }}>
+                        ❌ Feed amount exceeds available stock ({availableStockKg.toLocaleString()} kg max)!
+                      </div>
+                    )}
                   </div>
                 </div>
 

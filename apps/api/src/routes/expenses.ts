@@ -38,7 +38,13 @@ router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res
       return res.status(400).json({ error: 'Validation failed', details: parseResult.error.format() });
     }
 
-    const { batchId, category, amount, currency, date, note, receiptUrl } = parseResult.data;
+    const { batchId, category, amount, currency, date, note, receiptUrl, feedBags, feedKg } = req.body;
+
+    let computedBags = feedBags ? Number(feedBags) : undefined;
+    let computedKg = feedKg ? Number(feedKg) : undefined;
+    if (category === 'feed' && computedBags && !computedKg) {
+      computedKg = computedBags * 50;
+    }
 
     const expense = new ExpenseModel({
       farmId: req.farmId,
@@ -49,6 +55,8 @@ router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res
       date,
       note,
       receiptUrl,
+      feedBags: computedBags,
+      feedKg: computedKg,
       recordedBy: req.user?.userId
     });
 

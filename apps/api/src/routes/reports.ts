@@ -180,12 +180,33 @@ router.get('/summary', async (req: AuthRequest, res: Response) => {
 
     const feedPerChickenPercentage = Number(((feedPerChickenGrams / 110) * 100).toFixed(1));
 
+    // Calculate Total Purchased Feed Stock
+    const feedStockAgg = await ExpenseModel.aggregate([
+      { $match: { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }], category: 'feed' } },
+      {
+        $group: {
+          _id: null,
+          totalKg: { $sum: '$feedKg' },
+          totalAmount: { $sum: '$amount' }
+        }
+      }
+    ]);
+    let purchasedFeedKg = feedStockAgg[0]?.totalKg || 0;
+    if (purchasedFeedKg === 0 && (feedStockAgg[0]?.totalAmount || 0) > 0) {
+      purchasedFeedKg = Math.round((feedStockAgg[0].totalAmount / 2500) * 50);
+    }
+    const availableFeedStockKg = Math.max(0, purchasedFeedKg - logMetrics.totalFeedKg);
+    const availableFeedStockBags = Number((availableFeedStockKg / 50).toFixed(1));
+
     return res.json({
       totalEggs: logMetrics.totalEggs,
       totalBrokenEggs: logMetrics.totalBrokenEggs,
       totalDead: logMetrics.totalDead,
       mortalityRate,
       totalFeedKg: logMetrics.totalFeedKg,
+      purchasedFeedKg,
+      availableFeedStockKg,
+      availableFeedStockBags,
       totalWaterLiters: logMetrics.totalWaterLiters,
       totalCost,
       costByCategory,
