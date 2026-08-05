@@ -24,7 +24,8 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
   const [looseEggs, setLooseEggs] = useState('0');
   const [brokenEggCount, setBrokenEggCount] = useState('0');
   const [deadCount, setDeadCount] = useState('0');
-  const [feedGivenKg, setFeedGivenKg] = useState('');
+  const [feedBags, setFeedBags] = useState('1');
+  const [feedGivenKg, setFeedGivenKg] = useState('50');
   const [waterGivenLiters, setWaterGivenLiters] = useState('');
   const [submittingLog, setSubmittingLog] = useState(false);
 
@@ -443,8 +444,21 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                 </View>
               </View>
 
-              <Text style={common.label}>Feed Given (kg)</Text>
-              <TextInput style={common.input} keyboardType="numeric" placeholder="50" placeholderTextColor="#6B655C" value={feedGivenKg} onChangeText={setFeedGivenKg} />
+              <View style={[s.eggInputBox, { borderColor: 'rgba(217, 164, 65, 0.3)', backgroundColor: 'rgba(217, 164, 65, 0.08)' }]}>
+                <Text style={{ color: colors.amber, fontWeight: '800', fontSize: 13, marginBottom: 6 }}>
+                  🌾 Feed Given (Bags & kg)
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={common.label}>Feed Bags</Text>
+                    <TextInput style={common.input} keyboardType="numeric" value={feedBags} onChangeText={(txt) => { setFeedBags(txt); setFeedGivenKg(String(Number(txt || 0) * 50)); }} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={common.label}>Feed kg (1 Bag=50kg)</Text>
+                    <TextInput style={common.input} keyboardType="numeric" value={feedGivenKg} onChangeText={(txt) => { setFeedGivenKg(txt); setFeedBags(String((Number(txt || 0) / 50).toFixed(1))); }} />
+                  </View>
+                </View>
+              </View>
 
               <Text style={common.label}>Water Given (L)</Text>
               <TextInput style={common.input} keyboardType="numeric" placeholder="200" placeholderTextColor="#6B655C" value={waterGivenLiters} onChangeText={setWaterGivenLiters} />

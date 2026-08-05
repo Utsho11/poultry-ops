@@ -14,16 +14,28 @@ export const DailyLogPage: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [error, setError] = useState('');
 
-  // Form fields
+  // Form Sections: 'log' (Daily Feeding & Production) vs 'stock' (Store Feed Stock Entry)
+  const [activeFormTab, setActiveFormTab] = useState<'log' | 'stock'>('log');
+
+  // Daily Log Form fields
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [crates, setCrates] = useState<number>(0);
   const [looseEggs, setLooseEggs] = useState<number>(0);
   const [brokenEggCount, setBrokenEggCount] = useState<number>(0);
   const [deadCount, setDeadCount] = useState<number>(0);
+  const [feedBags, setFeedBags] = useState<number>(1);
   const [feedGivenKg, setFeedGivenKg] = useState<number>(50);
   const [waterGivenLiters, setWaterGivenLiters] = useState<number>(100);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Store Feed Stock Form fields
+  const [stockDate, setStockDate] = useState(new Date().toISOString().split('T')[0]);
+  const [stockBags, setStockBags] = useState<number>(10);
+  const [bagPrice, setBagPrice] = useState<number>(2500);
+  const [stockBatchId, setStockBatchId] = useState('');
+  const [stockVendor, setStockVendor] = useState('');
+  const [submittingStock, setSubmittingStock] = useState(false);
 
   const loadData = async () => {
     try {
@@ -44,6 +56,16 @@ export const DailyLogPage: React.FC = () => {
   }, []);
 
   const totalCalculatedEggs = cratesAndLooseToTotal(crates, looseEggs);
+
+  const handleFeedBagsChange = (val: number) => {
+    setFeedBags(val);
+    setFeedGivenKg(val * 50);
+  };
+
+  const handleFeedKgChange = (val: number) => {
+    setFeedGivenKg(val);
+    setFeedBags(Number((val / 50).toFixed(2)));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +93,7 @@ export const DailyLogPage: React.FC = () => {
         })
       });
 
-      setSuccessMsg(`Daily log saved! Recorded ${formatEggCount(totalCalculatedEggs)}.`);
+      setSuccessMsg(`Daily log saved! Recorded ${formatEggCount(totalCalculatedEggs)} and ${feedGivenKg} kg (${feedBags} Bags) feed given.`);
       setShowForm(false);
       setCrates(0);
       setLooseEggs(0);
@@ -83,12 +105,52 @@ export const DailyLogPage: React.FC = () => {
     }
   };
 
+  const handleSubmitStoreFeedStock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (stockBags <= 0 || bagPrice <= 0) {
+      setError('Please enter valid Bags and Price per Bag');
+      return;
+    }
+
+    setSubmittingStock(true);
+    setError('');
+    setSuccessMsg('');
+
+    const totalKgAdded = stockBags * 50;
+    const totalExpenseAmount = stockBags * bagPrice;
+    const expenseNote = `Purchased ${stockBags} Bags (${totalKgAdded.toLocaleString()} kg) of Feed @ ৳${bagPrice.toLocaleString()}/bag${stockVendor ? ` from ${stockVendor}` : ''}`;
+
+    try {
+      await fetchWithAuth('/expenses', {
+        method: 'POST',
+        body: JSON.stringify({
+          batchId: stockBatchId || undefined,
+          category: 'feed',
+          amount: totalExpenseAmount,
+          date: stockDate,
+          note: expenseNote
+        })
+      });
+
+      setSuccessMsg(`🌾 Success! Added ${stockBags} Bags (${totalKgAdded.toLocaleString()} kg) to Feed Stock & recorded ৳${totalExpenseAmount.toLocaleString()} expense.`);
+      setShowForm(false);
+      setStockBags(10);
+      setBagPrice(2500);
+      setStockVendor('');
+      loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to add feed stock');
+    } finally {
+      setSubmittingStock(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{t('dailyLog')}</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fast touch-friendly entry form for daily egg collection (crates + eggs), feed, water & mortality</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fast touch-friendly entry form for daily egg collection, flock feeding & store feed stock</p>
         </div>
         <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
           <Plus size={18} />
@@ -102,89 +164,181 @@ export const DailyLogPage: React.FC = () => {
         </div>
       )}
 
-      {/* Entry Form */}
+      {/* Entry Form Container */}
       {showForm && (
         <div className="glass-panel" style={{ padding: '28px' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '20px' }}>Log Daily Production & Feed</h2>
+          {/* Section Tabs */}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <button
+              type="button"
+              onClick={() => setActiveFormTab('log')}
+              style={{
+                padding: '10px 18px', borderRadius: '10px', fontWeight: 800, fontSize: '0.92rem', cursor: 'pointer',
+                backgroundColor: activeFormTab === 'log' ? 'rgba(74, 124, 89, 0.15)' : 'transparent',
+                color: activeFormTab === 'log' ? '#4A7C59' : '#6B655C',
+                border: `1px solid ${activeFormTab === 'log' ? '#4A7C59' : '#E8E2D8'}`
+              }}
+            >
+              ⚡ 1. Daily Feeding & Yield Log
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFormTab('stock')}
+              style={{
+                padding: '10px 18px', borderRadius: '10px', fontWeight: 800, fontSize: '0.92rem', cursor: 'pointer',
+                backgroundColor: activeFormTab === 'stock' ? 'rgba(217, 164, 65, 0.15)' : 'transparent',
+                color: activeFormTab === 'stock' ? '#D9A441' : '#6B655C',
+                border: `1px solid ${activeFormTab === 'stock' ? '#D9A441' : '#E8E2D8'}`
+              }}
+            >
+              🌾 2. Store Feed Stock Entry (Buy Feed Bags)
+            </button>
+          </div>
+
           {error && <div style={{ color: 'var(--accent-rose)', fontSize: '0.85rem', marginBottom: '14px' }}>{error}</div>}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Select Active Batch</label>
-                <select value={selectedBatchId} onChange={(e) => setSelectedBatchId(e.target.value)} className="input-field">
-                  {batches.map(b => (
-                    <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Date</label>
-                <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="input-field" />
-              </div>
-            </div>
-
-            {/* Egg Collection inputs (Crates + Loose) */}
-            <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '18px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <Egg size={18} /> Egg Collection (1 Crate = 30 Eggs)
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          {/* SECTION 1: DAILY FEEDING & PRODUCTION LOG */}
+          {activeFormTab === 'log' ? (
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Full Crates (30 eggs/crate)</label>
-                  <input type="number" min="0" placeholder="e.g. 10" value={crates} onChange={(e) => setCrates(Number(e.target.value))} className="input-field" />
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Select Active Batch *</label>
+                  <select value={selectedBatchId} onChange={(e) => setSelectedBatchId(e.target.value)} className="input-field">
+                    {batches.map(b => (
+                      <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Loose Eggs</label>
-                  <input type="number" min="0" placeholder="e.g. 15" value={looseEggs} onChange={(e) => setLooseEggs(Number(e.target.value))} className="input-field" />
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Date *</label>
+                  <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="input-field" />
                 </div>
               </div>
-              <div style={{ marginTop: '10px', fontSize: '0.88rem', fontWeight: 700, color: '#10b981' }}>
-                Total Yield: {formatEggCount(totalCalculatedEggs)} ({totalCalculatedEggs} eggs total)
-              </div>
-            </div>
 
-            {/* Metrics inputs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
-              <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                  <AlertTriangle size={16} color="var(--accent-amber)" /> {t('brokenEggs')}
+              {/* Egg Collection inputs (Crates + Loose) */}
+              <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '18px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <Egg size={18} /> Egg Collection (1 Crate = 30 Eggs)
                 </label>
-                <input type="number" min="0" value={brokenEggCount} onChange={(e) => setBrokenEggCount(Number(e.target.value))} className="input-field" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Full Crates (30 eggs/crate)</label>
+                    <input type="number" min="0" placeholder="e.g. 10" value={crates} onChange={(e) => setCrates(Number(e.target.value))} className="input-field" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Loose Eggs</label>
+                    <input type="number" min="0" placeholder="e.g. 15" value={looseEggs} onChange={(e) => setLooseEggs(Number(e.target.value))} className="input-field" />
+                  </div>
+                </div>
+                <div style={{ marginTop: '10px', fontSize: '0.88rem', fontWeight: 700, color: '#10b981' }}>
+                  Total Yield: {formatEggCount(totalCalculatedEggs)} ({totalCalculatedEggs} eggs total)
+                </div>
               </div>
 
-              <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                  <AlertTriangle size={16} color="var(--accent-rose)" /> {t('deadBirds')}
-                </label>
-                <input type="number" min="0" value={deadCount} onChange={(e) => setDeadCount(Number(e.target.value))} className="input-field" />
+              {/* Metrics inputs */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+                <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <AlertTriangle size={16} color="var(--accent-amber)" /> {t('brokenEggs')}
+                  </label>
+                  <input type="number" min="0" value={brokenEggCount} onChange={(e) => setBrokenEggCount(Number(e.target.value))} className="input-field" />
+                </div>
+
+                <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <AlertTriangle size={16} color="var(--accent-rose)" /> {t('deadBirds')}
+                  </label>
+                  <input type="number" min="0" value={deadCount} onChange={(e) => setDeadCount(Number(e.target.value))} className="input-field" />
+                </div>
+
+                {/* Feed Given Dual Input (Bags & kg) */}
+                <div style={{ background: 'rgba(217, 164, 65, 0.1)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(217, 164, 65, 0.3)' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <Scale size={16} color="#D9A441" /> Feed Given (Bags & kg)
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#6B655C' }}>Feed Bags</label>
+                      <input type="number" min="0" step="0.1" value={feedBags} onChange={(e) => handleFeedBagsChange(Number(e.target.value))} className="input-field" placeholder="1 Bag" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#6B655C' }}>Feed kg (1 Bag = 50kg)</label>
+                      <input type="number" min="0" step="0.1" value={feedGivenKg} onChange={(e) => handleFeedKgChange(Number(e.target.value))} className="input-field" placeholder="50 kg" />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <Droplet size={16} color="var(--accent-blue)" /> {t('waterLiters')}
+                  </label>
+                  <input type="number" min="0" value={waterGivenLiters} onChange={(e) => setWaterGivenLiters(Number(e.target.value))} className="input-field" />
+                </div>
               </div>
 
-              <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                  <Scale size={16} color="var(--accent-blue)" /> {t('feedKg')}
-                </label>
-                <input type="number" min="0" value={feedGivenKg} onChange={(e) => setFeedGivenKg(Number(e.target.value))} className="input-field" />
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>{t('notes')}</label>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="input-field" rows={2} placeholder="Optional notes regarding bird health or feed batch..." />
               </div>
 
-              <div style={{ background: 'var(--bg-surface-elevated)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                  <Droplet size={16} color="var(--accent-blue)" /> {t('waterLiters')}
-                </label>
-                <input type="number" min="0" value={waterGivenLiters} onChange={(e) => setWaterGivenLiters(Number(e.target.value))} className="input-field" />
+              <button type="submit" disabled={submitting} className="btn btn-primary" style={{ height: '44px' }}>
+                {submitting ? 'Saving Log...' : t('saveLog')}
+              </button>
+            </form>
+          ) : (
+            /* SECTION 2: STORE FEED STOCK ENTRY FORM (BUY FEED BAGS) */
+            <form onSubmit={handleSubmitStoreFeedStock} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ backgroundColor: 'rgba(217, 164, 65, 0.08)', padding: '18px', borderRadius: '12px', border: '1px solid rgba(217, 164, 65, 0.25)' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#D9A441', marginBottom: '4px' }}>🌾 Buy & Add Bags to Store Feed Stock</h3>
+                <p style={{ fontSize: '0.8rem', color: '#6B655C' }}>Enter purchased feed bags and bag price to add to store inventory & record expense automatically (1 Bag = 50 kg).</p>
               </div>
-            </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>{t('notes')}</label>
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="input-field" rows={2} placeholder="Optional notes regarding bird health or feed batch..." />
-            </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Date *</label>
+                  <input type="date" required value={stockDate} onChange={(e) => setStockDate(e.target.value)} className="input-field" />
+                </div>
 
-            <button type="submit" disabled={submitting} className="btn btn-primary" style={{ height: '44px' }}>
-              {submitting ? 'Saving Log...' : t('saveLog')}
-            </button>
-          </form>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Assign Batch (Optional)</label>
+                  <select value={stockBatchId} onChange={(e) => setStockBatchId(e.target.value)} className="input-field">
+                    <option value="">-- All / General Stock --</option>
+                    {batches.map(b => (
+                      <option key={b._id} value={b._id}>{b.name} ({b.breed})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>Number of Feed Bags Purchased *</label>
+                  <input type="number" min="1" required placeholder="e.g. 10" value={stockBags} onChange={(e) => setStockBags(Number(e.target.value))} className="input-field" />
+                  <div style={{ fontSize: '0.78rem', color: '#4A7C59', fontWeight: 700, marginTop: '4px' }}>
+                    = {(stockBags * 50).toLocaleString()} kg feed added to stock
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#D9A441', marginBottom: '4px' }}>Price per Bag (৳) *</label>
+                  <input type="number" min="1" step="0.01" required placeholder="e.g. 2500" value={bagPrice} onChange={(e) => setBagPrice(Number(e.target.value))} className="input-field" />
+                  <div style={{ fontSize: '0.78rem', color: '#3D6B8C', fontWeight: 700, marginTop: '4px' }}>
+                    Total Cost: ৳{(stockBags * bagPrice).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Feed Brand / Vendor Name (Optional)</label>
+                <input type="text" placeholder="e.g. Sona Feed Mills Co." value={stockVendor} onChange={(e) => setStockVendor(e.target.value)} className="input-field" />
+              </div>
+
+              <button type="submit" disabled={submittingStock} className="btn btn-primary" style={{ backgroundColor: '#D9A441', height: '44px' }}>
+                {submittingStock ? 'Adding Feed Stock...' : '🌾 Save & Add to Store Feed Stock'}
+              </button>
+            </form>
+          )}
         </div>
       )}
 

@@ -28,7 +28,8 @@ export const BatchDashboardPage: React.FC = () => {
   const [looseEggs, setLooseEggs] = useState('');
   const [brokenEggCount, setBrokenEggCount] = useState('0');
   const [deadCount, setDeadCount] = useState('0');
-  const [feedGivenKg, setFeedGivenKg] = useState('');
+  const [feedBags, setFeedBags] = useState('1');
+  const [feedGivenKg, setFeedGivenKg] = useState('50');
   const [waterGivenLiters, setWaterGivenLiters] = useState('');
   const [submittingLog, setSubmittingLog] = useState(false);
 
@@ -587,9 +588,18 @@ export const BatchDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#6B655C', marginBottom: '6px' }}>Feed Given (kg) *</label>
-                <input type="number" step="0.1" required placeholder="50" value={feedGivenKg} onChange={(e) => setFeedGivenKg(e.target.value)} className="input-field" />
+              <div style={{ backgroundColor: 'rgba(217, 164, 65, 0.08)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(217, 164, 65, 0.25)' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#D9A441', marginBottom: '6px' }}>🌾 Feed Given (Bags & kg) *</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#6B655C', marginBottom: '2px' }}>Feed Bags</label>
+                    <input type="number" step="0.1" placeholder="1" value={feedBags} onChange={(e) => { const b = e.target.value; setFeedBags(b); setFeedGivenKg(String(Number(b || 0) * 50)); }} className="input-field" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#6B655C', marginBottom: '2px' }}>Feed kg (1 Bag = 50kg)</label>
+                    <input type="number" step="0.1" required placeholder="50" value={feedGivenKg} onChange={(e) => { const k = e.target.value; setFeedGivenKg(k); setFeedBags(String((Number(k || 0) / 50).toFixed(1))); }} className="input-field" />
+                  </div>
+                </div>
               </div>
 
               <div>

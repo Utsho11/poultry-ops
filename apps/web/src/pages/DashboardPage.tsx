@@ -222,17 +222,22 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Total Feed Stock Used */}
-        <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(61, 107, 140, 0.4)', background: 'linear-gradient(135deg, rgba(61, 107, 140, 0.1) 0%, rgba(255, 255, 255, 1) 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ color: '#3D6B8C', fontSize: '0.85rem', fontWeight: 700 }}>Total Feed Stock Used</span>
-            <div style={{ background: 'rgba(61, 107, 140, 0.15)', color: '#3D6B8C', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Feed Stock Card - Redesigned (Bags Highlighted + kg) */}
+        <div className="glass-panel" style={{ padding: '20px', border: '2px solid #D9A441', background: 'linear-gradient(135deg, rgba(217, 164, 65, 0.15) 0%, rgba(255, 255, 255, 1) 100%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ color: '#D9A441', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🌾 Feed Stock</span>
+            <div style={{ background: 'rgba(217, 164, 65, 0.2)', color: '#D9A441', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Scale size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2A26' }}>{(summary?.totalFeedKg || 0).toLocaleString()} kg</div>
-          <div style={{ fontSize: '0.75rem', color: '#3D6B8C', marginTop: '4px', fontWeight: 600 }}>
-            {Math.round((summary?.totalFeedKg || 0) / 50)} Bags total feed consumed
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#2D2A26' }}>
+            {Math.round((summary?.totalFeedKg || 0) / 50).toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: 800, color: '#D9A441' }}>Bags</span>
+          </div>
+          <div style={{ fontSize: '0.82rem', color: '#6B655C', marginTop: '6px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span className="badge" style={{ backgroundColor: 'rgba(74, 124, 89, 0.15)', color: '#4A7C59', fontSize: '0.78rem', fontWeight: 800 }}>
+              {(summary?.totalFeedKg || 0).toLocaleString()} kg total
+            </span>
+            <span>(50 kg / bag)</span>
           </div>
         </div>
 
@@ -304,9 +309,14 @@ export const DashboardPage: React.FC = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span className="badge" style={{ backgroundColor: batch.type === 'layer' ? 'rgba(61, 107, 140, 0.15)' : 'rgba(217, 164, 65, 0.15)', color: batch.type === 'layer' ? '#3D6B8C' : '#D9A441', fontSize: '0.75rem', fontWeight: 700 }}>
-                      {batch.type.toUpperCase()}
-                    </span>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <span className="badge" style={{ backgroundColor: batch.type === 'layer' ? 'rgba(61, 107, 140, 0.15)' : 'rgba(217, 164, 65, 0.15)', color: batch.type === 'layer' ? '#3D6B8C' : '#D9A441', fontSize: '0.75rem', fontWeight: 700 }}>
+                        {batch.type.toUpperCase()}
+                      </span>
+                      <span className="badge" style={{ backgroundColor: 'rgba(74, 124, 89, 0.15)', color: '#4A7C59', fontSize: '0.75rem', fontWeight: 800 }}>
+                        📅 Age: {(batch as any).formattedAge || `${Math.floor(Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) / 7)}W ${Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) % 7}D`}
+                      </span>
+                    </div>
                     <span className="badge" style={{ backgroundColor: batch.status === 'active' ? 'rgba(74, 124, 89, 0.15)' : 'rgba(107, 101, 92, 0.15)', color: batch.status === 'active' ? '#4A7C59' : '#6B655C', fontSize: '0.75rem', fontWeight: 700 }}>
                       {batch.status.toUpperCase()}
                     </span>
