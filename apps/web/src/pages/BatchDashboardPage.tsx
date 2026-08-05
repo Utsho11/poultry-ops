@@ -202,6 +202,26 @@ export const BatchDashboardPage: React.FC = () => {
               <ShoppingCart size={18} /> 💰 Record Sale
             </button>
           )}
+
+          {isOwner && (
+            <button
+              onClick={async () => {
+                if (!window.confirm(`⚠️ SECURITY AUTHORIZATION REQUIRED:\n\nAre you sure you want to PERMANENTLY DELETE flock '${batch.name}'?\n\nThis will permanently delete all associated daily logs, health records, and expenses. This action CANNOT be undone.`)) return;
+                try {
+                  await fetchWithAuth(`/batches/${batch._id}`, { method: 'DELETE' });
+                  alert(`Flock '${batch.name}' deleted successfully.`);
+                  navigate('/batches');
+                } catch (err: any) {
+                  alert(err.message || 'Failed to delete batch');
+                }
+              }}
+              className="btn btn-secondary"
+              style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+              title="Delete Flock with Auth Confirmation"
+            >
+              🗑️ Delete Flock
+            </button>
+          )}
         </div>
       </div>
 

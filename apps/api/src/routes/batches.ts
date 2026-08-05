@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { createBatchSchema } from '@poultry-ops/validation';
-import { BatchModel } from '../models/schemas';
+import { BatchModel, DailyLogModel, HealthRecordModel, ExpenseModel, SaleModel } from '../models/schemas';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -98,6 +98,30 @@ router.post('/:id/close', requireRole(['owner', 'manager']), async (req: AuthReq
     batch.closedAt = new Date();
     await batch.save();
     return res.json(batch);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete batch and clean up associated records (Owner/Manager only)
+router.delete('/:id', requireRole(['owner', 'manager']), async (req: AuthRequest, res: Response) => {
+  try {
+    const batchId = req.params.id;
+    const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
+    if (!batch) {
+      return res.status(404).json({ error: 'Batch not found or unauthorized' });
+    }
+
+    // Clean up associated batch records
+    await Promise.all([
+      DailyLogModel.deleteMany({ farmId: req.farmId, batchId }),
+      HealthRecordModel.deleteMany({ farmId: req.farmId, batchId }),
+      ExpenseModel.deleteMany({ farmId: req.farmId, batchId }),
+      SaleModel.updateMany({ farmId: req.farmId, batchId }, { $unset: { batchId: 1 } })
+    ]);
+
+    await BatchModel.deleteOne({ _id: batchId, farmId: req.farmId });
+    return res.json({ message: `Flock '${batch.name}' and associated records deleted successfully`, deletedBatchId: batchId });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

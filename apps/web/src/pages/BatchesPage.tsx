@@ -152,6 +152,27 @@ export const BatchesPage: React.FC = () => {
     }
   };
 
+  const handleDeleteBatch = async (id: string, batchName: string) => {
+    if (!canManage) {
+      alert('Unauthorized! Only farm Owners and Managers can delete flocks.');
+      return;
+    }
+    if (!window.confirm(`⚠️ SECURITY AUTHORIZATION REQUIRED:\n\nAre you sure you want to PERMANENTLY DELETE flock '${batchName}'?\n\nThis will permanently delete all associated daily logs, health records, and expenses. This action CANNOT be undone.`)) {
+      return;
+    }
+    try {
+      await fetchWithAuth(`/batches/${id}`, { method: 'DELETE' });
+      loadData();
+      if (activeBatchId === id) {
+        setActiveBatchId(null);
+        setBatchDashboardData(null);
+      }
+      alert(`Flock '${batchName}' deleted successfully.`);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete batch');
+    }
+  };
+
   if (loading) return <div style={{ padding: '60px', textAlign: 'center', color: '#6B655C' }}>Loading Batches...</div>;
 
   return (
@@ -463,13 +484,22 @@ export const BatchesPage: React.FC = () => {
                   )}
                 </div>
 
-                {canManage && !isClosed && (
-                  <div style={{ marginTop: '14px', borderTop: '1px solid #E8E2D8', paddingTop: '10px' }}>
+                {canManage && (
+                  <div style={{ marginTop: '14px', borderTop: '1px solid #E8E2D8', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {!isClosed && (
+                      <button
+                        onClick={() => handleCloseBatch(batch._id)}
+                        style={{ background: 'none', border: 'none', color: '#B23A2F', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Close Batch
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleCloseBatch(batch._id)}
-                      style={{ background: 'none', border: 'none', color: '#B23A2F', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                      onClick={() => handleDeleteBatch(batch._id, batch.name)}
+                      style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#EF4444', fontSize: '0.78rem', fontWeight: 800, padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', marginLeft: 'auto' }}
+                      title="Delete Flock with Auth Confirmation"
                     >
-                      Close Batch
+                      🗑️ Delete Flock
                     </button>
                   </div>
                 )}

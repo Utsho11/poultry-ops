@@ -140,6 +140,25 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
     ]);
   };
 
+  const handleDelete = async (id: string, batchName: string) => {
+    if (!canManage) {
+      showAlert('Unauthorized', 'Only farm Owners and Managers are authorized to delete flocks.');
+      return;
+    }
+    showAlert('Delete Flock Authorization', `Are you sure you want to PERMANENTLY DELETE "${batchName}"?\n\nThis will delete all daily logs, health records, and expenses associated with this flock.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await apiFetch(`/batches/${id}`, { method: 'DELETE' }, token);
+            load();
+            showAlert('Deleted', `Flock "${batchName}" deleted successfully.`);
+          } catch (e: any) { showAlert('Error', e.message); }
+        }
+      }
+    ]);
+  };
+
   if (loading) return (
     <View style={[common.screen, { justifyContent: 'center', alignItems: 'center' }]}>
       <ActivityIndicator size="large" color={colors.brand} />
@@ -229,10 +248,20 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                 )}
               </View>
 
-              {canManage && !isClosed && (
-                <TouchableOpacity style={{ marginTop: 10 }} onPress={() => handleClose(batch._id, batch.name)}>
-                  <Text style={s.closeText}>Close Batch</Text>
-                </TouchableOpacity>
+              {canManage && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }}>
+                  {!isClosed && (
+                    <TouchableOpacity onPress={() => handleClose(batch._id, batch.name)}>
+                      <Text style={s.closeText}>Close Batch</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={{ backgroundColor: 'rgba(244,63,94,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 'auto' }}
+                    onPress={() => handleDelete(batch._id, batch.name)}
+                  >
+                    <Text style={{ color: colors.rose, fontSize: 12, fontWeight: '800' }}>🗑️ Delete Flock</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           );
