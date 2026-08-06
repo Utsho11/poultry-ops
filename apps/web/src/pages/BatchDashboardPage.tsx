@@ -438,6 +438,7 @@ export const BatchDashboardPage: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#6B655C', textTransform: 'uppercase' }}>Cost Breakdown:</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.82rem' }}>
+              <div style={{ backgroundColor: '#F4EFE6', padding: '8px 10px', borderRadius: '6px' }}>🌾 Feed: ৳{(expenseSection.costByCategory.feed || 0).toLocaleString()}</div>
               <div style={{ backgroundColor: '#F4EFE6', padding: '8px 10px', borderRadius: '6px' }}>💊 Meds: ৳{(expenseSection.costByCategory.medicine || 0).toLocaleString()}</div>
               <div style={{ backgroundColor: '#F4EFE6', padding: '8px 10px', borderRadius: '6px' }}>👷 Labor: ৳{(expenseSection.costByCategory.labor || 0).toLocaleString()}</div>
               <div style={{ backgroundColor: '#F4EFE6', padding: '8px 10px', borderRadius: '6px' }}>💡 Utility: ৳{(expenseSection.costByCategory.utility || 0).toLocaleString()}</div>

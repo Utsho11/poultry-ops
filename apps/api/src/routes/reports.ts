@@ -18,6 +18,21 @@ function toObjectId(id: string) {
   }
 }
 
+// Helper to calculate weighted average feed stock cost per kg
+async function getAvgFeedCostPerKg(farmId: any): Promise<number> {
+  const farmObjectId = toObjectId(farmId as string);
+  const stockAgg = await FeedStockModel.aggregate([
+    { $match: { $or: [{ farmId: farmObjectId }, { farmId }] } },
+    { $group: { _id: null, totalCost: { $sum: '$totalCost' }, totalKg: { $sum: '$totalKg' } } }
+  ]);
+  
+  if (stockAgg.length > 0 && stockAgg[0].totalKg > 0) {
+    return stockAgg[0].totalCost / stockAgg[0].totalKg;
+  }
+  
+  return 50; // Fallback: ৳50 / kg (equal to ৳2500 per 50kg bag)
+}
+
 // 1. Aggregated Summary Report (All Farm Roles)
 router.get('/summary', async (req: AuthRequest, res: Response) => {
   try {
@@ -65,7 +80,10 @@ router.get('/summary', async (req: AuthRequest, res: Response) => {
     const allTimeEggCount = allTimeEggAgg[0]?.sum || 0;
     const allTimeBrokenCount = allTimeEggAgg[0]?.brokenSum || 0;
 
-    // Calculate Expenses
+    // Calculate Expenses (including feed consumed expense based on avgCostPerKg)
+    const avgFeedCostPerKg = await getAvgFeedCostPerKg(req.farmId);
+    const calculatedFeedExpense = Math.round(logMetrics.totalFeedKg * avgFeedCostPerKg);
+
     const expenseMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
     if (batchId) {
       const bObjId = toObjectId(batchId as string);
@@ -88,13 +106,16 @@ router.get('/summary', async (req: AuthRequest, res: Response) => {
     ]);
 
     const costByCategory: Record<string, number> = {
+      feed: calculatedFeedExpense,
       medicine: 0, labor: 0, utility: 0, equipment: 0, other: 0
     };
 
-    let totalCost = 0;
+    let totalCost = calculatedFeedExpense;
     expenseAgg.forEach((item) => {
-      costByCategory[item._id] = item.totalAmount;
-      totalCost += item.totalAmount;
+      if (item._id !== 'feed') {
+        costByCategory[item._id] = item.totalAmount;
+        totalCost += item.totalAmount;
+      }
     });
 
     // Calculate Sales & Revenue Income (Egg & Chicken)
@@ -406,6 +427,15 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       resultMap[d].totalIncome += amount;
     });
 
+    // Calculate feed consumption expense per day based on feedGivenKg and avgFeedCostPerKg
+    const avgFeedCostPerKg = await getAvgFeedCostPerKg(req.farmId);
+    Object.values(resultMap).forEach((item: any) => {
+      if (item.feedGivenKg > 0) {
+        item.feedExpense = Math.round(item.feedGivenKg * avgFeedCostPerKg);
+        item.totalExpenses += item.feedExpense;
+      }
+    });
+
     // Calculate net profit for each day
     Object.values(resultMap).forEach((item: any) => {
       item.netProfit = item.totalIncome - item.totalExpenses;
@@ -483,6 +513,7 @@ router.get('/batch-breakdown', async (req: AuthRequest, res: Response) => {
   try {
     const farmObjectId = toObjectId(req.farmId as string);
     const batches = await BatchModel.find({ $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] }).sort({ createdAt: -1 });
+    const avgFeedCostPerKg = await getAvgFeedCostPerKg(req.farmId);
 
     const batchReports = await Promise.all(
       batches.map(async (batch) => {
@@ -504,12 +535,14 @@ router.get('/batch-breakdown', async (req: AuthRequest, res: Response) => {
         ]);
 
         const logs = logAgg[0] || { totalEggs: 0, totalBrokenEggs: 0, totalDead: 0, totalFeedKg: 0, totalWaterLiters: 0 };
+        const batchFeedExpense = Math.round(logs.totalFeedKg * avgFeedCostPerKg);
 
         const expAgg = await ExpenseModel.aggregate([
           { $match: bMatch },
           { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
-        const totalExpenses = expAgg[0]?.total || 0;
+        const otherExpenses = expAgg[0]?.total || 0;
+        const totalExpenses = otherExpenses + batchFeedExpense;
 
         const saleAgg = await SaleModel.aggregate([
           { $match: bMatch },
@@ -655,18 +688,24 @@ router.get('/batch-dashboard/:batchId', async (req: AuthRequest, res: Response) 
     const logs = logAgg[0] || { totalEggs: 0, totalBrokenEggs: 0, totalDead: 0, totalFeedKg: 0, totalWaterLiters: 0 };
 
     // Expenses aggregation by category for batch
+    const avgFeedCostPerKg = await getAvgFeedCostPerKg(req.farmId);
+    const calculatedFeedExpense = Math.round(logs.totalFeedKg * avgFeedCostPerKg);
+
     const expenseAgg = await ExpenseModel.aggregate([
       { $match: bMatch },
       { $group: { _id: '$category', totalAmount: { $sum: '$amount' } } }
     ]);
 
     const costByCategory: Record<string, number> = {
+      feed: calculatedFeedExpense,
       medicine: 0, labor: 0, utility: 0, equipment: 0, other: 0
     };
-    let totalExpenses = 0;
+    let totalExpenses = calculatedFeedExpense;
     expenseAgg.forEach((item) => {
-      costByCategory[item._id] = item.totalAmount;
-      totalExpenses += item.totalAmount;
+      if (item._id !== 'feed') {
+        costByCategory[item._id] = item.totalAmount;
+        totalExpenses += item.totalAmount;
+      }
     });
 
     // Sales aggregation for batch

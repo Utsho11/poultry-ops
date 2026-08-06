@@ -313,6 +313,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
               <Text style={[s.dashVal, { color: colors.amber, fontSize: 15 }]}>৳{expenseSection.totalExpenses.toLocaleString()}</Text>
             </View>
             <View style={s.gridBox}>
+              <Text style={s.gridItem}>🌾 Feed: ৳{(expenseSection.costByCategory.feed || 0).toLocaleString()}</Text>
               <Text style={s.gridItem}>💊 Meds: ৳{(expenseSection.costByCategory.medicine || 0).toLocaleString()}</Text>
               <Text style={s.gridItem}>👷 Labor: ৳{(expenseSection.costByCategory.labor || 0).toLocaleString()}</Text>
               <Text style={s.gridItem}>💡 Utility: ৳{(expenseSection.costByCategory.utility || 0).toLocaleString()}</Text>
