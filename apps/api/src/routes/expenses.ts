@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { expenseSchema } from '@poultry-ops/validation';
-import { ExpenseModel } from '../models/schemas';
+import { ExpenseModel, BatchModel } from '../models/schemas';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -39,6 +39,22 @@ router.post('/', requireRole(['owner', 'manager']), async (req: AuthRequest, res
     }
 
     const { batchId, category, amount, currency, date, note, receiptUrl, feedBags, feedKg } = req.body;
+
+    // Check worker assignment for labor expenses
+    if (category === 'labor') {
+      if (!batchId) {
+        return res.status(400).json({ error: 'Batch selection is required for labor expenses.' });
+      }
+      const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
+      if (!batch) {
+        return res.status(404).json({ error: 'Selected batch not found.' });
+      }
+      if (!batch.assignedWorkerIds || batch.assignedWorkerIds.length === 0) {
+        return res.status(400).json({
+          error: 'Cannot add labor expense to this batch because no workers are assigned to this flock/batch. Please assign a worker to the batch first.'
+        });
+      }
+    }
 
     let computedBags = feedBags ? Number(feedBags) : undefined;
     let computedKg = feedKg ? Number(feedKg) : undefined;

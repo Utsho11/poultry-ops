@@ -99,6 +99,14 @@ export const ExpensesScreen: React.FC = () => {
       } else {
         if (!expBatchId) { showAlert('Error', 'Please select a target Flock / Batch.'); setExpSubmitting(false); return; }
         if (!expAmount) { showAlert('Error', 'Amount is required'); setExpSubmitting(false); return; }
+        if (expCategory === 'labor') {
+          const selectedBatch = batches.find(b => b._id === expBatchId);
+          if (!selectedBatch?.assignedWorkerIds || selectedBatch.assignedWorkerIds.length === 0) {
+            showAlert('Worker Required', 'Cannot add labor expense to this batch because no workers are assigned to this flock/batch. Please assign a worker to the batch first.');
+            setExpSubmitting(false);
+            return;
+          }
+        }
         await apiFetch('/expenses', {
           method: 'POST',
           body: JSON.stringify({
