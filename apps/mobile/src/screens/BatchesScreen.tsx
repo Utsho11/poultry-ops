@@ -8,6 +8,9 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
 import { DatePickerInput } from '../components/DatePickerInput';
+import { formatEggCount } from '../utils/crates';
+import { Bird, Egg, Home, Calendar, Users, BarChart3, Lock, Plus, Trash2, Check, X, ShieldAlert, CircleDollarSign, Skull, TrendingUp, Feather, Droplet, Tag, User } from 'lucide-react-native';
+
 function getBatchAgeText(startDateStr: string) {
   if (!startDateStr) return 'N/A';
   const start = new Date(startDateStr);
@@ -23,7 +26,7 @@ function getBatchAgeText(startDateStr: string) {
 }
 
 export const BatchesScreen: React.FC<any> = ({ navigation }) => {
-  const { token, user } = useAuth();
+  const { token, user, activeFarm } = useAuth();
   const [batches, setBatches] = useState<any[]>([]);
   const [teamWorkers, setTeamWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,21 +50,20 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
   const [type, setType] = useState<'broiler' | 'layer'>('layer');
   const [initialCount, setInitialCount] = useState('1000');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [shed, setShed] = useState('Shed A');
 
   const load = useCallback(async () => {
     try {
       const [batchData, usersData] = await Promise.all([
-        apiFetch('/batches', {}, token),
-        canManage ? apiFetch('/team', {}, token) : Promise.resolve([])
+        apiFetch('/batches', {}, token, activeFarm?._id),
+        canManage ? apiFetch('/team', {}, token, activeFarm?._id) : Promise.resolve([])
       ]);
       setBatches(batchData);
       if (Array.isArray(usersData)) {
-        setTeamWorkers(usersData.filter((u: any) => u.role === 'worker'));
+        setTeamWorkers(usersData.filter((u: any) => u.role === 'worker' || u.role === 'manager'));
       }
     } catch (e) {}
     finally { setLoading(false); setRefreshing(false); }
-  }, [canManage, token]);
+  }, [canManage, token, activeFarm?._id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -89,11 +91,9 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
   const handleOpenCreateSecurity = () => {
     if (!name) { showAlert('Error', 'Batch name is required'); return; }
     if (!startDate) { showAlert('Error', 'Start date is required (YYYY-MM-DD)'); return; }
-    // Close the create modal first (Android can't stack two Modals)
     setModalVisible(false);
     setSecurityAction('create');
     setConfirmPassword('');
-    // Use setTimeout so the first modal fully closes before the second opens
     setTimeout(() => setSecurityModalVisible(true), 300);
   };
 
@@ -121,7 +121,6 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
   const handleCancelSecurity = () => {
     setSecurityModalVisible(false);
-    // If the user was creating a batch, re-open the create form so they don't lose their inputs
     if (securityAction === 'create') {
       setTimeout(() => setModalVisible(true), 300);
     }
@@ -139,8 +138,8 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
         await apiFetch('/batches', {
           method: 'POST',
           body: JSON.stringify({
-            name, breed, type, startDate,
-            initialCount: Number(initialCount), shed,
+            name, breed, type: activeFarm?.animalType === 'broiler' ? 'broiler' : 'layer', startDate,
+            initialCount: Number(initialCount),
             assignedWorkerIds: selectedWorkerIds,
             password: confirmPassword
           })
@@ -178,22 +177,8 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
   const handleOpenAssignModal = (batch: any) => {
     setAssignModalBatch(batch);
-    setSelectedWorkerIds(batch.assignedWorkerIds || []);
-  };
-
-  const handleSaveAssignments = async () => {
-    if (!assignModalBatch) return;
-    try {
-      await apiFetch(`/batches/${assignModalBatch._id}/assign-workers`, {
-        method: 'PATCH',
-        body: JSON.stringify({ workerIds: selectedWorkerIds })
-      }, token);
-      setAssignModalBatch(null);
-      setSelectedWorkerIds([]);
-      load();
-    } catch (err: any) {
-      showAlert('Error', err.message);
-    }
+    const existingWorkerIds = (batch.assignedWorkerIds || []).map((w: any) => String(w._id || w));
+    setSelectedWorkerIds(existingWorkerIds);
   };
 
   const toggleWorkerSelection = (workerId: string) => {
@@ -202,18 +187,20 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
     );
   };
 
-  const handleClose = async (id: string, batchName: string) => {
-    showAlert('Close Batch', `Close "${batchName}"? This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Close', style: 'destructive', onPress: async () => {
-          try {
-            await apiFetch(`/batches/${id}/close`, { method: 'POST' }, token);
-            load();
-          } catch (e: any) { showAlert('Error', e.message); }
-        }
-      }
-    ]);
+  const handleSaveAssignments = async () => {
+    if (!assignModalBatch) return;
+    try {
+      await apiFetch(`/batches/${assignModalBatch._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ assignedWorkerIds: selectedWorkerIds })
+      }, token);
+      showAlert('Success', 'Worker assignments updated');
+      setAssignModalBatch(null);
+      setSelectedWorkerIds([]);
+      load();
+    } catch (err: any) {
+      showAlert('Error', err.message);
+    }
   };
 
   if (loading) return (
@@ -226,19 +213,18 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
     <View style={common.screen}>
       <ScrollView
         contentContainerStyle={common.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={colors.brand} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.brand} />}
       >
-        <View style={common.row}>
+        <View style={[common.row, { marginBottom: 20 }]}>
           <View>
-            <Text style={common.sectionTitle}>Bird Flocks</Text>
-            <Text style={common.sectionSubtitle}>
-              {user?.role === 'worker' ? 'Your assigned flocks' : `${batches.length} total farm flocks`}
-            </Text>
+            <Text style={common.sectionTitle}>Flocks & Batches</Text>
+            <Text style={common.sectionSubtitle}>{batches.length} active flocks recorded</Text>
           </View>
 
           {canManage && (
             <TouchableOpacity style={common.btn} onPress={() => { setSelectedWorkerIds([]); setModalVisible(true); }}>
-              <Text style={common.btnText}>+ New Batch</Text>
+              <Plus size={16} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={common.btnText}>New Batch</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -247,46 +233,55 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
           const isClosed = batch.status === 'closed';
           const mortalityCount = batch.initialCount - batch.currentCount;
           const mortalityPct = ((mortalityCount / batch.initialCount) * 100).toFixed(1);
-          const assignedWorkers = teamWorkers.filter(w => (batch.assignedWorkerIds || []).includes(w._id));
+          const batchWorkerIds = (batch.assignedWorkerIds || []).map((id: any) => String(id?._id || id));
+          const assignedWorkers = teamWorkers.filter(w => batchWorkerIds.includes(String(w._id)));
 
           return (
             <View key={batch._id} style={[common.card, isClosed && { opacity: 0.6 }]}>
-              <View style={common.row}>
-                <Text style={s.batchName}>{batch.name}</Text>
-                <View style={[s.badge, { backgroundColor: isClosed ? 'rgba(178, 58, 47, 0.15)' : 'rgba(74, 124, 89, 0.15)' }]}>
-                  <Text style={{ color: isClosed ? colors.rose : colors.secondary, fontWeight: '800', fontSize: 10 }}>
-                    {batch.status.toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={s.breedText}>
-                🐔 {batch.breed} ({batch.type}) • 🏠 {batch.shed || 'Main Shed'} • 📅 Age: {getBatchAgeText(batch.startDate)}
-              </Text>
-
-              {/* Progress bar */}
-              <View style={s.progressContainer}>
+              {/* Touchable Main Card Content -> Navigates to Batch Dashboard */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('BatchDashboard', { batchId: batch._id })}
+              >
                 <View style={common.row}>
-                  <Text style={s.progressText}>Current: {batch.currentCount} birds</Text>
-                  <Text style={[s.progressText, { color: colors.rose }]}>Mortality: {mortalityPct}% ({mortalityCount})</Text>
+                  <Text style={s.batchName}>{batch.name}</Text>
+                  <View style={[s.badge, { backgroundColor: isClosed ? 'rgba(178, 58, 47, 0.15)' : 'rgba(74, 124, 89, 0.15)' }]}>
+                    <Text style={{ color: isClosed ? colors.rose : colors.secondary, fontWeight: '800', fontSize: 10 }}>
+                      {batch.status.toUpperCase()}
+                    </Text>
+                  </View>
                 </View>
-                <View style={s.track}>
-                  <View style={[s.fill, { width: `${(batch.currentCount / batch.initialCount) * 100}%` }]} />
-                </View>
-              </View>
 
-              {/* View Batchwise Dashboard Button */}
-              <TouchableOpacity style={s.dashBtn} onPress={() => navigation.navigate('BatchDashboard', { batchId: batch._id })}>
-                <Text style={s.dashBtnText}>📊 View Batch Dashboard</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 6, flexWrap: 'wrap' }}>
+                  <Bird size={14} color={colors.brand} />
+                  <Text style={s.breedText}>{batch.breed}</Text>
+                  <Text style={{ color: colors.textMuted }}>•</Text>
+                  <Calendar size={14} color={colors.textMuted} />
+                  <Text style={s.breedText}>Age: {getBatchAgeText(batch.startDate)}</Text>
+                </View>
+
+                {/* Progress bar */}
+                <View style={s.progressContainer}>
+                  <View style={common.row}>
+                    <Text style={s.progressText}>Current: {batch.currentCount} birds</Text>
+                    <Text style={[s.progressText, { color: colors.rose }]}>Mortality: {mortalityPct}% ({mortalityCount})</Text>
+                  </View>
+                  <View style={s.track}>
+                    <View style={[s.fill, { width: `${(batch.currentCount / batch.initialCount) * 100}%` }]} />
+                  </View>
+                </View>
               </TouchableOpacity>
 
-              {/* Assigned Workers */}
+              {/* Assigned Workers Management */}
               <View style={s.workerBox}>
                 <View style={common.row}>
-                  <Text style={s.workerTitle}>👥 Workers ({assignedWorkers.length})</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Users size={14} color={colors.textMain} />
+                    <Text style={s.workerTitle}>Assigned Workers ({assignedWorkers.length})</Text>
+                  </View>
                   {canManage && (
                     <TouchableOpacity onPress={() => handleOpenAssignModal(batch)}>
-                      <Text style={s.assignBtnText}>Assign Workers</Text>
+                      <Text style={s.assignBtnText}>+ Add / Assign Worker</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -294,13 +289,14 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                   <View style={s.workerChipRow}>
                     {assignedWorkers.map(w => (
                       <View key={w._id} style={s.workerChip}>
-                        <Text style={s.workerChipText}>👤 {w.name}</Text>
+                        <User size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
+                        <Text style={s.workerChipText}>{w.name}</Text>
                       </View>
                     ))}
                   </View>
                 ) : (
                   <Text style={s.allWorkersText}>
-                    {canManage ? 'All workers can access (Click Assign Workers to restrict)' : 'Assigned to All Workers'}
+                    {canManage ? 'All workers can access (Click "+ Add / Assign Worker" to restrict)' : 'Assigned to All Workers'}
                   </Text>
                 )}
               </View>
@@ -309,14 +305,15 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }}>
                   {!isClosed && (
                     <TouchableOpacity onPress={() => handleOpenCloseSecurity(batch._id, batch.name)}>
-                      <Text style={s.closeText}>Close Batch</Text>
+                      <Text style={s.closeText}>Discontinue Batch</Text>
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
-                    style={{ backgroundColor: 'rgba(244,63,94,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 'auto' }}
+                    style={{ backgroundColor: 'rgba(244,63,94,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}
                     onPress={() => handleOpenDeleteSecurity(batch._id, batch.name)}
                   >
-                    <Text style={{ color: colors.rose, fontSize: 12, fontWeight: '800' }}>🗑️ Delete Flock</Text>
+                    <Trash2 size={13} color={colors.rose} />
+                    <Text style={{ color: colors.rose, fontSize: 12, fontWeight: '800' }}>Delete Batch</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -462,20 +459,11 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
               <Text style={common.label}>Breed</Text>
               <TextInput style={common.input} placeholder="Cobb 500" placeholderTextColor="#6B655C" value={breed} onChangeText={setBreed} />
 
-              <Text style={common.label}>Flock Type</Text>
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-                <TouchableOpacity
-                  style={[s.typeBtn, type === 'layer' && s.typeBtnSelected]}
-                  onPress={() => setType('layer')}
-                >
-                  <Text style={{ color: type === 'layer' ? colors.brand : colors.textMuted, fontWeight: '800' }}>🥚 Layer</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.typeBtn, type === 'broiler' && s.typeBtnSelected]}
-                  onPress={() => setType('broiler')}
-                >
-                  <Text style={{ color: type === 'broiler' ? colors.amber : colors.textMuted, fontWeight: '800' }}>🍗 Broiler</Text>
-                </TouchableOpacity>
+              <Text style={common.label}>Firm Animal Type</Text>
+              <View style={{ backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 13 }}>
+                  {activeFarm?.animalType === 'layer' ? '🥚 LAYER FARM' : '🐓 BROILER / POULTRY FARM'}
+                </Text>
               </View>
 
               <Text style={common.label}>Initial Birds Count</Text>
@@ -488,16 +476,111 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                 style={{ marginBottom: 14 }}
               />
 
-              <Text style={common.label}>Shed / House Name</Text>
-              <TextInput style={common.input} value={shed} onChangeText={setShed} />
+              <Text style={[common.label, { marginTop: 8 }]}>Assign Workers (Optional)</Text>
+              <View style={{ marginBottom: 14 }}>
+                {teamWorkers.length > 0 ? (
+                  teamWorkers.map(w => {
+                    const isSelected = selectedWorkerIds.includes(w._id);
+                    return (
+                      <TouchableOpacity
+                        key={w._id}
+                        onPress={() => toggleWorkerSelection(w._id)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: 10,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: isSelected ? colors.secondary : colors.border,
+                          backgroundColor: isSelected ? 'rgba(74, 124, 89, 0.15)' : colors.surfaceElevated,
+                          marginBottom: 6
+                        }}
+                      >
+                        <Text style={{ color: colors.textMain, fontWeight: '600', fontSize: 13 }}>👷 {w.name}</Text>
+                        {isSelected && <Text style={{ color: colors.secondary, fontWeight: '800' }}>✓</Text>}
+                      </TouchableOpacity>
+                    );
+                  })
+                ) : (
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>All workers can access</Text>
+                )}
+              </View>
             </ScrollView>
 
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
               <TouchableOpacity style={s.cancelBtn} onPress={() => setModalVisible(false)}>
-                <Text style={s.btnText}>Cancel</Text>
+                <Text style={[s.btnText,{color:colors.rose}]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.submitBtn} onPress={handleOpenCreateSecurity}>
                 <Text style={s.btnText}>Create Batch</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 👷 WORKER ASSIGNMENT MODAL FOR MOBILE */}
+      <Modal visible={!!assignModalBatch} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContainer, { maxHeight: '80%' }]}>
+            <Text style={s.modalTitle}>Assign Workers</Text>
+            <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 14 }}>
+              Select workers allowed to view and log data for flock '{assignModalBatch?.name}'
+            </Text>
+
+            <ScrollView style={{ maxHeight: 250, marginBottom: 16 }}>
+              {teamWorkers.length > 0 ? (
+                teamWorkers.map(w => {
+                  const isAssigned = selectedWorkerIds.includes(w._id);
+                  return (
+                    <TouchableOpacity
+                      key={w._id}
+                      onPress={() => toggleWorkerSelection(w._id)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: 12,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: isAssigned ? colors.secondary : colors.border,
+                        backgroundColor: isAssigned ? 'rgba(74, 124, 89, 0.15)' : colors.surfaceElevated,
+                        marginBottom: 8
+                      }}
+                    >
+                      <View>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textMain }}>👷 {w.name}</Text>
+                        <Text style={{ fontSize: 12, color: colors.textMuted }}>{w.email || w.phone || 'Worker'}</Text>
+                      </View>
+                      <View style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 6,
+                        backgroundColor: isAssigned ? colors.secondary : 'transparent',
+                        borderWidth: 1,
+                        borderColor: colors.secondary,
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {isAssigned && <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>✓</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              ) : (
+                <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', padding: 20 }}>
+                  No workers found. Add workers in Team Management screen first.
+                </Text>
+              )}
+            </ScrollView>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={s.cancelBtn} onPress={() => setAssignModalBatch(null)}>
+                <Text style={[s.btnText, { color: colors.textMain }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.submitBtn, { backgroundColor: colors.secondary }]} onPress={handleSaveAssignments}>
+                <Text style={s.btnText}>Save Assignments</Text>
               </TouchableOpacity>
             </View>
           </View>

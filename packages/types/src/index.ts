@@ -14,9 +14,14 @@ export type HealthRecordType = 'checkup' | 'vaccination' | 'injection' | 'treatm
 export type SubscriptionPlan = 'free' | 'pro';
 export type SaleItemType = 'egg' | 'chicken';
 
+export type AnimalType = 'poultry' | 'layer' | 'broiler';
+
 export interface IFarm {
   _id: string;
   name: string;
+  animalType: AnimalType;
+  date?: string | Date;
+  location?: string;
   ownerId: string;
   plan: SubscriptionPlan;
   timezone: string;
@@ -25,9 +30,10 @@ export interface IFarm {
 
 export interface IUser {
   _id: string;
-  farmId: string;
+  farmId?: string;
+  activeFarmId?: string;
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
   role: UserRole;
   fcmTokens?: string[];
@@ -40,11 +46,10 @@ export interface IBatch {
   farmId: string;
   name: string;
   breed: string;
-  type: BatchType;
+  type?: BatchType;
   startDate: string | Date;
   initialCount: number;
   currentCount: number;
-  shed?: string;
   status: BatchStatus;
   assignedWorkerIds?: string[];
   closedAt?: string | Date;
@@ -93,6 +98,7 @@ export interface IExpense {
   _id: string;
   farmId: string;
   batchId?: string;
+  workerId?: string;
   category: ExpenseCategory;
   amount: number;
   currency: string;
@@ -208,11 +214,13 @@ export interface IReportMetrics {
 
 export interface IAuthUser {
   userId: string;
-  farmId: string;
+  farmId?: string;
   name: string;
-  email: string;
+  email?: string;
+  phone?: string;
   role: UserRole;
-  farmName: string;
+  farmName?: string;
+  animalType?: AnimalType;
 }
 
 export interface IAuthResponse {

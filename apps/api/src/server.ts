@@ -14,6 +14,8 @@ import reportRoutes from './routes/reports';
 import userRoutes from './routes/users';
 import feedStockRoutes from './routes/feedStock';
 
+import farmRoutes from './routes/farms';
+
 dotenv.config();
 
 const app = express();
@@ -30,6 +32,8 @@ app.get('/api/health-check', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/farms', farmRoutes);
+app.use('/api/firms', farmRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/expenses', expenseRoutes);

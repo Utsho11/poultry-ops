@@ -10,6 +10,7 @@ import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
 import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
 import { DatePickerInput } from '../components/DatePickerInput';
+import { Plus, Zap, Egg, Bird, AlertCircle, Wheat, Droplets, Calendar, Filter, FileText } from 'lucide-react-native';
 
 export const DailyLogScreen: React.FC = () => {
   const { token } = useAuth();
@@ -23,6 +24,9 @@ export const DailyLogScreen: React.FC = () => {
   // Form Section: 'log' vs 'stock'
   const [formSection, setFormSection] = useState<'log' | 'stock'>('log');
   const [summaryData, setSummaryData] = useState<any>(null);
+
+  // Filter state (separate from form selectedBatchId)
+  const [filterBatchId, setFilterBatchId] = useState<string>('all');
 
   const [selectedBatchId, setSelectedBatchId] = useState('');
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
@@ -45,9 +49,10 @@ export const DailyLogScreen: React.FC = () => {
 
   const load = useCallback(async () => {
     try {
+      const logsQuery = filterBatchId !== 'all' ? `?batchId=${filterBatchId}` : '';
       const [batchData, logData, summaryRes] = await Promise.all([
         apiFetch('/batches?status=active', {}, token),
-        apiFetch('/logs', {}, token),
+        apiFetch(`/logs${logsQuery}`, {}, token),
         apiFetch('/reports/summary', {}, token)
       ]);
       setBatches(batchData);
@@ -56,7 +61,7 @@ export const DailyLogScreen: React.FC = () => {
       setSummaryData(summaryRes);
     } catch (e) {}
     finally { setRefreshing(false); }
-  }, [token, selectedBatchId]);
+  }, [token, selectedBatchId, filterBatchId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -131,7 +136,7 @@ export const DailyLogScreen: React.FC = () => {
         contentContainerStyle={common.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.brand} />}
       >
-        <View style={[common.row, { marginBottom: 20 }]}>
+        <View style={[common.row, { marginBottom: 12 }]}>
           <View>
             <Text style={common.sectionTitle}>Daily Log</Text>
             <Text style={common.sectionSubtitle}>{logs.length} entries recorded</Text>
@@ -139,6 +144,24 @@ export const DailyLogScreen: React.FC = () => {
           <TouchableOpacity style={s.addBtn} onPress={() => setModalVisible(true)}>
             <Text style={{ color: '#fff', fontWeight: '700' }}>+ Submit Log</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Batch Filter */}
+        <View style={s.filterContainer}>
+          <Text style={s.filterLabel}>🐔 Filter by Flock</Text>
+          <View style={s.pickerWrapper}>
+            <Picker
+              selectedValue={filterBatchId}
+              onValueChange={(val) => setFilterBatchId(val)}
+              dropdownIconColor={colors.brand}
+              style={s.pickerStyle}
+            >
+              <Picker.Item label="All Flocks" value="all" />
+              {batches.map(b => (
+                <Picker.Item key={b._id} label={`🐔 ${b.name}`} value={b._id} />
+              ))}
+            </Picker>
+          </View>
         </View>
 
         {success && (
@@ -149,27 +172,43 @@ export const DailyLogScreen: React.FC = () => {
 
         {/* Log table */}
         {logs.length === 0
-          ? <Text style={common.emptyText}>No logs yet. Tap "+ Submit Log" to record today's data.</Text>
+          ? <Text>No logs yet. Tap "+ Submit Log" to record today's data.</Text>
           : logs.map(log => (
             <View key={log._id} style={common.card}>
               <View style={common.row}>
-                <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 15 }}>{log.date}</Text>
+                <View>
+                  <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 15 }}>{log.date}</Text>
+                  {log.batchId?.name && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <Bird size={12} color={colors.brand} />
+                      <Text style={{ color: colors.brand, fontSize: 11, fontWeight: '700' }}>{log.batchId.name}</Text>
+                    </View>
+                  )}
+                </View>
                 <View style={s.eggBadge}>
-                  <Text style={{ color: colors.brand, fontSize: 12, fontWeight: '700' }}>
-                    🥚 {formatEggCount(log.eggCount)}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Egg size={12} color={colors.brand} />
+                    <Text style={{ color: colors.brand, fontSize: 12, fontWeight: '700' }}>
+                      {formatEggCount(log.eggCount)}
+                    </Text>
+                  </View>
                 </View>
               </View>
               <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 <View style={s.chip}><Text style={s.chipText}>Total: {log.eggCount} eggs</Text></View>
                 <View style={s.chip}><Text style={s.chipText}>Broken: {log.brokenEggCount}</Text></View>
                 <View style={[s.chip, log.deadCount > 0 && { backgroundColor: 'rgba(244,63,94,0.15)' }]}>
-                  <Text style={[s.chipText, log.deadCount > 0 && { color: colors.rose }]}>☠️ Dead: {log.deadCount}</Text>
+                  <Text style={[s.chipText, log.deadCount > 0 && { color: colors.rose }]}>Dead: {log.deadCount}</Text>
                 </View>
                 <View style={s.chip}><Text style={s.chipText}>Feed: {log.feedGivenKg}kg ({(log.feedGivenKg / 50).toFixed(1)} Bags)</Text></View>
                 <View style={s.chip}><Text style={s.chipText}>Water: {log.waterGivenLiters}L</Text></View>
               </View>
-              {log.notes ? <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 8 }}>📝 {log.notes}</Text> : null}
+              {log.notes ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 }}>
+                  <FileText size={12} color={colors.textMuted} />
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>{log.notes}</Text>
+                </View>
+              ) : null}
             </View>
           ))
         }
@@ -300,6 +339,20 @@ const s = StyleSheet.create({
   tabBtn: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.surfaceElevated },
   tabBtnActiveLog: { borderColor: colors.secondary, backgroundColor: 'rgba(74, 124, 89, 0.15)' },
   tabBtnActiveStock: { borderColor: colors.amber, backgroundColor: 'rgba(217, 164, 65, 0.15)' },
+  filterContainer: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginBottom: 6,
+  },
   pickerWrapper: {
     borderWidth: 1,
     borderColor: colors.border,

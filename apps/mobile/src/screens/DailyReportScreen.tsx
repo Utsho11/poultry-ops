@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
-  RefreshControl, StyleSheet, ActivityIndicator
+  View, Text, ScrollView, TouchableOpacity, TextInput,
+  Modal, RefreshControl, StyleSheet, ActivityIndicator, Alert
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../config';
@@ -12,27 +12,120 @@ export type MobileReportTab = 'egg' | 'mortality' | 'expense' | 'sell' | 'income
 
 export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
   const { token } = useAuth();
-  const { batchId, initialTab = 'egg' } = route.params || {};
+  const { batchId: routeBatchId, initialTab = 'egg' } = route.params || {};
 
   const [activeTab, setActiveTab] = useState<MobileReportTab>(initialTab as MobileReportTab);
   const [dailyLogs, setDailyLogs] = useState<any[]>([]);
+  const [rawLogs, setRawLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Accordion state
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
 
+  // Edit Log State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState<any>(null);
+  const [editEggCount, setEditEggCount] = useState('0');
+  const [editBrokenEggCount, setEditBrokenEggCount] = useState('0');
+  const [editDeadCount, setEditDeadCount] = useState('0');
+  const [editFeedKg, setEditFeedKg] = useState('0');
+  const [editWaterLiters, setEditWaterLiters] = useState('0');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Helper to find individual raw log entry for a date
+  const getRawLogForDate = (date: string) => {
+    return rawLogs.find(l => l.date === date && (!routeBatchId || String(l.batchId?._id || l.batchId) === String(routeBatchId)));
+  };
+
+  const openEditModal = (log: any) => {
+    const raw = getRawLogForDate(log.date);
+    const logToEdit = raw || log;
+    setEditingLog(logToEdit);
+    setEditEggCount(String(logToEdit.eggCount || 0));
+    setEditBrokenEggCount(String(logToEdit.brokenEggCount || 0));
+    setEditDeadCount(String(logToEdit.deadCount || 0));
+    setEditFeedKg(String(logToEdit.feedGivenKg || 0));
+    setEditWaterLiters(String(logToEdit.waterGivenLiters || 0));
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateLog = async () => {
+    let targetId = editingLog?._id || editingLog?.logId;
+    if (!targetId && editingLog?.date) {
+      const raw = getRawLogForDate(editingLog.date);
+      targetId = raw?._id;
+    }
+
+    if (!targetId) {
+      Alert.alert('Error', 'Daily log ID not found for editing.');
+      return;
+    }
+
+    setEditSubmitting(true);
+    try {
+      await apiFetch(`/logs/${targetId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          eggCount: Number(editEggCount),
+          brokenEggCount: Number(editBrokenEggCount),
+          deadCount: Number(editDeadCount),
+          feedGivenKg: Number(editFeedKg),
+          waterGivenLiters: Number(editWaterLiters)
+        })
+      }, token);
+      Alert.alert('Success', 'Daily log entry updated successfully');
+      setEditModalOpen(false);
+      loadLogs();
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteLog = async (log: any) => {
+    const raw = getRawLogForDate(log.date);
+    const targetId = raw?._id || log._id || log.logId;
+
+    if (!targetId) {
+      Alert.alert('Not Found', 'Could not find individual log entry to delete. Please refresh.');
+      return;
+    }
+
+    Alert.alert('Confirm Delete', 'Deleting this daily log will adjust flock mortality stats. Proceed?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Log',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await apiFetch(`/logs/${targetId}`, { method: 'DELETE' }, token);
+            Alert.alert('Success', 'Daily log entry deleted');
+            loadLogs();
+          } catch (err: any) {
+            Alert.alert('Error', err.message);
+          }
+        }
+      }
+    ]);
+  };
+
   const loadLogs = useCallback(async () => {
     try {
-      const query = batchId ? `?batchId=${batchId}` : '';
-      const logs = await apiFetch(`/reports/daily${query}`, {}, token);
+      const query = routeBatchId ? `?batchId=${routeBatchId}` : '';
+      const [logs, raw] = await Promise.all([
+        apiFetch(`/reports/daily${query}`, {}, token),
+        apiFetch(`/logs${query}`, {}, token)
+      ]);
       setDailyLogs(logs);
+      setRawLogs(raw);
       if (logs.length > 0) {
         setExpandedDates({ [logs[0].date]: true });
       }
     } catch (e) {}
     finally { setLoading(false); setRefreshing(false); }
-  }, [batchId, token]);
+  }, [routeBatchId, token]);
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
@@ -141,62 +234,26 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
                         )}
                         {log.rateTrend === 'down' && (
                           <View style={[s.rateBadge, { backgroundColor: 'rgba(178, 58, 47, 0.15)', borderColor: colors.rose, borderWidth: 1 }]}>
-                            <Text style={[s.rateBadgeText, { color: colors.rose }]}>▼ {log.eggLayingRate}% ({log.rateDiff}%)</Text>
+                            <Text style={[s.rateBadgeText, { color: colors.rose }]}>▼ {log.eggLayingRate}% (-{log.rateDiff}%)</Text>
                           </View>
                         )}
-                        {log.rateTrend === 'same' && (
+                        {log.rateTrend === 'stable' && (
                           <View style={s.rateBadge}>
-                            <Text style={s.rateBadgeText}>{log.eggLayingRate}% Laying</Text>
+                            <Text style={s.rateBadgeText}>— {log.eggLayingRate}%</Text>
                           </View>
                         )}
                       </>
                     )}
-
-                    {activeTab === 'mortality' && (
-                      <View style={[s.rateBadge, { backgroundColor: log.deadCount > 0 ? 'rgba(178, 58, 47, 0.15)' : 'rgba(74, 124, 89, 0.15)' }]}>
-                        <Text style={[s.rateBadgeText, { color: log.deadCount > 0 ? colors.rose : colors.secondary }]}>
-                          {log.deadCount} Dead
-                        </Text>
-                      </View>
-                    )}
-
-                    {activeTab === 'expense' && (
-                      <View style={[s.rateBadge, { backgroundColor: 'rgba(217, 164, 65, 0.15)' }]}>
-                        <Text style={[s.rateBadgeText, { color: colors.amber }]}>৳{log.totalExpenses}</Text>
-                      </View>
-                    )}
-
-                    {activeTab === 'sell' && (
-                      <View style={[s.rateBadge, { backgroundColor: 'rgba(61, 107, 140, 0.15)' }]}>
-                        <Text style={[s.rateBadgeText, { color: colors.blue }]}>৳{log.totalIncome}</Text>
-                      </View>
-                    )}
-
-                    {activeTab === 'income' && (
-                      <View style={[s.rateBadge, { backgroundColor: log.netProfit >= 0 ? 'rgba(74, 124, 89, 0.15)' : 'rgba(178, 58, 47, 0.15)' }]}>
-                        <Text style={[s.rateBadgeText, { color: log.netProfit >= 0 ? colors.secondary : colors.rose }]}>
-                          ৳{log.netProfit}
-                        </Text>
-                      </View>
-                    )}
-
-                    {activeTab === 'food' && (
-                      <View style={s.rateBadge}>
-                        <Text style={s.rateBadgeText}>{log.feedGivenKg} kg Feed</Text>
-                      </View>
-                    )}
-
-                    <Text style={{ color: colors.textMuted, fontSize: 16 }}>{isExpanded ? '▲' : '▼'}</Text>
+                    <Text style={{ fontSize: 18 }}>{isExpanded ? '▲' : '▼'}</Text>
                   </View>
                 </TouchableOpacity>
 
-                {/* Expanded Details Body */}
                 {isExpanded && (
                   <View style={s.accordionBody}>
                     {activeTab === 'egg' && (
                       <>
                         <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.secondary }]}>🥚 COLLECTED EGGS</Text>
+                          <Text style={[s.boxTitle, { color: colors.secondary }]}>🥚 TOTAL EGGS COLLECTED</Text>
                           <Text style={s.boxValue}>{formatEggCount(log.eggCount)}</Text>
                           <Text style={s.boxSub}>{log.eggCount} total eggs collected</Text>
                         </View>
@@ -272,6 +329,16 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
                         </View>
                       </>
                     )}
+
+                    {/* ALWAYS VISIBLE Edit / Delete Actions */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+                      <TouchableOpacity onPress={() => openEditModal(log)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(61, 107, 140, 0.12)', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: colors.blue }}>✏️ Edit Log</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeleteLog(log)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(220, 38, 38, 0.12)', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>🗑️ Delete Log</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </View>
@@ -285,6 +352,46 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
           </View>
         )}
       </ScrollView>
+
+      {/* EDIT LOG MODAL */}
+      <Modal visible={editModalOpen} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 16 }}>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, maxHeight: '85%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: colors.textMain }}>✏️ Edit Daily Log — {editingLog?.date}</Text>
+              <TouchableOpacity onPress={() => setEditModalOpen(false)}>
+                <Text style={{ fontSize: 18, fontWeight: '900', color: colors.textMuted }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView>
+              <Text style={common.label}>🥚 Egg Count</Text>
+              <TextInput style={common.input} keyboardType="numeric" value={editEggCount} onChangeText={setEditEggCount} />
+
+              <Text style={common.label}>💔 Broken Egg Count</Text>
+              <TextInput style={common.input} keyboardType="numeric" value={editBrokenEggCount} onChangeText={setEditBrokenEggCount} />
+
+              <Text style={common.label}>💀 Dead Birds Count</Text>
+              <TextInput style={common.input} keyboardType="numeric" value={editDeadCount} onChangeText={setEditDeadCount} />
+
+              <Text style={common.label}>🌾 Feed Given (kg)</Text>
+              <TextInput style={common.input} keyboardType="numeric" value={editFeedKg} onChangeText={setEditFeedKg} />
+
+              <Text style={common.label}>💧 Water Given (Liters)</Text>
+              <TextInput style={common.input} keyboardType="numeric" value={editWaterLiters} onChangeText={setEditWaterLiters} />
+
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 16, marginBottom: 20 }}>
+                <TouchableOpacity style={[common.btnSecondary, { flex: 1 }]} onPress={() => setEditModalOpen(false)}>
+                  <Text style={common.btnSecondaryText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[common.btn, { flex: 1 }]} onPress={handleUpdateLog} disabled={editSubmitting}>
+                  {editSubmitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={common.btnText}>Save Changes</Text>}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

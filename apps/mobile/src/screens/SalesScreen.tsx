@@ -9,6 +9,7 @@ import { colors, common } from '../styles';
 import { formatEggCount } from '../utils/crates';
 import { ISale, ICustomer, IBatch, IPayment } from '@poultry-ops/types';
 import { DatePickerInput } from '../components/DatePickerInput';
+import { Tag, Plus, Phone, Egg, Bird, DollarSign, Trash2, Users, CreditCard, ShoppingBag } from 'lucide-react-native';
 
 export const SalesScreen: React.FC<any> = ({ navigation }) => {
   const { token, user } = useAuth();
@@ -214,12 +215,18 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
       {/* Top Banner Header */}
       <View style={s.topHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>🏷️ Sales & Customer Dues</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Tag size={18} color={colors.brand} />
+            <Text style={s.headerTitle}>Sales & Customer Dues</Text>
+          </View>
           <Text style={s.headerSub}>Total Outstanding Due: ৳{totalDues.toLocaleString()}</Text>
         </View>
         {!isWorker && (
           <TouchableOpacity style={s.addBtn} onPress={() => setNewSaleModalOpen(true)}>
-            <Text style={s.addBtnText}>+ New Sale</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Plus size={14} color="#fff" />
+              <Text style={s.addBtnText}>New Sale</Text>
+            </View>
           </TouchableOpacity>
         )}
       </View>
@@ -247,7 +254,12 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
               <View style={common.row}>
                 <View>
                   <Text style={s.customerName}>{sale.customerName || 'Walk-in Customer'}</Text>
-                  {sale.customerPhone ? <Text style={s.phoneText}>📞 {sale.customerPhone}</Text> : null}
+                  {sale.customerPhone ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <Phone size={12} color={colors.textMuted} />
+                      <Text style={s.phoneText}>{sale.customerPhone}</Text>
+                    </View>
+                  ) : null}
                 </View>
                 <View style={[
                   s.statusBadge,
@@ -267,14 +279,20 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
               <View style={{ marginVertical: 8, padding: 8, backgroundColor: colors.surfaceElevated, borderRadius: 6 }}>
                 {sale.items && sale.items.length > 0 ? (
                   sale.items.map((item, idx) => (
-                    <Text key={idx} style={s.itemText}>
-                      {item.type === 'egg' ? '🥚' : '🐔'} {item.type === 'egg' ? formatEggCount(item.quantity) : `${item.quantity} birds`} @ ৳{item.unitPrice} = ৳{item.subtotal}
-                    </Text>
+                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 2 }}>
+                      {item.type === 'egg' ? <Egg size={13} color={colors.brand} /> : <Bird size={13} color={colors.brand} />}
+                      <Text style={s.itemText}>
+                        {item.type === 'egg' ? formatEggCount(item.quantity) : `${item.quantity} birds`} @ ৳{item.unitPrice} = ৳{item.subtotal}
+                      </Text>
+                    </View>
                   ))
                 ) : (
-                  <Text style={s.itemText}>
-                    {sale.itemType === 'egg' ? '🥚' : '🐔'} {sale.quantity} @ ৳{sale.unitPrice} = ৳{sale.totalAmount}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {sale.itemType === 'egg' ? <Egg size={13} color={colors.brand} /> : <Bird size={13} color={colors.brand} />}
+                    <Text style={s.itemText}>
+                      {sale.quantity} @ ৳{sale.unitPrice} = ৳{sale.totalAmount}
+                    </Text>
+                  </View>
                 )}
               </View>
 
@@ -283,6 +301,34 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
                 <Text style={s.label}>Paid: <Text style={[s.val, { color: colors.secondary }]}>৳{sale.amountPaid}</Text></Text>
                 <Text style={s.label}>Due: <Text style={[s.val, { color: sale.amountDue > 0 ? colors.rose : colors.textMain }]}>৳{sale.amountDue}</Text></Text>
               </View>
+
+              {!isWorker && (
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Alert.alert("Confirm Delete Sale Invoice", "Deleting this sale invoice will restore flock stock and recalculate customer dues. Proceed?", [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Delete Invoice",
+                          style: "destructive",
+                          onPress: async () => {
+                            try {
+                              await apiFetch(`/sales/${sale._id}`, { method: "DELETE" }, token);
+                              Alert.alert("Success", "Sale invoice deleted and dues updated");
+                              loadData();
+                            } catch (err: any) {
+                              Alert.alert("Error", err.message);
+                            }
+                          },
+                        },
+                      ]);
+                    }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>🗑️ Delete Invoice</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           ))
         )}

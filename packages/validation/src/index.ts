@@ -1,26 +1,48 @@
 import { z } from 'zod';
 
-export const registerFarmSchema = z.object({
-  farmName: z.string().min(2, 'Farm name must be at least 2 characters'),
-  ownerName: z.string().min(2, 'Owner name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
+export const registerSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  phone: z.string().min(6, 'Phone number must be at least 6 digits').optional().or(z.literal('')),
+}).refine(data => (data.email && data.email.trim().length > 0) || (data.phone && data.phone.trim().length > 0), {
+  message: 'Please provide either an email address or a phone number',
+  path: ['email']
+});
+
+export const registerFarmSchema = z.object({
+  farmName: z.string().min(2, 'Firm name must be at least 2 characters'),
+  ownerName: z.string().min(2, 'Owner name must be at least 2 characters'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: z.string().optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  animalType: z.enum(['poultry', 'layer', 'broiler']).default('layer'),
+  date: z.string().optional(),
+  location: z.string().optional(),
+  timezone: z.string().default('Asia/Dhaka')
+});
+
+export const createFarmSchema = z.object({
+  name: z.string().min(2, 'Firm name must be at least 2 characters'),
+  animalType: z.enum(['poultry', 'layer', 'broiler']),
+  date: z.string().optional(),
+  location: z.string().optional(),
   timezone: z.string().default('Asia/Dhaka')
 });
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  identifier: z.string().min(1, 'Email or Phone number is required').optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
   password: z.string().min(1, 'Password is required')
 });
 
 export const createBatchSchema = z.object({
   name: z.string().min(2, 'Batch name must be at least 2 characters'),
   breed: z.string().min(1, 'Breed is required'),
-  type: z.enum(['layer', 'broiler']),
+  type: z.enum(['layer', 'broiler']).optional(),
   startDate: z.string().or(z.date()),
-  initialCount: z.coerce.number().int().positive('Initial count must be greater than 0'),
-  shed: z.string().optional()
+  initialCount: z.coerce.number().int().positive('Initial count must be greater than 0')
 });
 
 export const dailyLogSchema = z.object({
@@ -41,6 +63,7 @@ export const dailyLogSchema = z.object({
 
 export const expenseSchema = z.object({
   batchId: z.string().min(1, 'Batch ID is required').optional(),
+  workerId: z.string().optional(),
   category: z.enum(['feed', 'medicine', 'labor', 'utility', 'equipment', 'other']),
   amount: z.number().positive('Expense amount must be positive'),
   currency: z.string().default('BDT'),
@@ -126,7 +149,9 @@ export const createUserSchema = z.object({
   phone: z.string().optional()
 });
 
+export type RegisterInput = z.infer<typeof registerSchema>;
 export type RegisterFarmInput = z.infer<typeof registerFarmSchema>;
+export type CreateFarmInput = z.infer<typeof createFarmSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateBatchInput = z.infer<typeof createBatchSchema>;
 export type DailyLogInput = z.infer<typeof dailyLogSchema>;

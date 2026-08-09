@@ -2,9 +2,13 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth';
 
 export const resolveTenant = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!req.user || !req.user.farmId) {
-    return res.status(403).json({ error: 'Tenant context missing or unauthorized' });
+  const headerFarmId = req.headers['x-farm-id'] as string;
+  const farmId = headerFarmId || req.user?.farmId;
+
+  if (!farmId) {
+    return res.status(403).json({ error: 'Firm context missing. Please select or create a Firm.' });
   }
-  req.farmId = req.user.farmId;
+
+  req.farmId = farmId;
   next();
 };
