@@ -12,18 +12,157 @@ function toObjectId(id: string) {
   }
 }
 
-async function getAvgFeedCostPerKg(farmId: any): Promise<number> {
-  const farmObjectId = toObjectId(farmId as string);
-  const stockAgg = await FeedStockModel.aggregate([
-    { $match: { $or: [{ farmId: farmObjectId }, { farmId }] } },
-    { $group: { _id: null, totalCost: { $sum: '$totalCost' }, totalKg: { $sum: '$totalKg' } } }
-  ]);
+interface FeedLot {
+  date: string;
+  totalKg: number;
+  remainingKg: number;
+  costPerKg: number;
+}
 
-  if (stockAgg.length > 0 && stockAgg[0].totalKg > 0) {
-    return stockAgg[0].totalCost / stockAgg[0].totalKg;
+/**
+ * Calculates feed expense using FIFO (First-In, First-Out) inventory costing.
+ * Fetches all feed purchases (from FeedStock or Expense category 'feed') sorted by date ASC.
+ * Consumes feed lot by lot starting from the oldest available stock.
+ */
+async function calculateFifoFeedCost(
+  farmId: any,
+  targetBatchId?: string,
+  dateFrom?: string,
+  dateTo?: string
+): Promise<{ totalFeedExpense: number; avgCostPerKg: number }> {
+  const farmObjectId = toObjectId(farmId as string);
+
+  // 1. Fetch all feed purchases for the farm sorted by date ASC (oldest first)
+  const feedStockRecords = await FeedStockModel.find({
+    $or: [{ farmId: farmObjectId }, { farmId }]
+  }).sort({ date: 1, createdAt: 1 });
+
+  const feedExpenseRecords = await ExpenseModel.find({
+    $or: [{ farmId: farmObjectId }, { farmId }],
+    category: 'feed'
+  }).sort({ date: 1, createdAt: 1 });
+
+  const lots: FeedLot[] = [];
+
+  feedStockRecords.forEach(fs => {
+    const costPerKg = fs.totalKg > 0 ? fs.totalCost / fs.totalKg : (fs.bagPrice ? fs.bagPrice / 50 : 50);
+    lots.push({
+      date: fs.date,
+      totalKg: fs.totalKg,
+      remainingKg: fs.totalKg,
+      costPerKg
+    });
+  });
+
+  feedExpenseRecords.forEach(fe => {
+    const kg = fe.feedKg || (fe.feedBags ? fe.feedBags * 50 : 0);
+    if (kg > 0) {
+      const costPerKg = fe.amount / kg;
+      lots.push({
+        date: fe.date,
+        totalKg: kg,
+        remainingKg: kg,
+        costPerKg
+      });
+    }
+  });
+
+  lots.sort((a, b) => a.date.localeCompare(b.date));
+
+  // If no purchase records exist, fallback to ৳50 / kg
+  if (lots.length === 0) {
+    const defaultCostPerKg = 50;
+    const logMatch: any = { $or: [{ farmId: farmObjectId }, { farmId }] };
+    if (targetBatchId) {
+      const bObjId = toObjectId(targetBatchId);
+      logMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(targetBatchId) }] }];
+    }
+    if (dateFrom || dateTo) {
+      logMatch.date = {};
+      if (dateFrom) logMatch.date.$gte = dateFrom;
+      if (dateTo) logMatch.date.$lte = dateTo;
+    }
+    const logAgg = await DailyLogModel.aggregate([
+      { $match: logMatch },
+      { $group: { _id: null, totalKg: { $sum: '$feedGivenKg' } } }
+    ]);
+    const totalKg = logAgg[0]?.totalKg || 0;
+    return {
+      totalFeedExpense: Math.round(totalKg * defaultCostPerKg),
+      avgCostPerKg: defaultCostPerKg
+    };
   }
 
-  return 50; // Fallback: ৳50 / kg
+  // 2. Fetch all daily logs across the farm chronologically by date ASC
+  const allFarmLogs = await DailyLogModel.find({
+    $or: [{ farmId: farmObjectId }, { farmId }]
+  }).sort({ date: 1, createdAt: 1 });
+
+  const logFifoCosts = new Map<string, number>();
+  let currentLotIdx = 0;
+
+  for (const log of allFarmLogs) {
+    const logKg = log.feedGivenKg || 0;
+    if (logKg <= 0) {
+      logFifoCosts.set(String(log._id), 0);
+      continue;
+    }
+
+    let neededKg = logKg;
+    let logCost = 0;
+
+    while (neededKg > 0 && currentLotIdx < lots.length) {
+      const currentLot = lots[currentLotIdx];
+      if (currentLot.remainingKg <= 0) {
+        currentLotIdx++;
+        continue;
+      }
+
+      const takeKg = Math.min(neededKg, currentLot.remainingKg);
+      logCost += takeKg * currentLot.costPerKg;
+      currentLot.remainingKg -= takeKg;
+      neededKg -= takeKg;
+
+      if (currentLot.remainingKg <= 0) {
+        currentLotIdx++;
+      }
+    }
+
+    if (neededKg > 0) {
+      const lastPrice = lots[lots.length - 1]?.costPerKg || 50;
+      logCost += neededKg * lastPrice;
+    }
+
+    logFifoCosts.set(String(log._id), logCost);
+  }
+
+  // 3. Filter target logs if targetBatchId or date filters are provided
+  let filteredTotalCost = 0;
+  let filteredTotalKg = 0;
+
+  for (const log of allFarmLogs) {
+    let match = true;
+    if (targetBatchId) {
+      const bStr = String(targetBatchId);
+      const logBStr = String(log.batchId);
+      if (logBStr !== bStr) match = false;
+    }
+    if (dateFrom && log.date < dateFrom) match = false;
+    if (dateTo && log.date > dateTo) match = false;
+
+    if (match) {
+      const cost = logFifoCosts.get(String(log._id)) || 0;
+      filteredTotalCost += cost;
+      filteredTotalKg += log.feedGivenKg || 0;
+    }
+  }
+
+  const effectiveAvgCost = filteredTotalKg > 0 ? filteredTotalCost / filteredTotalKg : (lots[lots.length - 1]?.costPerKg || 50);
+
+  return {
+    totalFeedExpense: Math.round(filteredTotalCost),
+    avgCostPerKg: Number(effectiveAvgCost.toFixed(2))
+  };
 }
 
 export class ReportController {
@@ -73,8 +212,12 @@ export class ReportController {
       const allTimeEggCount = allTimeEggAgg[0]?.sum || 0;
       const allTimeBrokenCount = allTimeEggAgg[0]?.brokenSum || 0;
 
-      const avgFeedCostPerKg = await getAvgFeedCostPerKg(req.farmId);
-      const calculatedFeedExpense = Math.round(logMetrics.totalFeedKg * avgFeedCostPerKg);
+      const { totalFeedExpense: calculatedFeedExpense, avgCostPerKg: avgFeedCostPerKg } = await calculateFifoFeedCost(
+        req.farmId,
+        batchId ? String(batchId) : undefined,
+        from ? String(from) : undefined,
+        to ? String(to) : undefined
+      );
 
       const expenseMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
       if (batchId) {
@@ -476,8 +619,10 @@ export class ReportController {
         totalExpenses += e.amount || 0;
       });
 
-      const avgFeedCostPerKg = await getAvgFeedCostPerKg(req.farmId);
-      const calculatedFeedExpense = Math.round(totalFeedKg * avgFeedCostPerKg);
+      const { totalFeedExpense: calculatedFeedExpense, avgCostPerKg: avgFeedCostPerKg } = await calculateFifoFeedCost(
+        req.farmId,
+        batchId
+      );
       const grandTotalCost = totalExpenses + calculatedFeedExpense;
 
       const mortalityRate = batch.initialCount > 0
