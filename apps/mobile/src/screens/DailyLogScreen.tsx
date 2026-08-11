@@ -148,7 +148,7 @@ export const DailyLogScreen: React.FC = () => {
 
         {/* Batch Filter */}
         <View style={s.filterContainer}>
-          <Text style={s.filterLabel}>🐔 Filter by Flock</Text>
+          <Text style={s.filterLabel}>Filter by Flock</Text>
           <View style={s.pickerWrapper}>
             <Picker
               selectedValue={filterBatchId}
@@ -157,22 +157,29 @@ export const DailyLogScreen: React.FC = () => {
               style={s.pickerStyle}
             >
               <Picker.Item label="All Flocks" value="all" />
-              {batches.map(b => (
-                <Picker.Item key={b._id} label={`🐔 ${b.name}`} value={b._id} />
-              ))}
+              {batches
+                .filter(b => b.type === (activeFarm?.animalType === 'broiler' ? 'broiler' : 'layer'))
+                .map(b => (
+                  <Picker.Item key={b._id} label={`${b.name} (${b.breed || 'Flock'})`} value={b._id} />
+                ))}
             </Picker>
           </View>
         </View>
 
         {success && (
           <View style={s.successBanner}>
-            <Text style={{ color: colors.brand, fontWeight: '700' }}>✅ Daily log saved! Recorded {formatEggCount(totalCalculatedEggs)}.</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Zap size={14} color={colors.brand} />
+              <Text style={{ color: colors.brand, fontWeight: '700' }}>
+                Daily log saved! Recorded {activeFarm?.animalType === 'layer' ? formatEggCount(totalCalculatedEggs) : `${totalFeedGivenKg}kg feed`}.
+              </Text>
+            </View>
           </View>
         )}
 
         {/* Log table */}
         {logs.length === 0
-          ? <Text>No logs yet. Tap "+ Submit Log" to record today's data.</Text>
+          ? <Text style={{ color: colors.textMuted, textAlign: 'center', marginVertical: 20 }}>No logs yet. Tap "+ Submit Log" to record today's data.</Text>
           : logs.map(log => (
             <View key={log._id} style={common.card}>
               <View style={common.row}>
@@ -185,18 +192,24 @@ export const DailyLogScreen: React.FC = () => {
                     </View>
                   )}
                 </View>
-                <View style={s.eggBadge}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Egg size={12} color={colors.brand} />
-                    <Text style={{ color: colors.brand, fontSize: 12, fontWeight: '700' }}>
-                      {formatEggCount(log.eggCount)}
-                    </Text>
+                {activeFarm?.animalType === 'layer' && (
+                  <View style={s.eggBadge}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Egg size={12} color={colors.brand} />
+                      <Text style={{ color: colors.brand, fontSize: 12, fontWeight: '700' }}>
+                        {formatEggCount(log.eggCount)}
+                      </Text>
+                    </View>
                   </View>
-                </View>
+                )}
               </View>
               <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <View style={s.chip}><Text style={s.chipText}>Total: {log.eggCount} eggs</Text></View>
-                <View style={s.chip}><Text style={s.chipText}>Broken: {log.brokenEggCount}</Text></View>
+                {activeFarm?.animalType === 'layer' && (
+                  <>
+                    <View style={s.chip}><Text style={s.chipText}>Total: {log.eggCount} eggs</Text></View>
+                    <View style={s.chip}><Text style={s.chipText}>Broken: {log.brokenEggCount}</Text></View>
+                  </>
+                )}
                 <View style={[s.chip, log.deadCount > 0 && { backgroundColor: 'rgba(244,63,94,0.15)' }]}>
                   <Text style={[s.chipText, log.deadCount > 0 && { color: colors.rose }]}>Dead: {log.deadCount}</Text>
                 </View>
