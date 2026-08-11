@@ -12,7 +12,7 @@ import { DatePickerInput } from '../components/DatePickerInput';
 import { Tag, Plus, Phone, Egg, Bird, DollarSign, Trash2, Users, CreditCard, ShoppingBag } from 'lucide-react-native';
 
 export const SalesScreen: React.FC<any> = ({ navigation }) => {
-  const { token, user } = useAuth();
+  const { token, user, activeFarm } = useAuth();
   const isWorker = user?.role === 'worker';
 
   const [activeTab, setActiveTab] = useState<'sales' | 'customers' | 'payments'>('sales');

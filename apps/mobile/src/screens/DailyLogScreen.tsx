@@ -13,7 +13,7 @@ import { DatePickerInput } from '../components/DatePickerInput';
 import { Plus, Zap, Egg, Bird, AlertCircle, Wheat, Droplets, Calendar, Filter, FileText } from 'lucide-react-native';
 
 export const DailyLogScreen: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user, activeFarm } = useAuth();
   const [batches, setBatches] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);

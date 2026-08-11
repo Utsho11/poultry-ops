@@ -17,7 +17,7 @@ import { formatEggCount, cratesAndLooseToTotal } from "../utils/crates";
 import { Zap, Tag, Calendar, Egg, Wheat, Skull, TrendingUp, CircleDollarSign, Bird, Package, X, Plus } from "lucide-react-native";
 
 export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
-  const { token, user } = useAuth();
+  const { token, user, activeFarm } = useAuth();
   const { batchId } = route.params || {};
 
   const [data, setData] = useState<any>(null);

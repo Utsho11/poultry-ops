@@ -13,7 +13,7 @@ import { Egg, Skull, CircleDollarSign, Tag, TrendingUp, Wheat, ArrowLeft, Edit2,
 export type MobileReportTab = 'egg' | 'mortality' | 'expense' | 'sell' | 'income' | 'food';
 
 export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
-  const { token } = useAuth();
+  const { token, user, activeFarm } = useAuth();
   const { batchId: routeBatchId, initialTab = 'egg' } = route.params || {};
 
   const [activeTab, setActiveTab] = useState<MobileReportTab>(initialTab as MobileReportTab);

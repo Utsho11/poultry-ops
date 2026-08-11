@@ -37,7 +37,7 @@ const categoryColor: Record<string, string> = {
 };
 
 export const ExpensesScreen: React.FC = () => {
-  const { token, user } = useAuth();
+  const { token, user, activeFarm } = useAuth();
   const [activeTab, setActiveTab] = useState<"expenses" | "health">("expenses");
   const [expenses, setExpenses] = useState<any[]>([]);
   const [health, setHealth] = useState<any[]>([]);
