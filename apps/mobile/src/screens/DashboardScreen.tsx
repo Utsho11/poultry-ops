@@ -354,7 +354,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           {isLayerFarm ? <Egg size={20} color={colors.brand} /> : <Bird size={20} color={colors.brand} />}
           <Text style={s.brandLogo}>
-            {activeFarm?.name || "PoultryOps"}
+            {activeFarm?.name || "PoultryDex"}
           </Text>
         </View>
         <View style={{ flexDirection: "row", gap: 6 }}>

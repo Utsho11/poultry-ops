@@ -120,7 +120,7 @@ function AppNavigator() {
         <Text style={{ fontSize: 48, marginBottom: 16 }}>🐔</Text>
         <ActivityIndicator size="large" color="#C7511F" />
         <Text style={{ color: "#6B655C", marginTop: 12, fontWeight: "600" }}>
-          Loading PoultryOps...
+          Loading PoultryDex...
         </Text>
       </View>
     );

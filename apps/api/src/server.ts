@@ -27,7 +27,7 @@ app.use(express.json());
 
 // Health Check
 app.get('/api/health-check', (req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'PoultryOps API v1.1.0', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'PoultryDex API v1.1.0', timestamp: new Date().toISOString() });
 });
 
 // API Routes
@@ -54,7 +54,7 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 
 // Start Server
 app.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`PoultryOps API Server v1.1.0 running on port ${PORT} (0.0.0.0)`);
+  console.log(`PoultryDex API Server v1.1.0 running on port ${PORT} (0.0.0.0)`);
   connectDB();
 });
 

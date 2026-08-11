@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PoultryOps",
-    "slug": "poultry-ops",
+    "name": "PoultryDex",
+    "slug": "poultry-dex",
     "version": "1.0.0",
     "sdkVersion": "57.0.0",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.poultryops.app",
+      "bundleIdentifier": "com.poultrydex.app",
       "icon": "./assets/icon.png"
     },
     "android": {
@@ -18,7 +18,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f172a"
       },
-      "package": "com.poultryops.app"
+      "package": "com.poultrydex.app"
     },
     "plugins": [
       [

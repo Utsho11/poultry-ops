@@ -75,7 +75,7 @@ export const LoginScreen: React.FC = () => {
       {/* Logo */}
       <View style={s.logoBox}>
         <Image source={require('../../assets/icon.png')} style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 8, borderWidth: 1, borderColor: colors.brand }} />
-        <Text style={s.appName}>PoultryOps</Text>
+        <Text style={s.appName}>PoultryDex</Text>
         <Text style={s.tagline}>Farm & Firm Management System</Text>
       </View>
 
