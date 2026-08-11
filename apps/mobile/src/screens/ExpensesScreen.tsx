@@ -365,7 +365,7 @@ export const ExpensesScreen: React.FC = () => {
               {tab === "expenses" ? (
                 <CircleDollarSign size={14} color={activeTab === tab ? colors.brand : colors.textMuted} />
               ) : (
-                <Stethoscope size={14} color={activeTab === tab ? colors.brand : colors.textMuted} />
+                <HeartPulse size={14} color={activeTab === tab ? colors.brand : colors.textMuted} />
               )}
               <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
                 {tab === "expenses" ? "Expenses" : "Health Records"}

@@ -14,6 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch, showAlert } from "../config";
 import { colors, common } from "../styles";
 import { formatEggCount, cratesAndLooseToTotal } from "../utils/crates";
+import { Zap, Tag, Calendar, Egg, Wheat, Skull, TrendingUp, CircleDollarSign, Bird, Package, X, Plus } from "lucide-react-native";
 
 export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
   const { token, user } = useAuth();
