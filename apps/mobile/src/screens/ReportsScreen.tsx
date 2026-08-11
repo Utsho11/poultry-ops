@@ -8,8 +8,10 @@ import { apiFetch } from '../config';
 import { colors, common } from '../styles';
 import { formatEggCount } from '../utils/crates';
 
+import { Egg, Bird, AlertTriangle, CircleDollarSign, Wheat, Calendar } from 'lucide-react-native';
+
 export const ReportsScreen: React.FC = () => {
-  const { token, user } = useAuth();
+  const { token, user, activeFarm } = useAuth();
   const [summary, setSummary] = useState<any>(null);
   const [batchData, setBatchData] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
@@ -172,31 +174,57 @@ export const ReportsScreen: React.FC = () => {
 
         {/* 2x2 Metric Grid */}
         <View style={s.metricGrid}>
-          {/* Tile 1: Current Egg Stock */}
-          <View style={s.metricCard}>
-            <View style={common.row}>
-              <Text style={s.metricLabel}>EGG STOCK</Text>
-              <Text style={{ fontSize: 16 }}>🥚</Text>
-            </View>
-            <Text style={[s.metricValue, { fontSize: 16, color: colors.brand }]}>{formatEggCount(summary?.currentEggCount || 0)}</Text>
-            <Text style={[s.trendText, { color: colors.textMuted }]}>Unsold stock</Text>
-          </View>
+          {activeFarm?.animalType === 'layer' ? (
+            <>
+              {/* Tile 1: Current Egg Stock */}
+              <View style={s.metricCard}>
+                <View style={common.row}>
+                  <Text style={s.metricLabel}>EGG STOCK</Text>
+                  <Egg size={16} color={colors.brand} />
+                </View>
+                <Text style={[s.metricValue, { fontSize: 16, color: colors.brand }]}>{formatEggCount(summary?.currentEggCount || 0)}</Text>
+                <Text style={[s.trendText, { color: colors.textMuted }]}>Unsold stock</Text>
+              </View>
 
-          {/* Tile 2: Total Eggs Collected */}
-          <View style={s.metricCard}>
-            <View style={common.row}>
-              <Text style={s.metricLabel}>ALL-TIME EGGS</Text>
-              <Text style={{ fontSize: 16 }}>🥚</Text>
-            </View>
-            <Text style={[s.metricValue, { fontSize: 16 }]}>{formatEggCount(summary?.allTimeEggCount || 0)}</Text>
-            <Text style={[s.trendText, { color: colors.amber }]}>Total collected</Text>
-          </View>
+              {/* Tile 2: Total Eggs Collected */}
+              <View style={s.metricCard}>
+                <View style={common.row}>
+                  <Text style={s.metricLabel}>ALL-TIME EGGS</Text>
+                  <Egg size={16} color={colors.amber} />
+                </View>
+                <Text style={[s.metricValue, { fontSize: 16 }]}>{formatEggCount(summary?.allTimeEggCount || 0)}</Text>
+                <Text style={[s.trendText, { color: colors.amber }]}>Total collected</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              {/* Tile 1: Total Birds */}
+              <View style={s.metricCard}>
+                <View style={common.row}>
+                  <Text style={s.metricLabel}>ACTIVE BIRDS</Text>
+                  <Bird size={16} color={colors.brand} />
+                </View>
+                <Text style={[s.metricValue, { fontSize: 16, color: colors.brand }]}>{(summary?.totalBirds || summary?.currentCount || 0).toLocaleString()}</Text>
+                <Text style={[s.trendText, { color: colors.textMuted }]}>Current count</Text>
+              </View>
+
+              {/* Tile 2: Total Feed Consumed */}
+              <View style={s.metricCard}>
+                <View style={common.row}>
+                  <Text style={s.metricLabel}>TOTAL FEED</Text>
+                  <Wheat size={16} color={colors.amber} />
+                </View>
+                <Text style={[s.metricValue, { fontSize: 16 }]}>{(summary?.totalFeedKg || 0).toLocaleString()} kg</Text>
+                <Text style={[s.trendText, { color: colors.amber }]}>Consumed</Text>
+              </View>
+            </>
+          )}
 
           {/* Tile 3: Mortality */}
           <View style={s.metricCard}>
             <View style={common.row}>
               <Text style={s.metricLabel}>MORTALITY</Text>
-              <Text style={{ fontSize: 16 }}>⚠️</Text>
+              <AlertTriangle size={16} color={colors.rose} />
             </View>
             <Text style={s.metricValue}>{summary?.mortalityRate || 0}%</Text>
             <Text style={[s.trendText, { color: colors.rose }]}>Dead: {summary?.totalDead || 0}</Text>
@@ -206,10 +234,12 @@ export const ReportsScreen: React.FC = () => {
           <View style={s.metricCard}>
             <View style={common.row}>
               <Text style={s.metricLabel}>TOTAL EXPENSES</Text>
-              <Text style={{ fontSize: 16 }}>💰</Text>
+              <CircleDollarSign size={16} color={colors.amber} />
             </View>
             <Text style={s.metricValue}>৳{totalCost.toLocaleString()}</Text>
-            <Text style={[s.trendText, { color: colors.textMuted }]}>Cost/Egg: ৳{summary?.costPerEgg || 0}</Text>
+            <Text style={[s.trendText, { color: colors.textMuted }]}>
+              {activeFarm?.animalType === 'layer' ? `Cost/Egg: ৳${summary?.costPerEgg || 0}` : `Cost/Bird: ৳${summary?.costPerBird || 0}`}
+            </Text>
           </View>
         </View>
 
@@ -223,7 +253,7 @@ export const ReportsScreen: React.FC = () => {
               <View key={sale._id} style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10, marginTop: 8 }}>
                 <View style={common.row}>
                   <Text style={{ color: colors.textMain, fontWeight: '800', fontSize: 14 }}>
-                    {sale.itemType === 'egg' ? '🥚 Egg Sale' : '🐔 Chicken Sale'}
+                    {sale.itemType === 'egg' ? 'Egg Sale' : 'Chicken Sale'}
                   </Text>
                   <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 14 }}>+৳{sale.totalAmount.toLocaleString()}</Text>
                 </View>

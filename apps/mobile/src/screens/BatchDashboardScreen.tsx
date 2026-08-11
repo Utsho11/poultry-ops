@@ -293,9 +293,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
             ]}
             onPress={() => setSaleModalOpen(true)}
           >
-            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}>
-              💰 Sale
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Tag size={13} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}>
+                Sale
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
       </View>
@@ -589,70 +592,76 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
         {showMoreDetails && (
           <View style={{ marginTop: 10 }}>
             {/* 1. EGG YIELD & PRODUCTIVITY */}
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("DailyReport", {
-                  batchId,
-                  initialTab: "egg",
-                })
-              }
-              activeOpacity={0.8}
-            >
-              <View style={[s.dashCard, { borderColor: colors.secondary }]}>
-                <View style={common.row}>
-                  <Text style={[s.sectionHeader, { color: colors.secondary }]}>
-                    🥚 1. Egg Productivity
-                  </Text>
-                  <View style={s.rateBadge}>
-                    <Text style={s.rateBadgeText}>
-                      {eggSection.eggLayingRate}% Laying Rate
+            {/* 1. EGG PRODUCTIVITY SECTION (LAYER FLOCKS ONLY) */}
+            {(batch?.type === "layer" || activeFarm?.animalType === "layer") && (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("DailyReport", {
+                    batchId,
+                    initialTab: "egg",
+                  })
+                }
+                activeOpacity={0.8}
+              >
+                <View style={[s.dashCard, { borderColor: colors.secondary }]}>
+                  <View style={common.row}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Egg size={14} color={colors.secondary} />
+                      <Text style={[s.sectionHeader, { color: colors.secondary }]}>
+                        1. Egg Productivity
+                      </Text>
+                    </View>
+                    <View style={s.rateBadge}>
+                      <Text style={s.rateBadgeText}>
+                        {eggSection.eggLayingRate}% Laying Rate
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={s.dashRow}>
+                    <Text style={s.dashLabel}>Total Eggs Collected:</Text>
+                    <Text
+                      style={[
+                        s.dashVal,
+                        { color: colors.secondary, fontSize: 15 },
+                      ]}
+                    >
+                      {formatEggCount(eggSection.totalEggs)}
+                    </Text>
+                  </View>
+                  <View style={s.dashRow}>
+                    <Text style={s.dashLabel}>Raw Egg Count:</Text>
+                    <Text style={s.dashVal}>
+                      {eggSection.totalEggs.toLocaleString()} eggs
+                    </Text>
+                  </View>
+                  <View style={s.dashRow}>
+                    <Text style={s.dashLabel}>Broken Eggs:</Text>
+                    <Text style={[s.dashVal, { color: colors.rose }]}>
+                      {eggSection.totalBrokenEggs} eggs
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      marginTop: 8,
+                      padding: 8,
+                      backgroundColor: "rgba(74, 124, 89, 0.12)",
+                      borderRadius: 6,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.secondary,
+                        fontWeight: "800",
+                        fontSize: 11,
+                      }}
+                    >
+                      View Date-wise Daily Egg Report →
                     </Text>
                   </View>
                 </View>
-                <View style={s.dashRow}>
-                  <Text style={s.dashLabel}>Total Eggs Collected:</Text>
-                  <Text
-                    style={[
-                      s.dashVal,
-                      { color: colors.secondary, fontSize: 15 },
-                    ]}
-                  >
-                    {formatEggCount(eggSection.totalEggs)}
-                  </Text>
-                </View>
-                <View style={s.dashRow}>
-                  <Text style={s.dashLabel}>Raw Egg Count:</Text>
-                  <Text style={s.dashVal}>
-                    {eggSection.totalEggs.toLocaleString()} eggs
-                  </Text>
-                </View>
-                <View style={s.dashRow}>
-                  <Text style={s.dashLabel}>Broken Eggs:</Text>
-                  <Text style={[s.dashVal, { color: colors.rose }]}>
-                    {eggSection.totalBrokenEggs} eggs
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    marginTop: 8,
-                    padding: 8,
-                    backgroundColor: "rgba(74, 124, 89, 0.12)",
-                    borderRadius: 6,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.secondary,
-                      fontWeight: "800",
-                      fontSize: 11,
-                    }}
-                  >
-                    📅 View Date-wise Daily Egg Report →
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
 
             {/* 2. FOOD INFO SECTION */}
             <TouchableOpacity
@@ -666,9 +675,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
             >
               <View style={[s.dashCard, { borderColor: colors.secondary }]}>
                 <View style={common.row}>
-                  <Text style={[s.sectionHeader, { color: colors.secondary }]}>
-                    🌾 2. Food Info
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Wheat size={14} color={colors.secondary} />
+                    <Text style={[s.sectionHeader, { color: colors.secondary }]}>
+                      2. Food Info
+                    </Text>
+                  </View>
                   <View style={s.rateBadge}>
                     <Text style={s.rateBadgeText}>
                       {foodSection.feedPerChickenPercentage}% Target
@@ -710,7 +722,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                       fontSize: 11,
                     }}
                   >
-                    📅 View Date-wise Daily Food Report →
+                    View Date-wise Daily Food Report →
                   </Text>
                 </View>
               </View>
@@ -728,9 +740,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
             >
               <View style={[s.dashCard, { borderColor: colors.rose }]}>
                 <View style={common.row}>
-                  <Text style={[s.sectionHeader, { color: colors.rose }]}>
-                    💀 3. Mortality Rate
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Skull size={14} color={colors.rose} />
+                    <Text style={[s.sectionHeader, { color: colors.rose }]}>
+                      3. Mortality Rate
+                    </Text>
+                  </View>
                   <View
                     style={[
                       s.rateBadge,
@@ -778,7 +793,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                       fontSize: 11,
                     }}
                   >
-                    📅 View Date-wise Daily Mortality Report →
+                    View Date-wise Daily Mortality Report →
                   </Text>
                 </View>
               </View>
@@ -796,9 +811,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
             >
               <View style={[s.dashCard, { borderColor: colors.brand }]}>
                 <View style={common.row}>
-                  <Text style={[s.sectionHeader, { color: colors.brand }]}>
-                    📈 4. Income & Net Profit
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <TrendingUp size={14} color={colors.brand} />
+                    <Text style={[s.sectionHeader, { color: colors.brand }]}>
+                      4. Income & Net Profit
+                    </Text>
+                  </View>
                   <View
                     style={[
                       s.rateBadge,
@@ -866,7 +884,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                       fontSize: 11,
                     }}
                   >
-                    📅 View Date-wise Daily Income Report →
+                    View Date-wise Daily Income Report →
                   </Text>
                 </View>
               </View>
@@ -883,17 +901,22 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
               activeOpacity={0.8}
             >
               <View style={[s.dashCard, { borderColor: colors.blue }]}>
-                <Text style={[s.sectionHeader, { color: colors.blue }]}>
-                  🏷️ 5. Sales Volume
-                </Text>
-                <View style={s.dashRow}>
-                  <Text style={s.dashLabel}>Eggs Sold:</Text>
-                  <Text
-                    style={[s.dashVal, { color: colors.blue, fontSize: 15 }]}
-                  >
-                    {formatEggCount(sellSection.totalEggsSold)}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <Tag size={14} color={colors.blue} />
+                  <Text style={[s.sectionHeader, { color: colors.blue }]}>
+                    5. Sales Volume
                   </Text>
                 </View>
+                {(batch?.type === "layer" || activeFarm?.animalType === "layer") && (
+                  <View style={s.dashRow}>
+                    <Text style={s.dashLabel}>Eggs Sold:</Text>
+                    <Text
+                      style={[s.dashVal, { color: colors.blue, fontSize: 15 }]}
+                    >
+                      {formatEggCount(sellSection.totalEggsSold)}
+                    </Text>
+                  </View>
+                )}
                 <View style={s.dashRow}>
                   <Text style={s.dashLabel}>Chickens Sold:</Text>
                   <Text style={s.dashVal}>
@@ -916,7 +939,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                       fontSize: 11,
                     }}
                   >
-                    📅 View Date-wise Daily Sales Report →
+                    View Date-wise Daily Sales Report →
                   </Text>
                 </View>
               </View>
@@ -934,9 +957,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
             >
               <View style={[s.dashCard, { borderColor: colors.amber }]}>
                 <View style={common.row}>
-                  <Text style={[s.sectionHeader, { color: colors.amber }]}>
-                    💰 6. Expenses
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <CircleDollarSign size={14} color={colors.amber} />
+                    <Text style={[s.sectionHeader, { color: colors.amber }]}>
+                      6. Expenses
+                    </Text>
+                  </View>
                   <Text
                     style={[s.dashVal, { color: colors.amber, fontSize: 15 }]}
                   >
@@ -1164,49 +1190,62 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
       <Modal visible={saleModalOpen} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.modalContainer}>
-            <Text style={s.modalTitle}>💰 Record Sale ({batch.name})</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <Tag size={18} color={colors.blue} />
+              <Text style={s.modalTitle}>Record Sale ({batch.name})</Text>
+            </View>
             <ScrollView>
-              <Text style={common.label}>Item to Sell</Text>
-              <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
-                <TouchableOpacity
-                  style={[
-                    s.typeBtn,
-                    saleItemType === "egg" && s.typeBtnSelectedEgg,
-                  ]}
-                  onPress={() => setSaleItemType("egg")}
-                >
-                  <Text
-                    style={{
-                      color:
-                        saleItemType === "egg"
-                          ? colors.secondary
-                          : colors.textMuted,
-                      fontWeight: "800",
-                    }}
-                  >
-                    🥚 Eggs
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    s.typeBtn,
-                    saleItemType === "chicken" && s.typeBtnSelectedChicken,
-                  ]}
-                  onPress={() => setSaleItemType("chicken")}
-                >
-                  <Text
-                    style={{
-                      color:
-                        saleItemType === "chicken"
-                          ? colors.blue
-                          : colors.textMuted,
-                      fontWeight: "800",
-                    }}
-                  >
-                    🐔 Chickens
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              {(batch?.type === "layer" || activeFarm?.animalType === "layer") && (
+                <>
+                  <Text style={common.label}>Item to Sell</Text>
+                  <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+                    <TouchableOpacity
+                      style={[
+                        s.typeBtn,
+                        saleItemType === "egg" && s.typeBtnSelectedEgg,
+                      ]}
+                      onPress={() => setSaleItemType("egg")}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Egg size={14} color={saleItemType === "egg" ? colors.secondary : colors.textMuted} />
+                        <Text
+                          style={{
+                            color:
+                              saleItemType === "egg"
+                                ? colors.secondary
+                                : colors.textMuted,
+                            fontWeight: "800",
+                          }}
+                        >
+                          Eggs
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        s.typeBtn,
+                        saleItemType === "chicken" && s.typeBtnSelectedChicken,
+                      ]}
+                      onPress={() => setSaleItemType("chicken")}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Bird size={14} color={saleItemType === "chicken" ? colors.blue : colors.textMuted} />
+                        <Text
+                          style={{
+                            color:
+                              saleItemType === "chicken"
+                                ? colors.blue
+                                : colors.textMuted,
+                            fontWeight: "800",
+                          }}
+                        >
+                          Chickens
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
               {saleItemType === "egg" ? (
                 <View style={s.eggInputBox}>
@@ -1317,7 +1356,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                 disabled={submittingSale}
               >
                 <Text style={s.btnText}>
-                  {submittingSale ? "Recording..." : "💰 Record Revenue"}
+                  {submittingSale ? "Recording..." : "Record Revenue"}
                 </Text>
               </TouchableOpacity>
             </View>

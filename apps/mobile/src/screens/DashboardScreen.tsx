@@ -344,6 +344,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
     .filter((b) => b.type === "broiler" && b.status === "active")
     .reduce((a: number, b: any) => a + b.currentCount, 0);
 
+  const targetType = isLayerFarm ? "layer" : "broiler";
+  const displayedBatches = batches.filter((b) => b.type === targetType);
+
   return (
     <View style={common.screen}>
       {/* Mobile Top Header */}
@@ -659,11 +662,11 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
           </>
         )}
 
-        {/* 🐔 FLOCKS & BATCHES LIST SECTION */}
+        {/* FLOCKS & BATCHES LIST SECTION */}
         <View style={{ marginTop: 24 }}>
           <View style={[common.row, { marginBottom: 12 }]}>
             <Text style={s.titleHeader}>
-              All Farm Flocks ({batches.length})
+              All Farm Flocks ({displayedBatches.length})
             </Text>
             {canManageBatches && (
               <TouchableOpacity onPress={() => setCreateBatchModal(true)}>
@@ -683,9 +686,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
             )}
           </View>
 
-          {batches.length > 0 ? (
+          {displayedBatches.length > 0 ? (
             <View style={{ gap: 12 }}>
-              {batches.map((batch) => (
+              {displayedBatches.map((batch) => (
                 <TouchableOpacity
                   key={batch._id}
                   onPress={() =>
@@ -1118,10 +1121,13 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
       <Modal visible={quickLogModal} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.modalContainer}>
-            <Text style={s.modalTitle}>⚡ Quick Daily Log</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <Zap size={18} color={colors.brand} />
+              <Text style={s.modalTitle}>Quick Daily Log</Text>
+            </View>
             <ScrollView>
               <Text style={common.label}>Select Flock / Batch</Text>
-              {batches.map((b: any) => (
+              {displayedBatches.map((b: any) => (
                 <TouchableOpacity
                   key={b._id}
                   style={[
@@ -1263,9 +1269,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
       <Modal visible={saleModalOpen} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.modalContainer}>
-            <Text style={s.modalTitle}>💰 Record Sale Revenue</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <Tag size={18} color={colors.blue} />
+              <Text style={s.modalTitle}>Record Sale Revenue</Text>
+            </View>
             <ScrollView>
-              <Text style={common.label}>📅 Sale Date (YYYY-MM-DD) *</Text>
+              <Text style={common.label}>Sale Date (YYYY-MM-DD) *</Text>
               <TextInput
                 style={common.input}
                 placeholder="YYYY-MM-DD"
@@ -1274,47 +1283,57 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 onChangeText={setSaleDate}
               />
 
-              <Text style={common.label}>Item to Sell</Text>
-              <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
-                <TouchableOpacity
-                  style={[
-                    s.typeBtn,
-                    saleItemType === "egg" && s.typeBtnSelectedEgg,
-                  ]}
-                  onPress={() => setSaleItemType("egg")}
-                >
-                  <Text
-                    style={{
-                      color:
-                        saleItemType === "egg"
-                          ? colors.secondary
-                          : colors.textMuted,
-                      fontWeight: "800",
-                    }}
-                  >
-                    🥚 Eggs
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    s.typeBtn,
-                    saleItemType === "chicken" && s.typeBtnSelectedChicken,
-                  ]}
-                  onPress={() => setSaleItemType("chicken")}
-                >
-                  <Text
-                    style={{
-                      color:
-                        saleItemType === "chicken"
-                          ? colors.blue
-                          : colors.textMuted,
-                      fontWeight: "800",
-                    }}
-                  >
-                    🐔 Chickens
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              {isLayerFarm && (
+                <>
+                  <Text style={common.label}>Item to Sell</Text>
+                  <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+                    <TouchableOpacity
+                      style={[
+                        s.typeBtn,
+                        saleItemType === "egg" && s.typeBtnSelectedEgg,
+                      ]}
+                      onPress={() => setSaleItemType("egg")}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Egg size={14} color={saleItemType === "egg" ? colors.secondary : colors.textMuted} />
+                        <Text
+                          style={{
+                            color:
+                              saleItemType === "egg"
+                                ? colors.secondary
+                                : colors.textMuted,
+                            fontWeight: "800",
+                          }}
+                        >
+                          Eggs
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        s.typeBtn,
+                        saleItemType === "chicken" && s.typeBtnSelectedChicken,
+                      ]}
+                      onPress={() => setSaleItemType("chicken")}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Bird size={14} color={saleItemType === "chicken" ? colors.blue : colors.textMuted} />
+                        <Text
+                          style={{
+                            color:
+                              saleItemType === "chicken"
+                                ? colors.blue
+                                : colors.textMuted,
+                            fontWeight: "800",
+                          }}
+                        >
+                          Chickens
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
               {saleItemType === "egg" ? (
                 <View style={s.eggInputBox}>
@@ -1425,7 +1444,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 disabled={submittingSale}
               >
                 <Text style={s.btnText}>
-                  {submittingSale ? "Recording..." : "💰 Record Revenue"}
+                  {submittingSale ? "Recording..." : "Record Revenue"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1437,7 +1456,10 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
       <Modal visible={createBatchModal} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.modalContainer}>
-            <Text style={s.modalTitle}>➕ Create New Flock</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <Plus size={18} color={colors.brand} />
+              <Text style={s.modalTitle}>Create New Flock</Text>
+            </View>
             <ScrollView>
               <Text style={common.label}>Batch Name</Text>
               <TextInput
@@ -1704,7 +1726,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 disabled={securitySubmitting}
               >
                 <Text style={s.btnText}>
-                  {securitySubmitting ? "Verifying..." : "⚡ Confirm & Proceed"}
+                  {securitySubmitting ? "Verifying..." : "Confirm & Proceed"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1712,7 +1734,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* 🥚 BATCH-WISE EGG STOCK BREAKDOWN MODAL */}
+      {/* BATCH-WISE EGG STOCK BREAKDOWN MODAL */}
       <Modal visible={eggStockModalOpen} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={[s.modalContainer, { maxHeight: "80%" }]}>
@@ -1724,7 +1746,10 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 marginBottom: 12,
               }}
             >
-              <Text style={s.modalTitle}>🥚 Batch-wise Egg Stock</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Egg size={18} color={colors.secondary} />
+                <Text style={s.modalTitle}>Batch-wise Egg Stock</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setEggStockModalOpen(false)}
                 style={{ padding: 4 }}
@@ -1821,7 +1846,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* 🌾 CATEGORIZED FEED STOCK BREAKDOWN MODAL */}
+      {/* CATEGORIZED FEED STOCK BREAKDOWN MODAL */}
       <Modal visible={feedStockModalOpen} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={[s.modalContainer, { maxHeight: "80%" }]}>
@@ -1833,20 +1858,15 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 marginBottom: 12,
               }}
             >
-              <Text style={s.modalTitle}>🌾 Categorized Feed Stock</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Wheat size={18} color={colors.amber} />
+                <Text style={s.modalTitle}>Categorized Feed Stock</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setFeedStockModalOpen(false)}
                 style={{ padding: 4 }}
               >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "900",
-                    color: colors.textMuted,
-                  }}
-                >
-                  ✕
-                </Text>
+                <X size={18} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             <Text
@@ -1878,15 +1898,18 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                     }}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: "800",
-                          color: colors.textMain,
-                        }}
-                      >
-                        🌾 {cat.label}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Wheat size={14} color={colors.amber} />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "800",
+                            color: colors.textMain,
+                          }}
+                        >
+                          {cat.label}
+                        </Text>
+                      </View>
                       <Text style={{ fontSize: 11, color: colors.textMuted }}>
                         Category: {cat.category}
                       </Text>
@@ -1931,7 +1954,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* 🐔 ACTIVE LAYER FLOCKS BREAKDOWN MODAL */}
+      {/* ACTIVE LAYER FLOCKS BREAKDOWN MODAL */}
       <Modal visible={layerFlocksModalOpen} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={[s.modalContainer, { maxHeight: "80%" }]}>
@@ -1943,20 +1966,15 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 marginBottom: 12,
               }}
             >
-              <Text style={s.modalTitle}>🐔 Active Layer Flocks</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Bird size={18} color={colors.brand} />
+                <Text style={s.modalTitle}>Active Layer Flocks</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setLayerFlocksModalOpen(false)}
                 style={{ padding: 4 }}
               >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "900",
-                    color: colors.textMuted,
-                  }}
-                >
-                  ✕
-                </Text>
+                <X size={18} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             <Text
@@ -1997,18 +2015,20 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                       }}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "800",
-                            color: colors.textMain,
-                          }}
-                        >
-                          🐔 {b.name}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Bird size={14} color={colors.brand} />
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontWeight: "800",
+                              color: colors.textMain,
+                            }}
+                          >
+                            {b.name}
+                          </Text>
+                        </View>
                         <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                          Breed: {b.breed || "Layer"} | Shed:{" "}
-                          {b.shed || "Main Shed"}
+                          Breed: {b.breed || "Layer"}
                         </Text>
                       </View>
                       <View style={{ alignItems: "flex-end" }}>
@@ -2044,7 +2064,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* 🐥 ACTIVE POULTRY / BROILER FLOCKS BREAKDOWN MODAL */}
+      {/* ACTIVE POULTRY / BROILER FLOCKS BREAKDOWN MODAL */}
       <Modal visible={broilerFlocksModalOpen} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={[s.modalContainer, { maxHeight: "80%" }]}>
@@ -2056,20 +2076,15 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 marginBottom: 12,
               }}
             >
-              <Text style={s.modalTitle}>🐥 Active Poultry / Broilers</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Bird size={18} color={colors.amber} />
+                <Text style={s.modalTitle}>Active Broiler Flocks</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setBroilerFlocksModalOpen(false)}
                 style={{ padding: 4 }}
               >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "900",
-                    color: colors.textMuted,
-                  }}
-                >
-                  ✕
-                </Text>
+                <X size={18} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             <Text
@@ -2110,18 +2125,20 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                       }}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "800",
-                            color: colors.textMain,
-                          }}
-                        >
-                          🐥 {b.name}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Bird size={14} color={colors.amber} />
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontWeight: "800",
+                              color: colors.textMain,
+                            }}
+                          >
+                            {b.name}
+                          </Text>
+                        </View>
                         <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                          Breed: {b.breed || "Broiler"} | Shed:{" "}
-                          {b.shed || "Main Shed"}
+                          Breed: {b.breed || "Broiler"}
                         </Text>
                       </View>
                       <View style={{ alignItems: "flex-end" }}>

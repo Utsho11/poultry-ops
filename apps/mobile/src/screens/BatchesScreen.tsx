@@ -338,13 +338,16 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                     </Text>
                   </View>
                   <TouchableOpacity onPress={() => setDashboardModalVisible(false)}>
-                    <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 16 }}>✕</Text>
+                    <X size={18} color={colors.brand} />
                   </TouchableOpacity>
                 </View>
 
                 {/* 1. EGG SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.secondary }]}>
-                  <Text style={[s.sectionHeader, { color: colors.secondary }]}>🥚 1. Egg Yield</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <Egg size={14} color={colors.secondary} />
+                    <Text style={[s.sectionHeader, { color: colors.secondary }]}>1. Egg Yield</Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Eggs Collected:</Text>
                     <Text style={[s.dashVal, { color: colors.secondary }]}>{formatEggCount(activeBatchDashboard.eggSection.totalEggs)}</Text>
@@ -361,7 +364,10 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 2. MORTALITY RATE SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.rose }]}>
-                  <Text style={[s.sectionHeader, { color: colors.rose }]}>💀 2. Mortality Rate</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <Skull size={14} color={colors.rose} />
+                    <Text style={[s.sectionHeader, { color: colors.rose }]}>2. Mortality Rate</Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Dead Birds:</Text>
                     <Text style={[s.dashVal, { color: colors.rose }]}>{activeBatchDashboard.mortalitySection.totalDead} birds</Text>
@@ -378,7 +384,10 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 3. EXPENSE SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.amber }]}>
-                  <Text style={[s.sectionHeader, { color: colors.amber }]}>💸 3. Expenses</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <CircleDollarSign size={14} color={colors.amber} />
+                    <Text style={[s.sectionHeader, { color: colors.amber }]}>3. Expenses</Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Batch Expense:</Text>
                     <Text style={[s.dashVal, { color: colors.amber }]}>৳{activeBatchDashboard.expenseSection.totalExpenses.toLocaleString()}</Text>

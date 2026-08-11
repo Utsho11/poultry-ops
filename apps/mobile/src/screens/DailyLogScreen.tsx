@@ -218,7 +218,10 @@ export const DailyLogScreen: React.FC = () => {
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalCard}>
-            <Text style={{ color: colors.textMain, fontSize: 16, fontWeight: '800', marginBottom: 12 }}>⚡ Log Daily Yield & Feeding</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <Zap size={18} color={colors.brand} />
+              <Text style={{ color: colors.textMain, fontSize: 16, fontWeight: '800' }}>Log Daily Yield & Feeding</Text>
+            </View>
 
             {/* Batch selector */}
             <Text style={common.label}>Select Batch *</Text>
@@ -229,20 +232,28 @@ export const DailyLogScreen: React.FC = () => {
                 dropdownIconColor={colors.brand}
                 style={s.pickerStyle}
               >
-                {batches.map(b => (
-                  <Picker.Item key={b._id} label={`🐔 ${b.name} (${b.breed})`} value={b._id} />
-                ))}
+                {batches
+                  .filter(b => b.type === (activeFarm?.animalType === 'broiler' ? 'broiler' : 'layer'))
+                  .map(b => (
+                    <Picker.Item key={b._id} label={`${b.name} (${b.breed || 'Flock'})`} value={b._id} />
+                  ))}
               </Picker>
             </View>
 
             <DatePickerInput
-              label="📅 Log Date *"
+              label="Log Date *"
               value={logDate}
               onChange={setLogDate}
               style={{ marginBottom: 14 }}
             />
+
+            {activeFarm?.animalType === 'layer' && (
+              <>
                 <View style={s.crateBox}>
-                  <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 14, marginBottom: 8 }}>🥚 Eggs Collected (1 Crate = 30 Eggs)</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <Egg size={14} color={colors.brand} />
+                    <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 14 }}>Eggs Collected (1 Crate = 30 Eggs)</Text>
+                  </View>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1 }}>
                       <Text style={common.label}>Full Crates</Text>
@@ -258,45 +269,53 @@ export const DailyLogScreen: React.FC = () => {
                   </Text>
                 </View>
 
-                <Text style={common.label}>🔴 Broken Eggs</Text>
+                <Text style={common.label}>Broken Eggs</Text>
                 <TextInput style={common.input} keyboardType="numeric" value={brokenEggCount} onChangeText={setBrokenEggCount} />
+              </>
+            )}
 
-                <Text style={common.label}>☠️ Dead Birds</Text>
-                <TextInput style={common.input} keyboardType="numeric" value={deadCount} onChangeText={setDeadCount} />
+            <Text style={common.label}>Dead Birds</Text>
+            <TextInput style={common.input} keyboardType="numeric" value={deadCount} onChangeText={setDeadCount} />
 
-                {/* DUAL FEED INPUT (Full Bags + Loose kg) WITH STOCK LIMIT CHECK */}
-                <View style={[s.feedBox, isFeedExceeded && { borderColor: colors.rose, backgroundColor: 'rgba(244,63,94,0.1)' }]}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <Text style={{ color: isFeedExceeded ? colors.rose : colors.amber, fontWeight: '800', fontSize: 13 }}>
-                      🌾 Feed Given (Full Bags + Loose kg) *
-                    </Text>
-                  </View>
-                  <Text style={{ color: colors.secondary, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>
-                    🌾 Stock Available: {(summaryData?.availableFeedStockKg || 0).toLocaleString()} kg ({summaryData?.availableFeedStockBags || 0} Bags)
+            {/* DUAL FEED INPUT (Full Bags + Loose kg) WITH STOCK LIMIT CHECK */}
+            <View style={[s.feedBox, isFeedExceeded && { borderColor: colors.rose, backgroundColor: 'rgba(244,63,94,0.1)' }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Wheat size={14} color={isFeedExceeded ? colors.rose : colors.amber} />
+                  <Text style={{ color: isFeedExceeded ? colors.rose : colors.amber, fontWeight: '800', fontSize: 13 }}>
+                    Feed Given (Full Bags + Loose kg) *
                   </Text>
-
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Full Bags (50kg/bag)</Text>
-                      <TextInput style={common.input} keyboardType="numeric" placeholder="1" value={feedBags} onChangeText={setFeedBags} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Loose kg</Text>
-                      <TextInput style={common.input} keyboardType="numeric" placeholder="5" value={feedLooseKg} onChangeText={setFeedLooseKg} />
-                    </View>
-                  </View>
-
-                  <Text style={{ color: isFeedExceeded ? colors.rose : colors.textMain, fontWeight: '800', fontSize: 13, marginTop: 8 }}>
-                    Total: {totalFeedGivenKg.toLocaleString()} kg ({feedBags || 0} Bags + {feedLooseKg || 0} kg)
-                  </Text>
-                  {isFeedExceeded && (
-                    <Text style={{ color: colors.rose, fontWeight: '800', fontSize: 11, marginTop: 4 }}>
-                      ❌ Exceeds store feed stock ({availableStockKg.toLocaleString()} kg max)!
-                    </Text>
-                  )}
                 </View>
+              </View>
+              <Text style={{ color: colors.secondary, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>
+                Stock Available: {(summaryData?.availableFeedStockKg || 0).toLocaleString()} kg ({summaryData?.availableFeedStockBags || 0} Bags)
+              </Text>
 
-                <Text style={common.label}>💧 Water Given (Liters)</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={common.label}>Full Bags (50kg/bag)</Text>
+                  <TextInput style={common.input} keyboardType="numeric" placeholder="1" value={feedBags} onChangeText={setFeedBags} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={common.label}>Loose kg</Text>
+                  <TextInput style={common.input} keyboardType="numeric" placeholder="5" value={feedLooseKg} onChangeText={setFeedLooseKg} />
+                </View>
+              </View>
+
+              <Text style={{ color: isFeedExceeded ? colors.rose : colors.textMain, fontWeight: '800', fontSize: 13, marginTop: 8 }}>
+                Total: {totalFeedGivenKg.toLocaleString()} kg ({feedBags || 0} Bags + {feedLooseKg || 0} kg)
+              </Text>
+              {isFeedExceeded && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                  <AlertCircle size={12} color={colors.rose} />
+                  <Text style={{ color: colors.rose, fontWeight: '800', fontSize: 11 }}>
+                    Exceeds store feed stock ({availableStockKg.toLocaleString()} kg max)!
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={common.label}>Water Given (Liters)</Text>
                 <TextInput style={common.input} keyboardType="numeric" value={waterGivenLiters} onChangeText={setWaterGivenLiters} />
 
                 <Text style={common.label}>Notes / Observations</Text>

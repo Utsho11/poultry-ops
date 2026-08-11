@@ -455,21 +455,31 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
               )}
 
               {/* Item Type Selector */}
-              <Text style={s.inputLabel}>Item Category</Text>
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
-                <TouchableOpacity
-                  style={[s.typeChip, itemType === 'egg' && s.typeChipActive]}
-                  onPress={() => { setItemType('egg'); setUnit('tray'); }}
-                >
-                  <Text style={s.chipText}>🥚 Layer Eggs</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.typeChip, itemType === 'chicken' && s.typeChipActive]}
-                  onPress={() => { setItemType('chicken'); setUnit('kg'); }}
-                >
-                  <Text style={s.chipText}>🐔 Poultry / Birds</Text>
-                </TouchableOpacity>
-              </View>
+              {activeFarm?.animalType === 'layer' ? (
+                <>
+                  <Text style={s.inputLabel}>Item Category</Text>
+                  <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+                    <TouchableOpacity
+                      style={[s.typeChip, itemType === 'egg' && s.typeChipActive]}
+                      onPress={() => { setItemType('egg'); setUnit('tray'); }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Egg size={14} color={itemType === 'egg' ? colors.secondary : colors.textMuted} />
+                        <Text style={s.chipText}>Layer Eggs</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.typeChip, itemType === 'chicken' && s.typeChipActive]}
+                      onPress={() => { setItemType('chicken'); setUnit('kg'); }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Bird size={14} color={itemType === 'chicken' ? colors.brand : colors.textMuted} />
+                        <Text style={s.chipText}>Poultry / Birds</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : null}
 
               {/* DYNAMIC FORM FIELDS DEPENDING ON CATEGORY */}
               {itemType === 'egg' ? (

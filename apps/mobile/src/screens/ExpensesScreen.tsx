@@ -361,9 +361,16 @@ export const ExpensesScreen: React.FC = () => {
             style={[s.tab, activeTab === tab && s.tabActive]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
-              {tab === "expenses" ? "💰 Expenses" : "🏥 Health Records"}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {tab === "expenses" ? (
+                <CircleDollarSign size={14} color={activeTab === tab ? colors.brand : colors.textMuted} />
+              ) : (
+                <Stethoscope size={14} color={activeTab === tab ? colors.brand : colors.textMuted} />
+              )}
+              <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
+                {tab === "expenses" ? "Expenses" : "Health Records"}
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -976,27 +983,19 @@ export const ExpensesScreen: React.FC = () => {
                     dropdownIconColor={colors.amber}
                     style={s.pickerStyle}
                   >
-                    <Picker.Item
-                      label="🥚 Layer Starter"
-                      value="layer_starter"
-                    />
-                    <Picker.Item label="🥚 Layer Grower" value="layer_grower" />
-                    <Picker.Item
-                      label="🥚 Layer Layer-1"
-                      value="layer_layer_1"
-                    />
-                    <Picker.Item
-                      label="🍗 Broiler Starter"
-                      value="broiler_starter"
-                    />
-                    <Picker.Item
-                      label="🍗 Broiler Grower"
-                      value="broiler_grower"
-                    />
-                    <Picker.Item
-                      label="🍗 Broiler Finisher"
-                      value="broiler_finisher"
-                    />
+                    {activeFarm?.animalType === 'layer' ? (
+                      <>
+                        <Picker.Item label="Layer Starter" value="layer_starter" />
+                        <Picker.Item label="Layer Grower" value="layer_grower" />
+                        <Picker.Item label="Layer Layer-1" value="layer_layer_1" />
+                      </>
+                    ) : (
+                      <>
+                        <Picker.Item label="Broiler Starter" value="broiler_starter" />
+                        <Picker.Item label="Broiler Grower" value="broiler_grower" />
+                        <Picker.Item label="Broiler Finisher" value="broiler_finisher" />
+                      </>
+                    )}
                   </Picker>
                 </View>
 

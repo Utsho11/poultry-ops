@@ -8,6 +8,8 @@ import { apiFetch } from '../config';
 import { colors, common } from '../styles';
 import { formatEggCount } from '../utils/crates';
 
+import { Egg, Skull, CircleDollarSign, Tag, TrendingUp, Wheat, ArrowLeft, Edit2, Calendar } from 'lucide-react-native';
+
 export type MobileReportTab = 'egg' | 'mortality' | 'expense' | 'sell' | 'income' | 'food';
 
 export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
@@ -138,197 +140,207 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
     }));
   };
 
-  const TABS: { id: MobileReportTab; label: string; icon: string; color: string }[] = [
-    { id: 'egg', label: 'Egg Yield', icon: '🥚', color: colors.secondary },
-    { id: 'mortality', label: 'Mortality', icon: '💀', color: colors.rose },
-    { id: 'expense', label: 'Expenses', icon: '💸', color: colors.amber },
-    { id: 'sell', label: 'Sales', icon: '🏷️', color: colors.blue },
-    { id: 'income', label: 'Income', icon: '📈', color: colors.brand },
-    { id: 'food', label: 'Food & Water', icon: '🌾', color: colors.secondary },
-  ];
+    const isLayerFarm = activeFarm?.animalType === 'layer';
 
-  if (loading) return (
-    <View style={[common.screen, { justifyContent: 'center', alignItems: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.brand} />
-      <Text style={{ color: colors.textMuted, marginTop: 10 }}>Loading Date-wise Daily Logs...</Text>
-    </View>
-  );
+    const ALL_TABS: { id: MobileReportTab; label: string; icon: any; color: string }[] = [
+      { id: 'egg', label: 'Egg Yield', icon: Egg, color: colors.secondary },
+      { id: 'mortality', label: 'Mortality', icon: Skull, color: colors.rose },
+      { id: 'expense', label: 'Expenses', icon: CircleDollarSign, color: colors.amber },
+      { id: 'sell', label: 'Sales', icon: Tag, color: colors.blue },
+      { id: 'income', label: 'Income', icon: TrendingUp, color: colors.brand },
+      { id: 'food', label: 'Food & Water', icon: Wheat, color: colors.secondary },
+    ];
 
-  return (
-    <View style={common.screen}>
-      {/* Header Bar */}
-      <View style={s.topHeader}>
-        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={s.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Date-wise Daily Report</Text>
+    const TABS = isLayerFarm ? ALL_TABS : ALL_TABS.filter(t => t.id !== 'egg');
+
+    if (loading) return (
+      <View style={[common.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.brand} />
+        <Text style={{ color: colors.textMuted, marginTop: 10 }}>Loading Date-wise Daily Logs...</Text>
       </View>
+    );
 
-      {/* Horizontal Tabs Scroll */}
-      <View style={s.tabBarContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 10, gap: 6 }}>
-          {TABS.map(tab => {
-            const isActive = activeTab === tab.id;
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                style={[
-                  s.tabChip,
-                  isActive && { backgroundColor: tab.color, borderColor: tab.color }
-                ]}
-                onPress={() => setActiveTab(tab.id)}
-              >
-                <Text style={{ fontSize: 13 }}>{tab.icon}</Text>
-                <Text style={[s.tabChipText, isActive && { color: '#FFFFFF', fontWeight: '800' }]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+    return (
+      <View style={common.screen}>
+        {/* Header Bar */}
+        <View style={s.topHeader}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <ArrowLeft size={16} color={colors.brand} />
+              <Text style={s.backBtnText}>Back</Text>
+            </View>
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Date-wise Daily Report</Text>
+        </View>
 
-      <ScrollView
-        contentContainerStyle={common.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
-      >
-        {dailyLogs.length > 0 ? (
-          dailyLogs.map(log => {
-            const isExpanded = !!expandedDates[log.date];
-            return (
-              <View key={log.date} style={[s.accordionCard, isExpanded && { borderColor: colors.secondary }]}>
-                {/* Accordion Header Row */}
+        {/* Horizontal Tabs Scroll */}
+        <View style={s.tabBarContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 10, gap: 6 }}>
+            {TABS.map(tab => {
+              const isActive = activeTab === tab.id;
+              const IconComp = tab.icon;
+              return (
                 <TouchableOpacity
-                  style={[s.accordionHeader, isExpanded && { backgroundColor: colors.surfaceElevated }]}
-                  onPress={() => toggleAccordion(log.date)}
-                  activeOpacity={0.8}
+                  key={tab.id}
+                  style={[
+                    s.tabChip,
+                    isActive && { backgroundColor: tab.color, borderColor: tab.color }
+                  ]}
+                  onPress={() => setActiveTab(tab.id)}
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.dateText}>📅 {log.date}</Text>
-                    <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
-                      {log.dayNumber && (
-                        <View style={{ backgroundColor: 'rgba(199, 81, 31, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                          <Text style={{ color: colors.brand, fontSize: 10, fontWeight: '800' }}>Day {log.dayNumber} ({log.formattedAge})</Text>
-                        </View>
-                      )}
+                  <IconComp size={14} color={isActive ? '#FFFFFF' : tab.color} />
+                  <Text style={[s.tabChipText, isActive && { color: '#FFFFFF', fontWeight: '800' }]}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={common.scrollContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
+        >
+          {dailyLogs.length > 0 ? (
+            dailyLogs.map(log => {
+              const isExpanded = !!expandedDates[log.date];
+              return (
+                <View key={log.date} style={[s.accordionCard, isExpanded && { borderColor: colors.secondary }]}>
+                  {/* Accordion Header Row */}
+                  <TouchableOpacity
+                    style={[s.accordionHeader, isExpanded && { backgroundColor: colors.surfaceElevated }]}
+                    onPress={() => toggleAccordion(log.date)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Calendar size={13} color={colors.brand} />
+                        <Text style={s.dateText}>{log.date}</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+                        {log.dayNumber && (
+                          <View style={{ backgroundColor: 'rgba(199, 81, 31, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                            <Text style={{ color: colors.brand, fontSize: 10, fontWeight: '800' }}>Day {log.dayNumber} ({log.formattedAge})</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Subtext header per tab */}
+                      <Text style={s.subText}>
+                        {activeTab === 'egg' && `Yield: ${formatEggCount(log.eggCount)} (${log.eggCount} eggs)`}
+                        {activeTab === 'mortality' && `Mortality: ${log.deadCount} dead birds`}
+                        {activeTab === 'expense' && `Expenses: ৳${log.totalExpenses.toLocaleString()}`}
+                        {activeTab === 'sell' && `Sales Revenue: ৳${log.totalIncome.toLocaleString()}`}
+                        {activeTab === 'income' && `Net Profit: ৳${log.netProfit.toLocaleString()}`}
+                        {activeTab === 'food' && `Feed: ${log.feedGivenKg} kg | Water: ${log.waterGivenLiters} L`}
+                      </Text>
                     </View>
 
-                    {/* Subtext header per tab */}
-                    <Text style={s.subText}>
-                      {activeTab === 'egg' && `Yield: ${formatEggCount(log.eggCount)} (${log.eggCount} eggs)`}
-                      {activeTab === 'mortality' && `Mortality: ${log.deadCount} dead birds`}
-                      {activeTab === 'expense' && `Expenses: ৳${log.totalExpenses.toLocaleString()}`}
-                      {activeTab === 'sell' && `Sales Revenue: ৳${log.totalIncome.toLocaleString()}`}
-                      {activeTab === 'income' && `Net Profit: ৳${log.netProfit.toLocaleString()}`}
-                      {activeTab === 'food' && `Feed: ${log.feedGivenKg} kg | Water: ${log.waterGivenLiters} L`}
-                    </Text>
-                  </View>
+                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                      {activeTab === 'egg' && (
+                        <>
+                          {log.rateTrend === 'up' && (
+                            <View style={[s.rateBadge, { backgroundColor: 'rgba(74, 124, 89, 0.15)', borderColor: colors.secondary, borderWidth: 1 }]}>
+                              <Text style={[s.rateBadgeText, { color: colors.secondary }]}>▲ {log.eggLayingRate}% (+{log.rateDiff}%)</Text>
+                            </View>
+                          )}
+                          {log.rateTrend === 'down' && (
+                            <View style={[s.rateBadge, { backgroundColor: 'rgba(178, 58, 47, 0.15)', borderColor: colors.rose, borderWidth: 1 }]}>
+                              <Text style={[s.rateBadgeText, { color: colors.rose }]}>▼ {log.eggLayingRate}% (-{log.rateDiff}%)</Text>
+                            </View>
+                          )}
+                          {log.rateTrend === 'stable' && (
+                            <View style={s.rateBadge}>
+                              <Text style={s.rateBadgeText}>— {log.eggLayingRate}%</Text>
+                            </View>
+                          )}
+                        </>
+                      )}
+                    </View>
+                  </TouchableOpacity>
 
-                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                    {activeTab === 'egg' && (
-                      <>
-                        {log.rateTrend === 'up' && (
-                          <View style={[s.rateBadge, { backgroundColor: 'rgba(74, 124, 89, 0.15)', borderColor: colors.secondary, borderWidth: 1 }]}>
-                            <Text style={[s.rateBadgeText, { color: colors.secondary }]}>▲ {log.eggLayingRate}% (+{log.rateDiff}%)</Text>
+                  {isExpanded && (
+                    <View style={s.accordionBody}>
+                      {activeTab === 'egg' && (
+                        <>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.secondary }]}>TOTAL EGGS COLLECTED</Text>
+                            <Text style={s.boxValue}>{formatEggCount(log.eggCount)}</Text>
+                            <Text style={s.boxSub}>{log.eggCount} total eggs collected</Text>
                           </View>
-                        )}
-                        {log.rateTrend === 'down' && (
-                          <View style={[s.rateBadge, { backgroundColor: 'rgba(178, 58, 47, 0.15)', borderColor: colors.rose, borderWidth: 1 }]}>
-                            <Text style={[s.rateBadgeText, { color: colors.rose }]}>▼ {log.eggLayingRate}% (-{log.rateDiff}%)</Text>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.rose }]}>BROKEN / DAMAGED EGGS</Text>
+                            <Text style={[s.boxValue, { color: colors.rose }]}>{log.brokenEggCount} eggs</Text>
                           </View>
-                        )}
-                        {log.rateTrend === 'stable' && (
-                          <View style={s.rateBadge}>
-                            <Text style={s.rateBadgeText}>— {log.eggLayingRate}%</Text>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.blue }]}>DAILY LAYING RATE %</Text>
+                            <Text style={[s.boxValue, { color: colors.blue }]}>{log.eggLayingRate}% Hen-Day Yield</Text>
                           </View>
-                        )}
-                      </>
-                    )}
-                    <Text style={{ fontSize: 18 }}>{isExpanded ? '▲' : '▼'}</Text>
-                  </View>
-                </TouchableOpacity>
+                        </>
+                      )}
 
-                {isExpanded && (
-                  <View style={s.accordionBody}>
-                    {activeTab === 'egg' && (
-                      <>
+                      {activeTab === 'mortality' && (
                         <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.secondary }]}>🥚 TOTAL EGGS COLLECTED</Text>
-                          <Text style={s.boxValue}>{formatEggCount(log.eggCount)}</Text>
-                          <Text style={s.boxSub}>{log.eggCount} total eggs collected</Text>
+                          <Text style={[s.boxTitle, { color: colors.rose }]}>DAILY MORTALITY / DEAD BIRDS</Text>
+                          <Text style={[s.boxValue, { color: colors.rose }]}>{log.deadCount} dead birds</Text>
+                          <Text style={s.boxSub}>Reported on {log.date}</Text>
                         </View>
-                        <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.rose }]}>💔 BROKEN / DAMAGED EGGS</Text>
-                          <Text style={[s.boxValue, { color: colors.rose }]}>{log.brokenEggCount} eggs</Text>
-                        </View>
-                        <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.blue }]}>📈 DAILY LAYING RATE %</Text>
-                          <Text style={[s.boxValue, { color: colors.blue }]}>{log.eggLayingRate}% Hen-Day Yield</Text>
-                        </View>
-                      </>
-                    )}
+                      )}
 
-                    {activeTab === 'mortality' && (
-                      <View style={s.detailBox}>
-                        <Text style={[s.boxTitle, { color: colors.rose }]}>💀 DAILY MORTALITY / DEAD BIRDS</Text>
-                        <Text style={[s.boxValue, { color: colors.rose }]}>{log.deadCount} dead birds</Text>
-                        <Text style={s.boxSub}>Reported on {log.date}</Text>
-                      </View>
-                    )}
+                      {activeTab === 'expense' && (
+                        <>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.amber }]}>TOTAL DAILY EXPENSES</Text>
+                            <Text style={[s.boxValue, { color: colors.amber }]}>৳{log.totalExpenses.toLocaleString()}</Text>
+                          </View>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.blue }]}>COST BREAKDOWN</Text>
+                            <Text style={s.boxSubText}>Feed Expense: ৳{log.feedExpense.toLocaleString()}</Text>
+                            <Text style={s.boxSubText}>Medicine Expense: ৳{log.medicineExpense.toLocaleString()}</Text>
+                            <Text style={s.boxSubText}>Labor Expense: ৳{log.laborExpense.toLocaleString()}</Text>
+                            <Text style={s.boxSubText}>Utility Expense: ৳{log.utilityExpense.toLocaleString()}</Text>
+                          </View>
+                        </>
+                      )}
 
-                    {activeTab === 'expense' && (
-                      <>
+                      {activeTab === 'sell' && (
                         <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.amber }]}>💸 TOTAL DAILY EXPENSES</Text>
-                          <Text style={[s.boxValue, { color: colors.amber }]}>৳{log.totalExpenses.toLocaleString()}</Text>
-                        </View>
-                        <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.blue }]}>COST BREAKDOWN</Text>
-                          <Text style={s.boxSubText}>Feed Expense: ৳{log.feedExpense.toLocaleString()}</Text>
-                          <Text style={s.boxSubText}>Medicine Expense: ৳{log.medicineExpense.toLocaleString()}</Text>
-                          <Text style={s.boxSubText}>Labor Expense: ৳{log.laborExpense.toLocaleString()}</Text>
-                          <Text style={s.boxSubText}>Utility Expense: ৳{log.utilityExpense.toLocaleString()}</Text>
-                        </View>
-                      </>
-                    )}
-
-                    {activeTab === 'sell' && (
-                      <View style={s.detailBox}>
-                        <Text style={[s.boxTitle, { color: colors.blue }]}>🏷️ DAILY SALES REVENUE</Text>
-                        <Text style={[s.boxValue, { color: colors.blue }]}>৳{log.totalIncome.toLocaleString()}</Text>
-                        <Text style={s.boxSub}>Eggs Sold: {formatEggCount(log.eggsSold)} | Chickens Sold: {log.chickensSold} birds</Text>
-                      </View>
-                    )}
-
-                    {activeTab === 'income' && (
-                      <>
-                        <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.blue }]}>📈 DAILY SALES INCOME</Text>
+                          <Text style={[s.boxTitle, { color: colors.blue }]}>DAILY SALES REVENUE</Text>
                           <Text style={[s.boxValue, { color: colors.blue }]}>৳{log.totalIncome.toLocaleString()}</Text>
+                          <Text style={s.boxSub}>{isLayerFarm ? `Eggs Sold: ${formatEggCount(log.eggsSold)} | ` : ''}Chickens Sold: {log.chickensSold} birds</Text>
                         </View>
-                        <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.amber }]}>💸 DAILY OPERATIONAL COST</Text>
-                          <Text style={[s.boxValue, { color: colors.amber }]}>৳{log.totalExpenses.toLocaleString()}</Text>
-                        </View>
-                        <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: log.netProfit >= 0 ? colors.secondary : colors.rose }]}>⚖️ DAILY NET PROFIT / LOSS</Text>
-                          <Text style={[s.boxValue, { color: log.netProfit >= 0 ? colors.secondary : colors.rose }]}>৳{log.netProfit.toLocaleString()}</Text>
-                        </View>
-                      </>
-                    )}
+                      )}
 
-                    {activeTab === 'food' && (
-                      <>
-                        <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.secondary }]}>🌾 DAILY FEED GIVEN</Text>
-                          <Text style={s.boxValue}>{log.feedGivenKg} kg ({ (log.feedGivenKg / 50).toFixed(1) } 50kg bags)</Text>
-                        </View>
-                        <View style={s.detailBox}>
-                          <Text style={[s.boxTitle, { color: colors.blue }]}>💧 DAILY WATER PROVIDED</Text>
-                          <Text style={[s.boxValue, { color: colors.blue }]}>{log.waterGivenLiters} Liters</Text>
-                        </View>
-                      </>
-                    )}
+                      {activeTab === 'income' && (
+                        <>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.blue }]}>DAILY SALES INCOME</Text>
+                            <Text style={[s.boxValue, { color: colors.blue }]}>৳{log.totalIncome.toLocaleString()}</Text>
+                          </View>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.amber }]}>DAILY OPERATIONAL COST</Text>
+                            <Text style={[s.boxValue, { color: colors.amber }]}>৳{log.totalExpenses.toLocaleString()}</Text>
+                          </View>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: log.netProfit >= 0 ? colors.secondary : colors.rose }]}>DAILY NET PROFIT / LOSS</Text>
+                            <Text style={[s.boxValue, { color: log.netProfit >= 0 ? colors.secondary : colors.rose }]}>৳{log.netProfit.toLocaleString()}</Text>
+                          </View>
+                        </>
+                      )}
+
+                      {activeTab === 'food' && (
+                        <>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.secondary }]}>DAILY FEED GIVEN</Text>
+                            <Text style={s.boxValue}>{log.feedGivenKg} kg ({ (log.feedGivenKg / 50).toFixed(1) } 50kg bags)</Text>
+                          </View>
+                          <View style={s.detailBox}>
+                            <Text style={[s.boxTitle, { color: colors.blue }]}>DAILY WATER PROVIDED</Text>
+                            <Text style={[s.boxValue, { color: colors.blue }]}>{log.waterGivenLiters} Liters</Text>
+                          </View>
+                        </>
+                      )}
 
                     {/* ALWAYS VISIBLE Edit / Delete Actions */}
                     <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
