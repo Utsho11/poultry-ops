@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../config';
-import { colors, common } from '../styles';
+import { colors, common, STATUS_BAR_PADDING } from '../styles';
 import { formatEggCount } from '../utils/crates';
 
 import { Egg, Skull, CircleDollarSign, Tag, TrendingUp, Wheat, ArrowLeft, Edit2, Calendar } from 'lucide-react-native';
@@ -409,7 +409,7 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
 };
 
 const s = StyleSheet.create({
-  topHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10, backgroundColor: colors.surface, borderBottomWidth: 1, borderColor: colors.border },
+  topHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: STATUS_BAR_PADDING, paddingBottom: 10, backgroundColor: colors.surface, borderBottomWidth: 1, borderColor: colors.border },
   backBtn: { backgroundColor: colors.surfaceElevated, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
   backBtnText: { color: colors.brand, fontWeight: '800', fontSize: 12 },
   headerTitle: { fontSize: 15, fontWeight: '900', color: colors.textMain, marginLeft: 12 },

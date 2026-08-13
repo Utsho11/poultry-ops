@@ -1,7 +1,11 @@
 import { StyleSheet, Platform, StatusBar } from "react-native";
 
-const STATUS_BAR_HEIGHT =
-  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 0;
+export const STATUS_BAR_PADDING =
+  Platform.OS === "android"
+    ? (StatusBar.currentHeight || 28) + 8
+    : Platform.OS === "ios"
+    ? 48
+    : 16;
 
 export const colors = {
   bg: "#FAF7F2", // Warm off-white background

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../config';
-import { colors, common } from '../styles';
+import { colors, common, STATUS_BAR_PADDING } from '../styles';
 import { formatEggCount } from '../utils/crates';
 import { ISale, ICustomer, IBatch, IPayment } from '@poultry-ops/types';
 import { DatePickerInput } from '../components/DatePickerInput';
@@ -658,7 +658,7 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
 };
 
 const s = StyleSheet.create({
-  topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, backgroundColor: colors.surface, borderBottomWidth: 1, borderColor: colors.border },
+  topHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: STATUS_BAR_PADDING, paddingBottom: 10, backgroundColor: colors.surface, borderBottomWidth: 1, borderColor: colors.border },
   headerTitle: { fontSize: 16, fontWeight: '900', color: colors.textMain },
   headerSub: { fontSize: 11, fontWeight: '700', color: colors.rose, marginTop: 2 },
   addBtn: { backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },

@@ -152,8 +152,8 @@ export default function App() {
       <NavigationContainer>
         <StatusBar
           barStyle="dark-content"
-          backgroundColor="#FAF7F2"
-          translucent={false}
+          backgroundColor="transparent"
+          translucent
         />
         <AppNavigator />
       </NavigationContainer>

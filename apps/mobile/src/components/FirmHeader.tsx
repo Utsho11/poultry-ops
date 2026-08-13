@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useAuth, IFirm } from "../context/AuthContext";
 import { apiFetch, showAlert } from "../config";
-import { colors } from "../styles";
+import { colors, STATUS_BAR_PADDING } from "../styles";
 import { CreateFirmModal } from "./CreateFirmModal";
 
 import {
@@ -199,7 +199,7 @@ const s = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 8 : 44,
+    paddingTop: STATUS_BAR_PADDING,
     paddingBottom: 10,
     borderBottomWidth: 1,
     borderColor: colors.border,

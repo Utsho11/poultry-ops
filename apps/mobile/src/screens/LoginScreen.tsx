@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
-import { colors } from '../styles';
+import { colors, STATUS_BAR_PADDING } from '../styles';
 
 export const LoginScreen: React.FC = () => {
   const { login } = useAuth();
@@ -181,7 +181,7 @@ export const LoginScreen: React.FC = () => {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 24, paddingTop: 60 },
+  content: { padding: 24, paddingTop: STATUS_BAR_PADDING + 16 },
   logoBox: { alignItems: 'center', marginBottom: 24 },
   appName: { fontSize: 32, fontWeight: '800', color: colors.brand, marginTop: 8 },
   tagline: { fontSize: 13, color: colors.textMuted, marginTop: 4 },

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useAuth, IFirm } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
-import { colors, common } from '../styles';
+import { colors, common, STATUS_BAR_PADDING } from '../styles';
 import { CreateFirmModal } from '../components/CreateFirmModal';
 
 import { Building2, Plus, ChevronRight, Egg, Bird, ArrowRight, MapPin, Calendar, LogOut } from 'lucide-react-native';
@@ -169,7 +169,7 @@ export const FirmSelectionScreen: React.FC<any> = ({ navigation }) => {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 20, paddingTop: 50 },
+  content: { padding: 20, paddingTop: STATUS_BAR_PADDING + 10 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, backgroundColor: colors.surface, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
   welcomeText: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
   userName: { fontSize: 16, fontWeight: '800', color: colors.textMain },
