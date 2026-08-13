@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { createBatchSchema } from '@poultry-ops/validation';
-import { BatchModel, FarmModel } from '../models/schemas';
+import { BatchModel, FarmModel, DailyLogModel, HealthRecordModel, ExpenseModel, SaleModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -98,16 +98,25 @@ export class BatchController {
     }
   }
 
-  // Delete Batch
+  // Delete Batch (with cascade cleanup of linked records)
   static async deleteBatch(req: AuthRequest, res: Response) {
     try {
-      const batch = await BatchModel.findOne({ _id: req.params.id, farmId: req.farmId });
+      const batchId = req.params.id;
+      const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
       if (!batch) {
         return ResponseView.notFound(res, 'Flock/Batch not found');
       }
 
-      await BatchModel.deleteOne({ _id: req.params.id, farmId: req.farmId });
-      return ResponseView.success(res, { message: 'Flock/Batch deleted successfully' });
+      // Cascade delete daily logs and health records linked to this batch, and unset references in expenses/sales
+      await Promise.all([
+        DailyLogModel.deleteMany({ batchId, farmId: req.farmId }),
+        HealthRecordModel.deleteMany({ batchId, farmId: req.farmId }),
+        ExpenseModel.updateMany({ batchId, farmId: req.farmId }, { $unset: { batchId: 1 } }),
+        SaleModel.updateMany({ batchId, farmId: req.farmId }, { $unset: { batchId: 1 } }),
+        BatchModel.deleteOne({ _id: batchId, farmId: req.farmId })
+      ]);
+
+      return ResponseView.success(res, { message: 'Flock/Batch and associated logs deleted successfully' });
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
     }

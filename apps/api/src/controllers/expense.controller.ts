@@ -42,7 +42,8 @@ export class ExpenseController {
         return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
       }
 
-      const { batchId, workerId, category, amount, currency, date, note, receiptUrl, feedBags, feedKg } = req.body;
+      const { batchId, workerId, category, amount, currency, date, note, receiptUrl } = parseResult.data;
+      const { feedBags, feedKg } = req.body;
 
       if (category === 'labor') {
         if (!batchId) {
@@ -91,12 +92,18 @@ export class ExpenseController {
   // Edit expense
   static async updateExpense(req: AuthRequest, res: Response) {
     try {
+      const parseResult = expenseSchema.partial().safeParse(req.body);
+      if (!parseResult.success) {
+        return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
+      }
+
       const expense = await ExpenseModel.findOne({ _id: req.params.id, farmId: req.farmId });
       if (!expense) {
         return ResponseView.notFound(res, 'Expense record not found');
       }
 
-      const { batchId, workerId, category, amount, date, note, feedBags, feedKg } = req.body;
+      const { batchId, workerId, category, amount, date, note } = parseResult.data;
+      const { feedBags, feedKg } = req.body;
 
       if (category === 'labor' && batchId) {
         const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
@@ -105,9 +112,9 @@ export class ExpenseController {
         }
       }
 
-      if (batchId !== undefined) expense.batchId = batchId;
-      if (workerId !== undefined) expense.workerId = workerId;
-      if (category !== undefined) expense.category = category;
+      if (batchId !== undefined) expense.batchId = batchId as any;
+      if (workerId !== undefined) expense.workerId = workerId as any;
+      if (category !== undefined) expense.category = category as any;
       if (amount !== undefined) expense.amount = Number(amount);
       if (date !== undefined) expense.date = date;
       if (note !== undefined) expense.note = note;

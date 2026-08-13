@@ -130,6 +130,22 @@ export class SaleController {
       if (amountDue === 0) status = 'paid';
       else if (amountPaid > 0) status = 'partial';
 
+      // Deduct sold chickens from batch with inventory validation
+      const totalChickensSold = itemsToSave
+        .filter(i => i.type === 'chicken')
+        .reduce((sum, i) => sum + (i.birdCount || i.quantity || 0), 0);
+
+      let batchDoc: any = null;
+      if (batchId) {
+        batchDoc = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
+        if (!batchDoc) {
+          return ResponseView.notFound(res, 'Selected flock/batch not found in this firm');
+        }
+        if (totalChickensSold > 0 && batchDoc.currentCount < totalChickensSold) {
+          return ResponseView.error(res, `Cannot sell ${totalChickensSold} chickens. Current flock count is only ${batchDoc.currentCount} birds.`);
+        }
+      }
+
       const sale = new SaleModel({
         farmId: req.farmId,
         batchId,
@@ -148,17 +164,9 @@ export class SaleController {
 
       await sale.save();
 
-      // Deduct sold chickens from batch
-      const totalChickensSold = itemsToSave
-        .filter(i => i.type === 'chicken')
-        .reduce((sum, i) => sum + (i.birdCount || i.quantity || 0), 0);
-
-      if (totalChickensSold > 0 && batchId) {
-        const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
-        if (batch) {
-          batch.currentCount = Math.max(0, batch.currentCount - totalChickensSold);
-          await batch.save();
-        }
+      if (totalChickensSold > 0 && batchDoc) {
+        batchDoc.currentCount = Math.max(0, batchDoc.currentCount - totalChickensSold);
+        await batchDoc.save();
       }
 
       // Record upfront payment if amountPaid > 0

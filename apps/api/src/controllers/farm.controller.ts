@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { createFarmSchema } from '@poultry-ops/validation';
-import { FarmModel, UserModel } from '../models/schemas';
+import { FarmModel, UserModel, BatchModel, DailyLogModel, ExpenseModel, SaleModel, FeedStockModel, CustomerModel, PaymentModel, HealthRecordModel } from '../models/schemas';
 import { AuthRequest, generateToken } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -84,29 +84,43 @@ export class FarmController {
     }
   }
 
-  // Get single Firm by ID
+  // Get single Firm by ID (with ownership/membership check)
   static async getFarmById(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
+      const userId = req.user?.userId;
       const farm = await FarmModel.findById(id);
       if (!farm) {
         return ResponseView.notFound(res, 'Firm not found');
       }
+
+      const isOwner = farm.ownerId && farm.ownerId.toString() === userId;
+      const isMember = req.user?.farmId && req.user.farmId.toString() === farm._id.toString();
+      if (!isOwner && !isMember) {
+        return ResponseView.forbidden(res, 'You do not have access to this firm');
+      }
+
       return ResponseView.success(res, farm);
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
     }
   }
 
-  // Update Firm Details
+  // Update Firm Details (Owner/Manager only)
   static async updateFarm(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
+      const userId = req.user?.userId;
       const { name, animalType, date, location } = req.body;
 
       const farm = await FarmModel.findById(id);
       if (!farm) {
         return ResponseView.notFound(res, 'Firm not found');
+      }
+
+      const isOwner = farm.ownerId && farm.ownerId.toString() === userId;
+      if (!isOwner) {
+        return ResponseView.forbidden(res, 'Only the firm owner can update firm details');
       }
 
       if (name !== undefined) farm.name = name;
@@ -121,7 +135,7 @@ export class FarmController {
     }
   }
 
-  // Delete Firm (Owner only)
+  // Delete Firm (Owner only, with complete cascade deletion of tenant data)
   static async deleteFarm(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
@@ -134,8 +148,22 @@ export class FarmController {
         return ResponseView.forbidden(res, 'Only the firm owner can delete this firm');
       }
 
-      await FarmModel.deleteOne({ _id: id });
-      return ResponseView.success(res, { message: 'Firm deleted successfully' });
+      // Cascade delete all tenant records
+      await Promise.all([
+        BatchModel.deleteMany({ farmId: id }),
+        DailyLogModel.deleteMany({ farmId: id }),
+        ExpenseModel.deleteMany({ farmId: id }),
+        SaleModel.deleteMany({ farmId: id }),
+        FeedStockModel.deleteMany({ farmId: id }),
+        CustomerModel.deleteMany({ farmId: id }),
+        PaymentModel.deleteMany({ farmId: id }),
+        HealthRecordModel.deleteMany({ farmId: id }),
+        UserModel.updateMany({ activeFarmId: id }, { $unset: { activeFarmId: 1 } }),
+        UserModel.updateMany({ farmId: id }, { $unset: { farmId: 1 } }),
+        FarmModel.deleteOne({ _id: id })
+      ]);
+
+      return ResponseView.success(res, { message: 'Firm and all associated data deleted successfully' });
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
     }

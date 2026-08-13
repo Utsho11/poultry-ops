@@ -266,6 +266,13 @@ export class AuthController {
         return ResponseView.notFound(res, 'User not found');
       }
 
+      // Security check: Verify user owns the farm or belongs to the farm team
+      const isOwner = farm.ownerId && farm.ownerId.toString() === (user._id as any).toString();
+      const isMember = user.farmId && user.farmId.toString() === farm._id.toString();
+      if (!isOwner && !isMember) {
+        return ResponseView.forbidden(res, 'You do not have permission to access this firm');
+      }
+
       user.activeFarmId = farm._id as any;
       await user.save();
 

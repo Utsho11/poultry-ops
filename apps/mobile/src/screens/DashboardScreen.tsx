@@ -37,7 +37,12 @@ import {
   CheckCircle,
   Building2,
   ChevronRight,
-  Info
+  Info,
+  Skull,
+  CircleDollarSign,
+  User,
+  Eye,
+  EyeOff
 } from "lucide-react-native";
 
 export const DashboardScreen: React.FC<any> = ({ navigation }) => {
@@ -766,7 +771,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                                 fontWeight: "800",
                               }}
                             >
-                              📅 Age:{" "}
+                              <Calendar size={10} color={colors.secondary} style={{ marginBottom: -2 }} /> Age:{" "}
                               {(batch as any).formattedAge ||
                                 `${Math.floor(Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) / 7)}W ${Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) % 7}D`}
                             </Text>
@@ -843,31 +848,28 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                         alignItems: "center",
                       }}
                     >
-                      <Text
-                        style={{
-                          color: colors.brand,
-                          fontWeight: "800",
-                          fontSize: 12,
-                        }}
-                      >
-                        📊 Open Batch Dashboard →
-                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <BarChart3 size={14} color={colors.brand} />
+                        <Text
+                          style={{
+                            color: colors.brand,
+                            fontWeight: "800",
+                            fontSize: 12,
+                          }}
+                        >
+                          Open Batch Dashboard →
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
           ) : (
-            <View style={common.card}>
-              <Text
-                style={{
-                  color: colors.textMuted,
-                  textAlign: "center",
-                  marginVertical: 12,
-                }}
-              >
-                No flocks created yet. Tap "➕ New Batch" to add a flock!
-              </Text>
+            <View style={[common.card, { flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: 12, flexWrap: "wrap" }]}>
+              <Text style={{ color: colors.textMuted }}>No flocks created yet. Tap "</Text>
+              <Plus size={14} color={colors.textMuted} />
+              <Text style={{ color: colors.textMuted }}> New Batch" to add a flock!</Text>
             </View>
           )}
         </View>
@@ -939,23 +941,18 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   <TouchableOpacity
                     onPress={() => setBatchDashModalOpen(false)}
                   >
-                    <Text
-                      style={{
-                        color: colors.brand,
-                        fontWeight: "800",
-                        fontSize: 16,
-                      }}
-                    >
-                      ✕
-                    </Text>
+                    <X size={20} color={colors.brand} />
                   </TouchableOpacity>
                 </View>
 
                 {/* 1. EGG SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.secondary }]}>
-                  <Text style={[s.sectionHeader, { color: colors.secondary }]}>
-                    🥚 1. Egg Yield
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <Egg size={16} color={colors.secondary} />
+                    <Text style={[s.sectionHeader, { color: colors.secondary, marginBottom: 0 }]}>
+                      1. Egg Yield
+                    </Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Eggs Collected:</Text>
                     <Text style={[s.dashVal, { color: colors.secondary }]}>
@@ -978,9 +975,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 2. MORTALITY RATE SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.rose }]}>
-                  <Text style={[s.sectionHeader, { color: colors.rose }]}>
-                    💀 2. Mortality Rate
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <Skull size={16} color={colors.rose} />
+                    <Text style={[s.sectionHeader, { color: colors.rose, marginBottom: 0 }]}>
+                      2. Mortality Rate
+                    </Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Dead Birds:</Text>
                     <Text style={[s.dashVal, { color: colors.rose }]}>
@@ -1004,9 +1004,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 3. EXPENSE SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.amber }]}>
-                  <Text style={[s.sectionHeader, { color: colors.amber }]}>
-                    💸 3. Expenses
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <CircleDollarSign size={16} color={colors.amber} />
+                    <Text style={[s.sectionHeader, { color: colors.amber, marginBottom: 0 }]}>
+                      3. Expenses
+                    </Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Batch Expense:</Text>
                     <Text style={[s.dashVal, { color: colors.amber }]}>
@@ -1030,9 +1033,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 4. SELL SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.blue }]}>
-                  <Text style={[s.sectionHeader, { color: colors.blue }]}>
-                    🏷️ 4. Sales Volume
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <Tag size={16} color={colors.blue} />
+                    <Text style={[s.sectionHeader, { color: colors.blue, marginBottom: 0 }]}>
+                      4. Sales Volume
+                    </Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Eggs Sold:</Text>
                     <Text style={[s.dashVal, { color: colors.blue }]}>
@@ -1050,9 +1056,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 5. INCOME SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.brand }]}>
-                  <Text style={[s.sectionHeader, { color: colors.brand }]}>
-                    📈 5. Income & Net Profit
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <TrendingUp size={16} color={colors.brand} />
+                    <Text style={[s.sectionHeader, { color: colors.brand, marginBottom: 0 }]}>
+                      5. Income & Net Profit
+                    </Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Sales Revenue:</Text>
                     <Text style={[s.dashVal, { color: colors.blue }]}>
@@ -1081,9 +1090,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 6. FOOD INFO SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.secondary }]}>
-                  <Text style={[s.sectionHeader, { color: colors.secondary }]}>
-                    🌾 6. Food Info
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <Wheat size={16} color={colors.secondary} />
+                    <Text style={[s.sectionHeader, { color: colors.secondary, marginBottom: 0 }]}>
+                      6. Food Info
+                    </Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Feed Consumed:</Text>
                     <Text style={[s.dashVal, { color: colors.secondary }]}>
@@ -1150,26 +1162,28 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 </TouchableOpacity>
               ))}
 
-              <Text style={common.label}>📅 Log Date (YYYY-MM-DD) *</Text>
+              <Text style={common.label}>Log Date (YYYY-MM-DD) *</Text>
               <TextInput
                 style={common.input}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={quickLogDate}
                 onChangeText={setQuickLogDate}
               />
 
               <View style={s.eggInputBox}>
-                <Text
-                  style={{
-                    color: colors.secondary,
-                    fontWeight: "800",
-                    fontSize: 13,
-                    marginBottom: 6,
-                  }}
-                >
-                  🥚 Eggs Collected (1 Crate = 30 Eggs)
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                  <Egg size={14} color={colors.secondary} />
+                  <Text
+                    style={{
+                      color: colors.secondary,
+                      fontWeight: "800",
+                      fontSize: 13,
+                    }}
+                  >
+                    Eggs Collected (1 Crate = 30 Eggs)
+                  </Text>
+                </View>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={common.label}>Full Crates</Text>
@@ -1228,7 +1242,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 style={common.input}
                 keyboardType="numeric"
                 placeholder="50"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={feedGivenKg}
                 onChangeText={setFeedGivenKg}
               />
@@ -1238,7 +1252,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 style={common.input}
                 keyboardType="numeric"
                 placeholder="200"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={waterGivenLiters}
                 onChangeText={setWaterGivenLiters}
               />
@@ -1256,9 +1270,14 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 onPress={handleQuickLog}
                 disabled={submittingLog}
               >
-                <Text style={s.btnText}>
-                  {submittingLog ? "Saving..." : "⚡ Save Log"}
-                </Text>
+                {submittingLog ? (
+                  <Text style={s.btnText}>Saving...</Text>
+                ) : (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Zap size={14} color="#fff" />
+                    <Text style={s.btnText}>Save Log</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -1278,7 +1297,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <TextInput
                 style={common.input}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={saleDate}
                 onChangeText={setSaleDate}
               />
@@ -1386,7 +1405,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                     style={common.input}
                     keyboardType="numeric"
                     placeholder="50"
-                    placeholderTextColor="#6B655C"
+                    placeholderTextColor={colors.textMuted}
                     value={saleChickenQty}
                     onChangeText={setSaleChickenQty}
                   />
@@ -1402,7 +1421,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 style={common.input}
                 keyboardType="numeric"
                 placeholder="10.50"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={saleUnitPrice}
                 onChangeText={setSaleUnitPrice}
               />
@@ -1425,7 +1444,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <TextInput
                 style={common.input}
                 placeholder="Wholesale Buyer"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={saleCustomer}
                 onChangeText={setSaleCustomer}
               />
@@ -1465,7 +1484,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <TextInput
                 style={common.input}
                 placeholder="e.g. Batch 2026-A"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={batchName}
                 onChangeText={setBatchName}
               />
@@ -1474,7 +1493,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <TextInput
                 style={common.input}
                 placeholder="e.g. Hy-Line Brown"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={breed}
                 onChangeText={setBreed}
               />
@@ -1494,7 +1513,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 style={common.input}
                 keyboardType="numeric"
                 placeholder="1000"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={initialCount}
                 onChangeText={setInitialCount}
               />
@@ -1565,10 +1584,11 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 <Text style={s.btnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[s.submitBtn, { backgroundColor: colors.brand }]}
+                style={[s.submitBtn, { backgroundColor: colors.brand, flexDirection: "row", justifyContent: "center", gap: 6 }]}
                 onPress={handleOpenCreateSecurity}
               >
-                <Text style={s.btnText}>➕ Create Flock</Text>
+                <Plus size={16} color="#fff" />
+                <Text style={s.btnText}>Create Flock</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1602,7 +1622,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   borderRadius: 10,
                 }}
               >
-                <Text style={{ color: "#fff", fontSize: 18 }}>🔐</Text>
+                <ShieldCheck size={20} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
@@ -1646,16 +1666,18 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               >
                 ACCOUNT USER
               </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "800",
-                  color: colors.textMain,
-                  marginBottom: 6,
-                }}
-              >
-                👤 {user?.name} ({user?.email})
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 }}>
+                <User size={14} color={colors.textMain} />
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "800",
+                    color: colors.textMain,
+                  }}
+                >
+                  {user?.name} ({user?.email})
+                </Text>
+              </View>
 
               <Text
                 style={{
@@ -1666,23 +1688,28 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               >
                 TARGET ACTION
               </Text>
-              <Text
-                style={{ fontSize: 13, fontWeight: "800", color: colors.brand }}
-              >
-                ➕ Create Flock '{batchName}'
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Plus size={14} color={colors.brand} />
+                <Text
+                  style={{ fontSize: 13, fontWeight: "800", color: colors.brand }}
+                >
+                  Create Flock '{batchName}'
+                </Text>
+              </View>
             </View>
 
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: "800",
-                color: colors.textMain,
-                marginBottom: 6,
-              }}
-            >
-              🔑 Enter Account Password *
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 }}>
+              <KeyRound size={14} color={colors.textMain} />
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "800",
+                  color: colors.textMain,
+                }}
+              >
+                Enter Account Password *
+              </Text>
+            </View>
             <View style={{ position: "relative", marginBottom: 16 }}>
               <TextInput
                 style={[
@@ -1705,9 +1732,11 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 onPress={() => setShowPassword(!showPassword)}
                 style={{ position: "absolute", right: 12, top: 12 }}
               >
-                <Text style={{ fontSize: 14, color: colors.textMuted }}>
-                  {showPassword ? "👁️" : "🙈"}
-                </Text>
+                {showPassword ? (
+                  <Eye size={18} color={colors.textMuted} />
+                ) : (
+                  <EyeOff size={18} color={colors.textMuted} />
+                )}
               </TouchableOpacity>
             </View>
 
@@ -1793,15 +1822,18 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                     }}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: "800",
-                          color: colors.textMain,
-                        }}
-                      >
-                        🐔 {b.batchName}
-                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Bird size={14} color={colors.textMain} />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "800",
+                            color: colors.textMain,
+                          }}
+                        >
+                          {b.batchName}
+                        </Text>
+                      </View>
                       <Text style={{ fontSize: 11, color: colors.textMuted }}>
                         Breed: {b.breed || "N/A"} (
                         {b.type ? b.type.toUpperCase() : "FLOCK"})
@@ -1817,15 +1849,18 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                       >
                         {b.currentStock.toLocaleString()} Eggs
                       </Text>
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: "700",
-                          color: colors.textMuted,
-                        }}
-                      >
-                        📦 {formatEggCount(b.currentStock)}
-                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 2 }}>
+                        <Package size={12} color={colors.textMuted} />
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: "700",
+                            color: colors.textMuted,
+                          }}
+                        >
+                          {formatEggCount(b.currentStock)}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 ))

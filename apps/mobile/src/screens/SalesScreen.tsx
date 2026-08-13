@@ -9,7 +9,7 @@ import { colors, common, STATUS_BAR_PADDING } from '../styles';
 import { formatEggCount } from '../utils/crates';
 import { ISale, ICustomer, IBatch, IPayment } from '@poultry-ops/types';
 import { DatePickerInput } from '../components/DatePickerInput';
-import { Tag, Plus, Phone, Egg, Bird, DollarSign, Trash2, Users, CreditCard, ShoppingBag } from 'lucide-react-native';
+import { Tag, Plus, Phone, Egg, Bird, DollarSign, Trash2, Users, CreditCard, ShoppingBag, Calendar, ShoppingCart } from 'lucide-react-native';
 
 export const SalesScreen: React.FC<any> = ({ navigation }) => {
   const { token, user, activeFarm } = useAuth();
@@ -325,7 +325,8 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
                     }}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>🗑️ Delete Invoice</Text>
+                    <Trash2 size={12} color="#DC2626" />
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>Delete Invoice</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -339,7 +340,10 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
               <View style={common.row}>
                 <View>
                   <Text style={s.customerName}>{c.name}</Text>
-                  <Text style={s.phoneText}>📞 {c.phone}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Phone size={11} color={colors.textMuted} />
+                    <Text style={[s.phoneText, { marginTop: 0 }]}>{c.phone}</Text>
+                  </View>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ fontSize: 11, color: colors.textMuted }}>Current Due</Text>
@@ -351,14 +355,15 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
 
               {c.totalDue > 0 && !isWorker && (
                 <TouchableOpacity
-                  style={[s.settleBtn, { marginTop: 10 }]}
+                  style={[s.settleBtn, { marginTop: 10, flexDirection: 'row', justifyContent: 'center', gap: 6 }]}
                   onPress={() => {
                     setTargetCustomer(c);
                     setPaymentAmt(String(c.totalDue));
                     setPaymentModalOpen(true);
                   }}
                 >
-                  <Text style={s.settleBtnText}>💳 Record Due Payment Settlement</Text>
+                  <CreditCard size={14} color="#FFFFFF" />
+                  <Text style={s.settleBtnText}>Record Due Payment Settlement</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -371,7 +376,10 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
               <View style={common.row}>
                 <View>
                   <Text style={s.customerName}>{p.customerName || 'Customer'}</Text>
-                  <Text style={s.phoneText}>📅 {p.date} | {p.method.toUpperCase()}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Calendar size={11} color={colors.textMuted} />
+                    <Text style={[s.phoneText, { marginTop: 0 }]}>{p.date} | {(p.method || 'CASH').toUpperCase()}</Text>
+                  </View>
                 </View>
                 <Text style={{ fontSize: 16, fontWeight: '900', color: colors.secondary }}>
                   +৳{p.amount.toLocaleString()}
@@ -386,11 +394,14 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
       <Modal visible={newSaleModalOpen} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.modalContent}>
-            <Text style={s.modalTitle}>🛒 Record New Sale Invoice</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+              <ShoppingCart size={18} color={colors.textMain} />
+              <Text style={[s.modalTitle, { marginBottom: 0 }]}>Record New Sale Invoice</Text>
+            </View>
             <ScrollView>
               {/* Sale Date Input (TOP) */}
               <DatePickerInput
-                label="📅 Sale Date *"
+                label="Sale Date *"
                 value={saleDate}
                 onChange={setSaleDate}
                 style={{ marginBottom: 14 }}
@@ -405,9 +416,12 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
                     style={[s.custChip, selectedBatchId === b._id && s.custChipActive]}
                     onPress={() => setSelectedBatchId(b._id)}
                   >
-                    <Text style={[s.chipText, selectedBatchId === b._id && { color: '#FFFFFF' }]}>
-                      🐔 {b.name} ({b.breed})
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Bird size={14} color={selectedBatchId === b._id ? '#FFFFFF' : colors.textMain} />
+                      <Text style={[s.chipText, selectedBatchId === b._id && { color: '#FFFFFF' }]}>
+                        {b.name} ({b.breed})
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -441,12 +455,14 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
                   <TextInput
                     style={[s.input, { flex: 1 }]}
                     placeholder="Customer Name"
+                    placeholderTextColor={colors.textMuted}
                     value={customerName}
                     onChangeText={setCustomerName}
                   />
                   <TextInput
                     style={[s.input, { flex: 1 }]}
                     placeholder="Phone (Required)"
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="phone-pad"
                     value={customerPhone}
                     onChangeText={setCustomerPhone}
@@ -625,10 +641,19 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
         <Modal visible={paymentModalOpen} animationType="slide" transparent>
           <View style={s.modalOverlay}>
             <View style={s.modalContent}>
-              <Text style={s.modalTitle}>💳 Settle Due Payment</Text>
-              <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 10 }}>
-                Customer: {targetCustomer.name} (📞 {targetCustomer.phone})
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+                <CreditCard size={18} color={colors.textMain} />
+                <Text style={[s.modalTitle, { marginBottom: 0 }]}>Settle Due Payment</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 }}>
+                <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                  Customer: {targetCustomer.name} -
+                </Text>
+                <Phone size={11} color={colors.textMuted} />
+                <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                  {targetCustomer.phone}
+                </Text>
+              </View>
               <Text style={{ fontSize: 14, fontWeight: '800', color: colors.rose, marginBottom: 14 }}>
                 Current Outstanding Due: ৳{targetCustomer.totalDue.toLocaleString()}
               </Text>

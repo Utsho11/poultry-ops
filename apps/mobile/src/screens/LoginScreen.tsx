@@ -103,7 +103,7 @@ export const LoginScreen: React.FC = () => {
             <TextInput
               style={s.input}
               placeholder="01700000000 or email@domain.com"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={identifier}
               onChangeText={setIdentifier}
               autoCapitalize="none"
@@ -113,7 +113,7 @@ export const LoginScreen: React.FC = () => {
             <TextInput
               style={s.input}
               placeholder="••••••••"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -125,7 +125,7 @@ export const LoginScreen: React.FC = () => {
             <TextInput
               style={s.input}
               placeholder="e.g. Karim Chowdhury"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={name}
               onChangeText={setName}
             />
@@ -134,7 +134,7 @@ export const LoginScreen: React.FC = () => {
             <TextInput
               style={s.input}
               placeholder="+8801700000000"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
@@ -144,7 +144,7 @@ export const LoginScreen: React.FC = () => {
             <TextInput
               style={s.input}
               placeholder="owner@farm.com"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -155,7 +155,7 @@ export const LoginScreen: React.FC = () => {
             <TextInput
               style={s.input}
               placeholder="••••••••"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={setPassword}
               secureTextEntry

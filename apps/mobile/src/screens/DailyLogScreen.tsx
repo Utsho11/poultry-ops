@@ -39,14 +39,6 @@ export const DailyLogScreen: React.FC = () => {
   const [waterGivenLiters, setWaterGivenLiters] = useState('100');
   const [notes, setNotes] = useState('');
 
-  // Store Feed Stock form states
-  const [stockDate, setStockDate] = useState(new Date().toISOString().split('T')[0]);
-  const [feedCategory, setFeedCategory] = useState<string>('layer_layer_1');
-  const [stockBags, setStockBags] = useState('10');
-  const [bagPrice, setBagPrice] = useState('2500');
-  const [stockVendor, setStockVendor] = useState('');
-  const [submittingStock, setSubmittingStock] = useState(false);
-
   const load = useCallback(async () => {
     try {
       const logsQuery = filterBatchId !== 'all' ? `?batchId=${filterBatchId}` : '';
@@ -100,34 +92,6 @@ export const DailyLogScreen: React.FC = () => {
     } catch (err: any) {
       showAlert('Submission Error', err.message);
     } finally { setSubmitting(false); }
-  };
-
-  const handleAddFeedStock = async () => {
-    const numBags = Number(stockBags || 0);
-    const numPrice = Number(bagPrice || 0);
-    if (numBags <= 0 || numPrice <= 0) {
-      showAlert('Error', 'Please enter valid Bags and Price per Bag');
-      return;
-    }
-    setSubmittingStock(true);
-    const totalKg = numBags * 50;
-    try {
-      await apiFetch('/feed-stock', {
-        method: 'POST',
-        body: JSON.stringify({
-          category: feedCategory,
-          bagPrice: numPrice,
-          bags: numBags,
-          date: stockDate,
-          note: stockVendor ? `Vendor: ${stockVendor}` : undefined
-        })
-      }, token);
-      setModalVisible(false);
-      load();
-      showAlert('Success', `🌾 Added ${numBags} Bags (${totalKg} kg) to Store Feed Stock (${feedCategory.toUpperCase().replace('_', ' ')})!`);
-    } catch (err: any) {
-      showAlert('Error', err.message || 'Failed to add feed stock');
-    } finally { setSubmittingStock(false); }
   };
 
   return (
@@ -270,11 +234,11 @@ export const DailyLogScreen: React.FC = () => {
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1 }}>
                       <Text style={common.label}>Full Crates</Text>
-                      <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={crates} onChangeText={setCrates} />
+                      <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textMuted} value={crates} onChangeText={setCrates} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={common.label}>Loose Eggs</Text>
-                      <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor="#64748b" value={looseEggs} onChangeText={setLooseEggs} />
+                      <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textMuted} value={looseEggs} onChangeText={setLooseEggs} />
                     </View>
                   </View>
                   <Text style={{ color: colors.brand, fontWeight: '700', fontSize: 13, marginTop: 6 }}>
@@ -335,7 +299,7 @@ export const DailyLogScreen: React.FC = () => {
                 <TextInput
                   style={[common.input, { minHeight: 50 }]}
                   placeholder="Optional health notes..."
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={colors.textMuted}
                   value={notes}
                   onChangeText={setNotes}
                   multiline

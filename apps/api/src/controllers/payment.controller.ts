@@ -75,6 +75,18 @@ export class PaymentController {
 
       await payment.save();
 
+      // If linked to a specific sale, update the sale invoice's paid/due/status
+      if (saleId) {
+        const sale = await SaleModel.findOne({ _id: saleId, farmId: req.farmId });
+        if (sale) {
+          sale.amountPaid = (sale.amountPaid || 0) + amount;
+          sale.amountDue = Math.max(0, (sale.totalAmount || 0) - sale.amountPaid);
+          if (sale.amountDue === 0) sale.status = 'paid';
+          else if (sale.amountPaid > 0) sale.status = 'partial';
+          await sale.save();
+        }
+      }
+
       // Recalculate customer due
       await syncCustomerTotalDue(req.farmId, customerId);
 

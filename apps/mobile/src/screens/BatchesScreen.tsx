@@ -9,7 +9,7 @@ import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
 import { DatePickerInput } from '../components/DatePickerInput';
 import { formatEggCount } from '../utils/crates';
-import { Bird, Egg, Home, Calendar, Users, BarChart3, Lock, Plus, Trash2, Check, X, ShieldAlert, CircleDollarSign, Skull, TrendingUp, Feather, Droplet, Tag, User } from 'lucide-react-native';
+import { Bird, Egg, Home, Calendar, Users, BarChart3, Lock, Plus, Trash2, Check, X, ShieldAlert, CircleDollarSign, Skull, TrendingUp, Feather, Droplet, Tag, User, Wheat, HardHat, Eye, EyeOff, KeyRound, Zap } from 'lucide-react-native';
 
 function getBatchAgeText(startDateStr: string) {
   if (!startDateStr) return 'N/A';
@@ -404,7 +404,10 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 4. SELL SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.blue }]}>
-                  <Text style={[s.sectionHeader, { color: colors.blue }]}>🏷️ 4. Sales Volume</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <Tag size={14} color={colors.blue} />
+                    <Text style={[s.sectionHeader, { color: colors.blue, marginBottom: 0 }]}>4. Sales Volume</Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Eggs Sold:</Text>
                     <Text style={[s.dashVal, { color: colors.blue }]}>{formatEggCount(activeBatchDashboard.sellSection.totalEggsSold)}</Text>
@@ -417,7 +420,10 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 5. INCOME SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.brand }]}>
-                  <Text style={[s.sectionHeader, { color: colors.brand }]}>📈 5. Income & Net Profit</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <TrendingUp size={14} color={colors.brand} />
+                    <Text style={[s.sectionHeader, { color: colors.brand, marginBottom: 0 }]}>5. Income & Net Profit</Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Sales Revenue:</Text>
                     <Text style={[s.dashVal, { color: colors.blue }]}>৳{activeBatchDashboard.incomeSection.totalIncome.toLocaleString()}</Text>
@@ -432,7 +438,10 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 6. FOOD INFO SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.secondary }]}>
-                  <Text style={[s.sectionHeader, { color: colors.secondary }]}>🌾 6. Food Info</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <Wheat size={14} color={colors.secondary} />
+                    <Text style={[s.sectionHeader, { color: colors.secondary, marginBottom: 0 }]}>6. Food Info</Text>
+                  </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Feed Consumed:</Text>
                     <Text style={[s.dashVal, { color: colors.secondary }]}>{activeBatchDashboard.foodSection.totalFeedKg} kg</Text>
@@ -463,23 +472,29 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
             <Text style={s.modalTitle}>New Bird Flock</Text>
             <ScrollView>
               <Text style={common.label}>Batch Name</Text>
-              <TextInput style={common.input} placeholder="e.g. Batch 2026-A" placeholderTextColor="#6B655C" value={name} onChangeText={setName} />
+              <TextInput style={common.input} placeholder="e.g. Batch 2026-A" placeholderTextColor={colors.textMuted} value={name} onChangeText={setName} />
 
               <Text style={common.label}>Breed</Text>
-              <TextInput style={common.input} placeholder="Cobb 500" placeholderTextColor="#6B655C" value={breed} onChangeText={setBreed} />
+              <TextInput style={common.input} placeholder="Cobb 500" placeholderTextColor={colors.textMuted} value={breed} onChangeText={setBreed} />
 
               <Text style={common.label}>Firm Animal Type</Text>
               <View style={{ backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
-                <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 13 }}>
-                  {activeFarm?.animalType === 'layer' ? '🥚 LAYER FARM' : '🐓 BROILER / POULTRY FARM'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {activeFarm?.animalType === 'layer' ? <Egg size={16} color={colors.brand} /> : <Bird size={16} color={colors.brand} />}
+                  <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 13 }}>
+                    {activeFarm?.animalType === 'layer' ? 'LAYER FARM' : 'BROILER / POULTRY FARM'}
+                  </Text>
+                </View>
               </View>
 
               <Text style={common.label}>Initial Birds Count</Text>
               <TextInput style={common.input} keyboardType="numeric" value={initialCount} onChangeText={setInitialCount} />
 
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <Calendar size={14} color={colors.textMuted} />
+                <Text style={[common.label, { marginBottom: 0 }]}>Start Date *</Text>
+              </View>
               <DatePickerInput
-                label="📅 Start Date *"
                 value={startDate}
                 onChange={setStartDate}
                 style={{ marginBottom: 14 }}
@@ -506,7 +521,10 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                           marginBottom: 6
                         }}
                       >
-                        <Text style={{ color: colors.textMain, fontWeight: '600', fontSize: 13 }}>👷 {w.name}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <HardHat size={14} color={colors.textMain} />
+                          <Text style={{ color: colors.textMain, fontWeight: '600', fontSize: 13 }}>{w.name}</Text>
+                        </View>
                         {isSelected && <Text style={{ color: colors.secondary, fontWeight: '800' }}>✓</Text>}
                       </TouchableOpacity>
                     );
@@ -559,7 +577,10 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                       }}
                     >
                       <View>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textMain }}>👷 {w.name}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <HardHat size={14} color={colors.textMain} />
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textMain }}>{w.name}</Text>
+                        </View>
                         <Text style={{ fontSize: 12, color: colors.textMuted }}>{w.email || w.phone || 'Worker'}</Text>
                       </View>
                       <View style={{
@@ -602,7 +623,7 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
           <View style={[s.modalContainer, { borderLeftWidth: 6, borderLeftColor: '#E2136E', padding: 22 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 10 }}>
               <View style={{ backgroundColor: '#E2136E', padding: 8, borderRadius: 10 }}>
-                <Text style={{ color: '#fff', fontSize: 18 }}>🔐</Text>
+                <Lock size={18} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 10, fontWeight: '800', color: '#E2136E', textTransform: 'uppercase' }}>bKash-Style Security Check</Text>
@@ -612,15 +633,24 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
 
             <View style={{ backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: colors.border }}>
               <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '700' }}>ACCOUNT USER</Text>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain, marginBottom: 6 }}>👤 {user?.name} ({user?.email})</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <User size={14} color={colors.textMain} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain }}>{user?.name} ({user?.email})</Text>
+              </View>
 
               <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '700' }}>TARGET ACTION</Text>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: securityAction === 'delete' || securityAction === 'close' ? colors.rose : colors.brand }}>
-                {securityAction === 'create' ? `➕ Create Flock '${name}'` : securityAction === 'delete' ? `🗑️ Delete Flock '${batchTarget?.name}'` : `🔒 Close Flock '${batchTarget?.name}'`}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {securityAction === 'create' ? <Plus size={14} color={colors.brand} /> : securityAction === 'delete' ? <Trash2 size={14} color={colors.rose} /> : <Lock size={14} color={colors.rose} />}
+                <Text style={{ fontSize: 13, fontWeight: '800', color: securityAction === 'delete' || securityAction === 'close' ? colors.rose : colors.brand }}>
+                  {securityAction === 'create' ? `Create Flock '${name}'` : securityAction === 'delete' ? `Delete Flock '${batchTarget?.name}'` : `Close Flock '${batchTarget?.name}'`}
+                </Text>
+              </View>
             </View>
 
-            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain, marginBottom: 6 }}>🔑 Enter Account Password *</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <KeyRound size={14} color={colors.textMain} />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain }}>Enter Account Password *</Text>
+            </View>
             <View style={{ position: 'relative', marginBottom: 16 }}>
               <TextInput
                 style={[common.input, { borderColor: '#E2136E', borderWidth: 2, fontSize: 15, paddingRight: 40 }]}
@@ -635,7 +665,7 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                 onPress={() => setShowPassword(!showPassword)}
                 style={{ position: 'absolute', right: 12, top: 12 }}
               >
-                <Text style={{ fontSize: 14, color: colors.textMuted }}>{showPassword ? '👁️' : '🙈'}</Text>
+                {showPassword ? <Eye size={16} color={colors.textMuted} /> : <EyeOff size={16} color={colors.textMuted} />}
               </TouchableOpacity>
             </View>
 
@@ -644,11 +674,12 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                 <Text style={[s.btnText, { color: colors.textMain }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[s.submitBtn, { backgroundColor: securityAction === 'delete' ? colors.rose : '#E2136E' }]}
+                style={[s.submitBtn, { backgroundColor: securityAction === 'delete' ? colors.rose : '#E2136E', flexDirection: 'row', justifyContent: 'center', gap: 6 }]}
                 onPress={handleConfirmSecurityAction}
                 disabled={securitySubmitting}
               >
-                <Text style={s.btnText}>{securitySubmitting ? 'Verifying...' : '⚡ Confirm & Proceed'}</Text>
+                {!securitySubmitting && <Zap size={16} color="#fff" />}
+                <Text style={s.btnText}>{securitySubmitting ? 'Verifying...' : 'Confirm & Proceed'}</Text>
               </TouchableOpacity>
             </View>
           </View>

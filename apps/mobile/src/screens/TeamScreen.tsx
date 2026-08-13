@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
+import { User, Home, Phone, Trash2, LogOut } from 'lucide-react-native';
 
 const ROLES = ['manager', 'worker'];
 
@@ -97,14 +98,17 @@ export const TeamScreen: React.FC = () => {
         {/* Profile Card */}
         <View style={[common.card, { alignItems: 'center', paddingVertical: 28 }]}>
           <View style={s.avatar}>
-            <Text style={{ fontSize: 32 }}>👤</Text>
+            <User size={32} color={colors.textMain} />
           </View>
           <Text style={{ color: colors.textMain, fontSize: 20, fontWeight: '800', marginTop: 12 }}>{user?.name}</Text>
           <View style={[s.roleBadge, { backgroundColor: `${roleColor[user?.role || 'worker']}20` }]}>
             <Text style={{ color: roleColor[user?.role || 'worker'], fontSize: 12, fontWeight: '700', textTransform: 'uppercase' }}>{user?.role}</Text>
           </View>
           <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 6 }}>{user?.email}</Text>
-          <Text style={{ color: colors.brand, fontSize: 13, marginTop: 2 }}>🏠 {user?.farmName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <Home size={14} color={colors.brand} style={{ marginRight: 4 }} />
+            <Text style={{ color: colors.brand, fontSize: 13 }}>{user?.farmName}</Text>
+          </View>
         </View>
 
         {/* Team section */}
@@ -121,14 +125,19 @@ export const TeamScreen: React.FC = () => {
         </View>
 
         {team.length === 0
-          ? <Text style={common.emptyText}>No team members found.</Text>
+          ? <Text style={{ color: colors.textMuted, textAlign: 'center', marginVertical: 20 }}>No team members found.</Text>
           : team.map(member => (
             <View key={member._id} style={common.card}>
               <View style={common.row}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.textMain, fontWeight: '700', fontSize: 15 }}>{member.name}</Text>
                   <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>{member.email}</Text>
-                  {member.phone && <Text style={{ color: colors.textMuted, fontSize: 12 }}>📞 {member.phone}</Text>}
+                  {member.phone && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                      <Phone size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
+                      <Text style={{ color: colors.textMuted, fontSize: 12 }}>{member.phone}</Text>
+                    </View>
+                  )}
                 </View>
                 <View style={[s.roleBadge, { backgroundColor: `${roleColor[member.role] || colors.brand}20` }]}>
                   <Text style={{ color: roleColor[member.role] || colors.brand, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>{member.role}</Text>
@@ -140,7 +149,10 @@ export const TeamScreen: React.FC = () => {
                   style={s.deleteBtn}
                   onPress={() => handleDeleteMember(member)}
                 >
-                  <Text style={{ color: colors.rose, fontSize: 12, fontWeight: '700' }}>🗑️ Delete Worker from DB & Unassign</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Trash2 size={14} color={colors.rose} style={{ marginRight: 6 }} />
+                    <Text style={{ color: colors.rose, fontSize: 12, fontWeight: '700' }}>Delete Worker from DB & Unassign</Text>
+                  </View>
                 </TouchableOpacity>
               )}
             </View>
@@ -149,7 +161,10 @@ export const TeamScreen: React.FC = () => {
 
         {/* Logout */}
         <TouchableOpacity style={s.logoutBtn} onPress={logout}>
-          <Text style={{ color: colors.rose, fontWeight: '700', fontSize: 15 }}>🚪 Sign Out</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <LogOut size={16} color={colors.rose} style={{ marginRight: 6 }} />
+            <Text style={{ color: colors.rose, fontWeight: '700', fontSize: 15 }}>Sign Out</Text>
+          </View>
         </TouchableOpacity>
       </ScrollView>
 
@@ -159,13 +174,13 @@ export const TeamScreen: React.FC = () => {
           <ScrollView style={s.modalCard}>
             <Text style={{ color: colors.textMain, fontSize: 18, fontWeight: '800', marginBottom: 16 }}>Add Team Member</Text>
             <Text style={common.label}>Full Name *</Text>
-            <TextInput style={common.input} placeholder="Rahim Uddin" placeholderTextColor="#64748b" value={memberName} onChangeText={setMemberName} />
+            <TextInput style={common.input} placeholder="Rahim Uddin" placeholderTextColor={colors.textMuted} value={memberName} onChangeText={setMemberName} />
             <Text style={common.label}>Email *</Text>
-            <TextInput style={common.input} placeholder="worker@yourfarm.com" placeholderTextColor="#64748b" value={memberEmail} onChangeText={setMemberEmail} autoCapitalize="none" keyboardType="email-address" />
+            <TextInput style={common.input} placeholder="worker@yourfarm.com" placeholderTextColor={colors.textMuted} value={memberEmail} onChangeText={setMemberEmail} autoCapitalize="none" keyboardType="email-address" />
             <Text style={common.label}>Password *</Text>
-            <TextInput style={common.input} placeholder="Temporary password" placeholderTextColor="#64748b" value={memberPassword} onChangeText={setMemberPassword} secureTextEntry />
+            <TextInput style={common.input} placeholder="Temporary password" placeholderTextColor={colors.textMuted} value={memberPassword} onChangeText={setMemberPassword} secureTextEntry />
             <Text style={common.label}>Phone</Text>
-            <TextInput style={common.input} placeholder="+8801700000000" placeholderTextColor="#64748b" value={memberPhone} onChangeText={setMemberPhone} keyboardType="phone-pad" />
+            <TextInput style={common.input} placeholder="+8801700000000" placeholderTextColor={colors.textMuted} value={memberPhone} onChangeText={setMemberPhone} keyboardType="phone-pad" />
             <Text style={common.label}>Role</Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
               {ROLES.map(r => (

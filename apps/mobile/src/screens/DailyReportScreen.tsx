@@ -8,7 +8,7 @@ import { apiFetch } from '../config';
 import { colors, common, STATUS_BAR_PADDING } from '../styles';
 import { formatEggCount } from '../utils/crates';
 
-import { Egg, Skull, CircleDollarSign, Tag, TrendingUp, Wheat, ArrowLeft, Edit2, Calendar } from 'lucide-react-native';
+import { Egg, Skull, CircleDollarSign, Tag, TrendingUp, Wheat, ArrowLeft, Edit2, Calendar, Pencil, Trash2, X, HeartCrack, Droplets } from 'lucide-react-native';
 
 export type MobileReportTab = 'egg' | 'mortality' | 'expense' | 'sell' | 'income' | 'food';
 
@@ -345,10 +345,12 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
                     {/* ALWAYS VISIBLE Edit / Delete Actions */}
                     <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
                       <TouchableOpacity onPress={() => openEditModal(log)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(61, 107, 140, 0.12)', borderRadius: 6 }}>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: colors.blue }}>✏️ Edit Log</Text>
+                        <Pencil size={12} color={colors.blue} />
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: colors.blue }}>Edit Log</Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => handleDeleteLog(log)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(220, 38, 38, 0.12)', borderRadius: 6 }}>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>🗑️ Delete Log</Text>
+                        <Trash2 size={12} color="#DC2626" />
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>Delete Log</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -370,26 +372,44 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 16 }}>
           <View style={{ backgroundColor: colors.surface, borderRadius: 14, padding: 16, maxHeight: '85%' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={{ fontSize: 16, fontWeight: '900', color: colors.textMain }}>✏️ Edit Daily Log — {editingLog?.date}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Pencil size={16} color={colors.textMain} />
+                <Text style={{ fontSize: 16, fontWeight: '900', color: colors.textMain }}>Edit Daily Log — {editingLog?.date}</Text>
+              </View>
               <TouchableOpacity onPress={() => setEditModalOpen(false)}>
-                <Text style={{ fontSize: 18, fontWeight: '900', color: colors.textMuted }}>✕</Text>
+                <X size={18} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView>
-              <Text style={common.label}>🥚 Egg Count</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                <Egg size={14} color={colors.textMain} />
+                <Text style={common.label}>Egg Count</Text>
+              </View>
               <TextInput style={common.input} keyboardType="numeric" value={editEggCount} onChangeText={setEditEggCount} />
 
-              <Text style={common.label}>💔 Broken Egg Count</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                <HeartCrack size={14} color={colors.textMain} />
+                <Text style={common.label}>Broken Egg Count</Text>
+              </View>
               <TextInput style={common.input} keyboardType="numeric" value={editBrokenEggCount} onChangeText={setEditBrokenEggCount} />
 
-              <Text style={common.label}>💀 Dead Birds Count</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                <Skull size={14} color={colors.textMain} />
+                <Text style={common.label}>Dead Birds Count</Text>
+              </View>
               <TextInput style={common.input} keyboardType="numeric" value={editDeadCount} onChangeText={setEditDeadCount} />
 
-              <Text style={common.label}>🌾 Feed Given (kg)</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                <Wheat size={14} color={colors.textMain} />
+                <Text style={common.label}>Feed Given (kg)</Text>
+              </View>
               <TextInput style={common.input} keyboardType="numeric" value={editFeedKg} onChangeText={setEditFeedKg} />
 
-              <Text style={common.label}>💧 Water Given (Liters)</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                <Droplets size={14} color={colors.textMain} />
+                <Text style={common.label}>Water Given (Liters)</Text>
+              </View>
               <TextInput style={common.input} keyboardType="numeric" value={editWaterLiters} onChangeText={setEditWaterLiters} />
 
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 16, marginBottom: 20 }}>

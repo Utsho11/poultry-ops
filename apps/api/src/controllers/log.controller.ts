@@ -108,13 +108,39 @@ export class LogController {
   // Update daily log entry
   static async updateLog(req: AuthRequest, res: Response) {
     try {
+      const parseResult = dailyLogSchema.partial().safeParse(req.body);
+      if (!parseResult.success) {
+        return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
+      }
+
       const log = await DailyLogModel.findOne({ _id: req.params.id, farmId: req.farmId });
       if (!log) {
         return ResponseView.notFound(res, 'Daily log record not found');
       }
 
       const oldDead = log.deadCount || 0;
-      const { eggCount, brokenEggCount, deadCount, feedGivenKg, waterGivenLiters, medicineGiven, notes } = req.body;
+      const { eggCount, brokenEggCount, deadCount, feedGivenKg, waterGivenLiters, medicineGiven, notes } = parseResult.data;
+
+      // Check feed stock if updated
+      if (feedGivenKg !== undefined && feedGivenKg > 0) {
+        const feedStockAgg = await FeedStockModel.aggregate([
+          { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string) } },
+          { $group: { _id: null, totalKg: { $sum: '$totalKg' } } }
+        ]);
+        const totalStockKg = feedStockAgg[0]?.totalKg || 0;
+
+        const loggedFeedAgg = await DailyLogModel.aggregate([
+          { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string), _id: { $ne: log._id } } },
+          { $group: { _id: null, sum: { $sum: '$feedGivenKg' } } }
+        ]);
+        const otherUsedKg = loggedFeedAgg[0]?.sum || 0;
+        const availableStockKg = Math.max(0, totalStockKg - otherUsedKg);
+
+        if (totalStockKg > 0 && feedGivenKg > availableStockKg) {
+          const availBags = (availableStockKg / 50).toFixed(1);
+          return ResponseView.error(res, `Invalid Feed Amount! You entered ${feedGivenKg} kg feed, but available Store Feed Stock is only ${availableStockKg.toLocaleString()} kg (${availBags} Bags).`);
+        }
+      }
 
       const newDead = deadCount !== undefined ? Number(deadCount) : oldDead;
       const deadDiff = newDead - oldDead;

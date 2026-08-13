@@ -1,10 +1,12 @@
-import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useRef } from "react";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { View, Text, StatusBar, ActivityIndicator } from "react-native";
 
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
+import { DrawerProvider } from "./src/context/DrawerContext";
+import { CustomDrawer } from "./src/components/CustomDrawer";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { BatchesScreen } from "./src/screens/BatchesScreen";
@@ -15,9 +17,12 @@ import { TeamScreen } from "./src/screens/TeamScreen";
 import { BatchDashboardScreen } from "./src/screens/BatchDashboardScreen";
 import { DailyReportScreen } from "./src/screens/DailyReportScreen";
 import { SalesScreen } from "./src/screens/SalesScreen";
-
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+import { FirmSelectionScreen } from "./src/screens/FirmSelectionScreen";
+import { FeedStockHistoryScreen } from "./src/screens/FeedStockHistoryScreen";
+import { ActivityLogScreen } from "./src/screens/ActivityLogScreen";
+import { ProfileScreen } from "./src/screens/ProfileScreen";
+import { FirmHeader } from "./src/components/FirmHeader";
+import { colors } from "./src/styles";
 
 import {
   LayoutDashboard,
@@ -28,10 +33,13 @@ import {
   BarChart3,
   Users,
 } from "lucide-react-native";
-import { FirmHeader } from "./src/components/FirmHeader";
+
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+export const navigationRef = createNavigationContainerRef<any>();
 
 function renderTabIcon(routeName: string, focused: boolean) {
-  const color = focused ? "#C7511F" : "#6B655C";
+  const color = focused ? colors.brand : colors.textMuted;
   const size = focused ? 22 : 18;
 
   switch (routeName) {
@@ -45,10 +53,6 @@ function renderTabIcon(routeName: string, focused: boolean) {
       return <Tag size={size} color={color} />;
     case "Expenses":
       return <CircleDollarSign size={size} color={color} />;
-    case "Reports":
-      return <BarChart3 size={size} color={color} />;
-    case "Team":
-      return <Users size={size} color={color} />;
     default:
       return <LayoutDashboard size={size} color={color} />;
   }
@@ -59,7 +63,7 @@ function MainTabs() {
   const isWorker = user?.role === "worker";
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FAF7F2" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <FirmHeader />
       <Tab.Navigator
         initialRouteName="Dashboard"
@@ -68,58 +72,54 @@ function MainTabs() {
           tabBarLabel: ({ focused }) => (
             <Text
               style={{
-                fontSize: 9,
-                fontWeight: focused ? "800" : "500",
-                color: focused ? "#C7511F" : "#6B655C",
-                marginBottom: 2,
+                fontSize: 10,
+                fontWeight: focused ? "800" : "600",
+                color: focused ? colors.brand : colors.textMuted,
+                marginBottom: 3,
                 textAlign: "center",
               }}
             >
-              {route.name}
+              {route.name === "Batches" ? "Flocks" : route.name}
             </Text>
           ),
           tabBarStyle: {
-            backgroundColor: "#FFFFFF",
-            borderTopColor: "#E8E2D8",
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
             borderTopWidth: 1,
-            height: 72,
-            paddingTop: 8,
+            height: 68,
+            paddingTop: 6,
           },
-          tabBarActiveTintColor: "#C7511F",
-          tabBarInactiveTintColor: "#6B655C",
+          tabBarActiveTintColor: colors.brand,
+          tabBarInactiveTintColor: colors.textMuted,
           headerShown: false,
         })}
       >
         <Tab.Screen name="Dashboard" component={DashboardScreen} />
+        <Tab.Screen name="Batches" component={BatchesScreen} />
         <Tab.Screen name="Daily Log" component={DailyLogScreen} />
 
         {!isWorker && <Tab.Screen name="Sales" component={SalesScreen} />}
         {!isWorker && <Tab.Screen name="Expenses" component={ExpensesScreen} />}
-        {!isWorker && <Tab.Screen name="Reports" component={ReportsScreen} />}
-        {!isWorker && <Tab.Screen name="Team" component={TeamScreen} />}
       </Tab.Navigator>
     </View>
   );
 }
 
-import { FirmSelectionScreen } from "./src/screens/FirmSelectionScreen";
-
 function AppNavigator() {
-  const { isAuthenticated, activeFarm, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
       <View
         style={{
           flex: 1,
-          backgroundColor: "#FAF7F2",
+          backgroundColor: colors.bg,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Text style={{ fontSize: 48, marginBottom: 16 }}>🐔</Text>
-        <ActivityIndicator size="large" color="#C7511F" />
-        <Text style={{ color: "#6B655C", marginTop: 12, fontWeight: "600" }}>
+        <ActivityIndicator size="large" color={colors.brand} />
+        <Text style={{ color: colors.textMuted, marginTop: 12, fontWeight: "600" }}>
           Loading PoultryDex...
         </Text>
       </View>
@@ -137,7 +137,38 @@ function AppNavigator() {
             component={BatchDashboardScreen}
           />
           <Stack.Screen name="DailyReport" component={DailyReportScreen} />
-          <Stack.Screen name="Sales" component={SalesScreen} />
+          <Stack.Screen
+            name="FeedStockHistory"
+            component={FeedStockHistoryScreen}
+          />
+          <Stack.Screen
+            name="ActivityLog"
+            component={ActivityLogScreen}
+          />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
+          />
+          <Stack.Screen
+            name="Batches"
+            component={BatchesScreen}
+          />
+          <Stack.Screen
+            name="Sales"
+            component={SalesScreen}
+          />
+          <Stack.Screen
+            name="Expenses"
+            component={ExpensesScreen}
+          />
+          <Stack.Screen
+            name="Reports"
+            component={ReportsScreen}
+          />
+          <Stack.Screen
+            name="Team"
+            component={TeamScreen}
+          />
         </>
       ) : (
         <Stack.Screen name="Login" component={LoginScreen} />
@@ -149,14 +180,17 @@ function AppNavigator() {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="transparent"
-          translucent
-        />
-        <AppNavigator />
-      </NavigationContainer>
+      <DrawerProvider>
+        <NavigationContainer ref={navigationRef}>
+          <StatusBar
+            barStyle="dark-content"
+            backgroundColor="transparent"
+            translucent
+          />
+          <AppNavigator />
+          <CustomDrawer navigation={navigationRef} />
+        </NavigationContainer>
+      </DrawerProvider>
     </AuthProvider>
   );
 }

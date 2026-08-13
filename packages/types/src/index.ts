@@ -105,6 +105,8 @@ export interface IExpense {
   date: string;
   note?: string;
   receiptUrl?: string;
+  feedBags?: number;
+  feedKg?: number;
   recordedBy: string;
   createdAt?: string | Date;
 }

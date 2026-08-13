@@ -81,7 +81,7 @@ export const CreateFirmModal: React.FC<CreateFirmModalProps> = ({ visible, onClo
           <TextInput
             style={common.input}
             placeholder="e.g. Gazipur Layer Farm Unit-2"
-            placeholderTextColor="#64748b"
+            placeholderTextColor={colors.textMuted}
             value={name}
             onChangeText={setName}
           />
@@ -109,7 +109,7 @@ export const CreateFirmModal: React.FC<CreateFirmModalProps> = ({ visible, onClo
           </View>
 
           <DatePickerInput
-            label="📅 Established / Start Date"
+            label="Established / Start Date"
             value={date}
             onChange={setDate}
             style={{ marginBottom: 14 }}
@@ -119,7 +119,7 @@ export const CreateFirmModal: React.FC<CreateFirmModalProps> = ({ visible, onClo
           <TextInput
             style={common.input}
             placeholder="e.g. Gazipur, Dhaka"
-            placeholderTextColor="#64748b"
+            placeholderTextColor={colors.textMuted}
             value={location}
             onChangeText={setLocation}
           />

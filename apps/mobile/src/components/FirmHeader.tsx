@@ -11,6 +11,7 @@ import {
   StatusBar
 } from "react-native";
 import { useAuth, IFirm } from "../context/AuthContext";
+import { useDrawer } from "../context/DrawerContext";
 import { apiFetch, showAlert } from "../config";
 import { colors, STATUS_BAR_PADDING } from "../styles";
 import { CreateFirmModal } from "./CreateFirmModal";
@@ -22,10 +23,12 @@ import {
   Building2,
   Plus,
   X,
+  Menu,
 } from "lucide-react-native";
 
 export const FirmHeader: React.FC = () => {
   const { token, activeFarm, switchFarm } = useAuth();
+  const { toggleDrawer } = useDrawer();
   const [modalVisible, setModalVisible] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [firmList, setFirmList] = useState<IFirm[]>([]);
@@ -68,43 +71,47 @@ export const FirmHeader: React.FC = () => {
 
   return (
     <View style={s.container}>
-      <TouchableOpacity
-        style={s.firmBadge}
-        onPress={handleOpenPicker}
-        activeOpacity={0.7}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-          }}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        {/* Hamburger Menu Button */}
+        <TouchableOpacity
+          style={s.menuBtn}
+          onPress={toggleDrawer}
+          activeOpacity={0.7}
         >
-          {activeFarm?.animalType === "layer" ? (
-            <Egg size={18} color={colors.brand} />
-          ) : (
-            <Bird size={18} color={colors.amber} />
-          )}
-          <View>
-            <Text style={s.firmName} numberOfLines={1}>
-              {activeFarm?.name || "Select Firm"}
-            </Text>
-            <Text style={s.firmType}>
-              {activeFarm?.animalType
-                ? `${activeFarm.animalType.toUpperCase()} FARM`
-                : "FIRM"}
-            </Text>
+          <Menu size={18} color={colors.textMain} />
+        </TouchableOpacity>
+
+        {/* Farm Badge */}
+        <TouchableOpacity
+          style={[s.firmBadge, { flex: 1 }]}
+          onPress={handleOpenPicker}
+          activeOpacity={0.7}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {activeFarm?.animalType === "layer" ? (
+              <Egg size={18} color={colors.brand} />
+            ) : (
+              <Bird size={18} color={colors.amber} />
+            )}
+            <View>
+              <Text style={s.firmName} numberOfLines={1}>
+                {activeFarm?.name || "Select Firm"}
+              </Text>
+              <Text style={s.firmType}>
+                {activeFarm?.animalType
+                  ? `${activeFarm.animalType.toUpperCase()} FARM`
+                  : "FIRM"}
+              </Text>
+            </View>
           </View>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Text
-            style={{ color: colors.brand, fontSize: 12, fontWeight: "800" }}
-          >
-            Switch
-          </Text>
-          <ChevronDown size={14} color={colors.brand} />
-        </View>
-      </TouchableOpacity>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text style={{ color: colors.brand, fontSize: 12, fontWeight: "800" }}>
+              Switch
+            </Text>
+            <ChevronDown size={14} color={colors.brand} />
+          </View>
+        </TouchableOpacity>
+      </View>
 
       {/* Firm Switcher Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
@@ -202,6 +209,13 @@ const s = StyleSheet.create({
     paddingTop: STATUS_BAR_PADDING,
     paddingBottom: 10,
     borderBottomWidth: 1,
+    borderColor: colors.border,
+  },
+  menuBtn: {
+    backgroundColor: colors.surfaceElevated,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
     borderColor: colors.border,
   },
   firmBadge: {

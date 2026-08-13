@@ -14,7 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch, showAlert } from "../config";
 import { colors, common, STATUS_BAR_PADDING } from "../styles";
 import { formatEggCount, cratesAndLooseToTotal } from "../utils/crates";
-import { Zap, Tag, Calendar, Egg, Wheat, Skull, TrendingUp, CircleDollarSign, Bird, Package, X, Plus } from "lucide-react-native";
+import { Zap, Tag, Calendar, Egg, Wheat, Skull, TrendingUp, CircleDollarSign, Bird, Package, X, Plus, MapPin, Droplets, HardHat, Settings, ClipboardList, ArrowLeft } from "lucide-react-native";
 
 export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
   const { token, user, activeFarm } = useAuth();
@@ -265,7 +265,10 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
       {/* Top Navigation Bar */}
       <View style={s.topHeader}>
         <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={s.backBtnText}>← Back</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <ArrowLeft size={16} color={colors.brand} />
+            <Text style={[s.backBtnText, { marginLeft: 4 }]}>Back</Text>
+          </View>
         </TouchableOpacity>
 
         <View style={{ flex: 1, marginHorizontal: 10 }}>
@@ -281,9 +284,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
           style={s.logHeaderBtn}
           onPress={() => setQuickLogOpen(true)}
         >
-          <Text style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}>
-            ⚡ Log
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Zap size={11} color="#fff" style={{ marginRight: 4 }} />
+            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}>
+              Log
+            </Text>
+          </View>
         </TouchableOpacity>
 
         {isOwner && (
@@ -327,17 +333,19 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
               >
                 {batch.name} Dashboard
               </Text>
-              <Text
-                style={{
-                  color: colors.secondary,
-                  fontWeight: "800",
-                  fontSize: 13,
-                  marginTop: 2,
-                }}
-              >
-                📅 Age: {batch.formattedAge || "N/A"} (Day{" "}
-                {batch.dayNumber || 1})
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                <Calendar size={13} color={colors.secondary} style={{ marginRight: 4 }} />
+                <Text
+                  style={{
+                    color: colors.secondary,
+                    fontWeight: "800",
+                    fontSize: 13,
+                  }}
+                >
+                  Age: {batch.formattedAge || "N/A"} (Day{" "}
+                  {batch.dayNumber || 1})
+                </Text>
+              </View>
               <Text
                 style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}
               >
@@ -372,17 +380,18 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
         </View>
 
         {/* 📌 LATEST LOG TOP KPI CARDS */}
-        <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "800",
-            color: colors.textMain,
-            marginBottom: 8,
-            marginTop: 4,
-          }}
-        >
-          📌 Latest Log Summary ({latest.date})
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, marginTop: 4 }}>
+          <MapPin size={15} color={colors.textMain} style={{ marginRight: 6 }} />
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: "800",
+              color: colors.textMain,
+            }}
+          >
+            Latest Log Summary ({latest.date})
+          </Text>
+        </View>
 
         <View
           style={{
@@ -393,9 +402,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
           }}
         >
           <View style={[s.topKpiCard, { borderColor: colors.secondary }]}>
-            <Text style={[s.topKpiLabel, { color: colors.secondary }]}>
-              🥚 Total Eggs
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Egg size={10} color={colors.secondary} style={{ marginRight: 4 }} />
+              <Text style={[s.topKpiLabel, { color: colors.secondary, marginBottom: 0 }]}>
+                Total Eggs
+              </Text>
+            </View>
             <View
               style={{
                 flexDirection: "row",
@@ -418,16 +430,18 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                   {latest.totalEggs.toLocaleString()}{" "}
                   <Text style={{ fontSize: 11, fontWeight: "700" }}>Eggs</Text>
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: "700",
-                    color: colors.textMuted,
-                    marginTop: 2,
-                  }}
-                >
-                  📦 {formatEggCount(latest.totalEggs)}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                  <Package size={10} color={colors.textMuted} style={{ marginRight: 4 }} />
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.textMuted,
+                    }}
+                  >
+                    {formatEggCount(latest.totalEggs)}
+                  </Text>
+                </View>
               </View>
 
               {/* Circular Progress Badge */}
@@ -468,9 +482,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
           </View>
 
           <View style={[s.topKpiCard, { borderColor: colors.amber }]}>
-            <Text style={[s.topKpiLabel, { color: colors.amber }]}>
-              🌾 Feed per Bird
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Wheat size={10} color={colors.amber} style={{ marginRight: 4 }} />
+              <Text style={[s.topKpiLabel, { color: colors.amber, marginBottom: 0 }]}>
+                Feed per Bird
+              </Text>
+            </View>
             <Text style={s.topKpiVal}>{latest.feedPerBirdGrams} g / bird</Text>
             <Text style={[s.topKpiSub, { color: colors.amber }]}>
               {latest.feedKg} kg feed logged
@@ -478,28 +495,36 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
           </View>
 
           <View style={[s.topKpiCard, { borderColor: colors.blue }]}>
-            <Text style={[s.topKpiLabel, { color: colors.blue }]}>
-              💧 Water Intake
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Droplets size={10} color={colors.blue} style={{ marginRight: 4 }} />
+              <Text style={[s.topKpiLabel, { color: colors.blue, marginBottom: 0 }]}>
+                Water Intake
+              </Text>
+            </View>
             <Text style={s.topKpiVal}>{latest.waterLiters} Liters</Text>
-            <Text
-              style={[s.topKpiSub, { color: colors.blue, fontWeight: "800" }]}
-            >
-              💧{" "}
-              {latest.waterPerBirdMl ||
-                (batch.currentCount > 0
-                  ? ((latest.waterLiters * 1000) / batch.currentCount).toFixed(
-                      1,
-                    )
-                  : 0)}{" "}
-              mL / bird
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+              <Droplets size={10} color={colors.blue} style={{ marginRight: 4 }} />
+              <Text
+                style={[s.topKpiSub, { color: colors.blue, fontWeight: "800", marginTop: 0 }]}
+              >
+                {latest.waterPerBirdMl ||
+                  (batch.currentCount > 0
+                    ? ((latest.waterLiters * 1000) / batch.currentCount).toFixed(
+                        1,
+                      )
+                    : 0)}{" "}
+                mL / bird
+              </Text>
+            </View>
           </View>
 
           <View style={[s.topKpiCard, { borderColor: colors.rose }]}>
-            <Text style={[s.topKpiLabel, { color: colors.rose }]}>
-              💀 Mortality
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Skull size={10} color={colors.rose} style={{ marginRight: 4 }} />
+              <Text style={[s.topKpiLabel, { color: colors.rose, marginBottom: 0 }]}>
+                Mortality
+              </Text>
+            </View>
             <Text
               style={[
                 s.topKpiVal,
@@ -528,9 +553,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
           style={[s.dashCard, { borderColor: colors.blue, marginBottom: 12 }]}
         >
           <View style={common.row}>
-            <Text style={[s.sectionHeader, { color: colors.blue }]}>
-              👷 Assigned Flock Workers
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <HardHat size={15} color={colors.blue} style={{ marginRight: 6 }} />
+              <Text style={[s.sectionHeader, { color: colors.blue }]}>
+                Assigned Flock Workers
+              </Text>
+            </View>
             {canManage && (
               <TouchableOpacity
                 onPress={handleOpenAssignModal}
@@ -543,15 +571,18 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                   borderColor: colors.border,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: "800",
-                    color: colors.textMain,
-                  }}
-                >
-                  ⚙️ Manage
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Settings size={11} color={colors.textMain} style={{ marginRight: 4 }} />
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "800",
+                      color: colors.textMain,
+                    }}
+                  >
+                    Manage
+                  </Text>
+                </View>
               </TouchableOpacity>
             )}
           </View>
@@ -567,7 +598,10 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
             >
               {data.assignedWorkers.map((w: any) => (
                 <View key={w._id} style={s.workerChip}>
-                  <Text style={s.workerChipText}>👷 {w.name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <HardHat size={12} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={s.workerChipText}>{w.name}</Text>
+                  </View>
                 </View>
               ))}
             </View>
@@ -583,10 +617,13 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
           style={s.moreDetailsBtn}
           onPress={() => setShowMoreDetails(!showMoreDetails)}
         >
-          <Text style={s.moreDetailsBtnText}>
-            📋 More Batch Details{" "}
-            {showMoreDetails ? "▲ (Hide)" : "▼ (Show Full Sections)"}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <ClipboardList size={13} color={colors.textMain} style={{ marginRight: 6 }} />
+            <Text style={s.moreDetailsBtnText}>
+              More Batch Details{" "}
+              {showMoreDetails ? "▲ (Hide)" : "▼ (Show Full Sections)"}
+            </Text>
+          </View>
         </TouchableOpacity>
 
         {/* STRUCTURED BATCH SECTIONS REARRANGED BY IMPORTANCE */}
@@ -1024,7 +1061,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                       fontSize: 11,
                     }}
                   >
-                    📅 View Date-wise Daily Expense Report →
+                    View Date-wise Daily Expense Report →
                   </Text>
                 </View>
               </View>
@@ -1037,19 +1074,24 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
       <Modal visible={quickLogOpen} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.modalContainer}>
-            <Text style={s.modalTitle}>⚡ Log Daily Yield ({batch.name})</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <Zap size={18} color={colors.brand} />
+              <Text style={[s.modalTitle, { marginBottom: 0 }]}>Log Daily Yield ({batch.name})</Text>
+            </View>
             <ScrollView>
               <View style={s.eggInputBox}>
-                <Text
-                  style={{
-                    color: colors.secondary,
-                    fontWeight: "800",
-                    fontSize: 13,
-                    marginBottom: 6,
-                  }}
-                >
-                  🥚 Eggs Collected (1 Crate = 30 Eggs)
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                  <Egg size={14} color={colors.secondary} />
+                  <Text
+                    style={{
+                      color: colors.secondary,
+                      fontWeight: "800",
+                      fontSize: 13,
+                    }}
+                  >
+                    Eggs Collected (1 Crate = 30 Eggs)
+                  </Text>
+                </View>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={common.label}>Full Crates</Text>
@@ -1112,16 +1154,18 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                   },
                 ]}
               >
-                <Text
-                  style={{
-                    color: colors.amber,
-                    fontWeight: "800",
-                    fontSize: 13,
-                    marginBottom: 6,
-                  }}
-                >
-                  🌾 Feed Given (Full Bags + Loose kg)
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                  <Wheat size={14} color={colors.amber} />
+                  <Text
+                    style={{
+                      color: colors.amber,
+                      fontWeight: "800",
+                      fontSize: 13,
+                    }}
+                  >
+                    Feed Given (Full Bags + Loose kg)
+                  </Text>
+                </View>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={common.label}>Full Bags (50kg/bag)</Text>
@@ -1160,7 +1204,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                 style={common.input}
                 keyboardType="numeric"
                 placeholder="200"
-                placeholderTextColor="#6B655C"
+                placeholderTextColor={colors.textMuted}
                 value={waterGivenLiters}
                 onChangeText={setWaterGivenLiters}
               />
@@ -1178,9 +1222,12 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                 onPress={handleQuickLog}
                 disabled={submittingLog}
               >
-                <Text style={s.btnText}>
-                  {submittingLog ? "Saving..." : "⚡ Save Log"}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <Zap size={14} color="#fff" />
+                  <Text style={s.btnText}>
+                    {submittingLog ? "Saving..." : "Save Log"}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>

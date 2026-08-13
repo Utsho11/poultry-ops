@@ -93,16 +93,22 @@ export const ReportsScreen: React.FC = () => {
         <View style={s.filterRow}>
           {/* Days Filter Dropdown */}
           <TouchableOpacity style={s.dropdown} onPress={() => setShowDaysPicker(!showDaysPicker)}>
-            <Text style={s.dropdownText} numberOfLines={1}>
-              📅 {DAYS_OPTIONS.find(d => d.id === selectedDays)?.label} ▾
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Calendar size={14} color={colors.textMain} style={{ marginRight: 6 }} />
+              <Text style={s.dropdownText} numberOfLines={1}>
+                {DAYS_OPTIONS.find(d => d.id === selectedDays)?.label} ▾
+              </Text>
+            </View>
           </TouchableOpacity>
 
           {/* Batch Filter Dropdown */}
           <TouchableOpacity style={s.dropdown} onPress={() => setShowBatchPicker(!showBatchPicker)}>
-            <Text style={s.dropdownText} numberOfLines={1}>
-              🐔 {selectedBatchId === 'all' ? 'All Flocks' : selectedBatchObj?.name || 'Selected Batch'} ▾
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Bird size={14} color={colors.textMain} style={{ marginRight: 6 }} />
+              <Text style={s.dropdownText} numberOfLines={1}>
+                {selectedBatchId === 'all' ? 'All Flocks' : selectedBatchObj?.name || 'Selected Batch'} ▾
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 

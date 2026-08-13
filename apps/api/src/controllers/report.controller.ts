@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
-import { DailyLogModel, ExpenseModel, BatchModel, SaleModel, FeedStockModel } from '../models/schemas';
+import { DailyLogModel, ExpenseModel, BatchModel, SaleModel, FeedStockModel, HealthRecordModel, PaymentModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -721,6 +721,149 @@ export class ReportController {
         sales,
         expenses
       });
+    } catch (error: any) {
+      return ResponseView.serverError(res, error.message);
+    }
+  }
+
+  // Unified Activity Log (Last 50 activities across the farm)
+  static async getActivityLog(req: AuthRequest, res: Response) {
+    try {
+      const farmId = req.farmId;
+
+      const [logs, sales, expenses, feedStocks, batches, healthRecords, payments] = await Promise.all([
+        DailyLogModel.find({ farmId })
+          .populate('recordedBy', 'name email')
+          .populate('batchId', 'name breed')
+          .sort({ createdAt: -1 })
+          .limit(50),
+        SaleModel.find({ farmId })
+          .populate('recordedBy', 'name email')
+          .populate('batchId', 'name')
+          .populate('customerId', 'name phone')
+          .sort({ createdAt: -1 })
+          .limit(50),
+        ExpenseModel.find({ farmId })
+          .populate('recordedBy', 'name email')
+          .populate('batchId', 'name')
+          .populate('workerId', 'name')
+          .sort({ createdAt: -1 })
+          .limit(50),
+        FeedStockModel.find({ farmId })
+          .populate('recordedBy', 'name email')
+          .sort({ createdAt: -1 })
+          .limit(50),
+        BatchModel.find({ farmId })
+          .sort({ createdAt: -1 })
+          .limit(50),
+        HealthRecordModel.find({ farmId })
+          .populate('createdBy', 'name email')
+          .populate('batchId', 'name')
+          .sort({ createdAt: -1 })
+          .limit(50),
+        PaymentModel.find({ farmId })
+          .populate('recordedBy', 'name email')
+          .populate('customerId', 'name phone')
+          .sort({ createdAt: -1 })
+          .limit(50)
+      ]);
+
+      const activities: any[] = [];
+
+      // Map daily logs
+      for (const log of logs) {
+        const batchName = (log.batchId as any)?.name || 'Flock';
+        const eggText = log.eggCount > 0 ? `${log.eggCount} eggs` : '';
+        const feedText = log.feedGivenKg > 0 ? `${log.feedGivenKg}kg feed` : '';
+        const deadText = log.deadCount > 0 ? `${log.deadCount} dead` : '';
+        const details = [eggText, feedText, deadText].filter(Boolean).join(', ');
+
+        activities.push({
+          type: 'log',
+          description: `Daily log recorded for ${batchName}${details ? ` (${details})` : ''}`,
+          user: (log.recordedBy as any)?.name || 'Worker',
+          timestamp: log.createdAt || log.date,
+          metadata: { id: log._id, date: log.date, batchName }
+        });
+      }
+
+      // Map sales
+      for (const sale of sales) {
+        const custName = sale.customerName || (sale.customerId as any)?.name || 'Walk-in Customer';
+        activities.push({
+          type: 'sale',
+          description: `Sale invoice of ৳${sale.totalAmount.toLocaleString()} to ${custName} (${sale.status.toUpperCase()})`,
+          user: (sale.recordedBy as any)?.name || 'Staff',
+          timestamp: sale.createdAt || sale.date,
+          metadata: { id: sale._id, amount: sale.totalAmount, status: sale.status }
+        });
+      }
+
+      // Map expenses
+      for (const exp of expenses) {
+        const catName = exp.category.toUpperCase();
+        const batchName = (exp.batchId as any)?.name ? ` for ${(exp.batchId as any).name}` : '';
+        activities.push({
+          type: 'expense',
+          description: `Expense of ৳${exp.amount.toLocaleString()} logged (${catName}${batchName})${exp.note ? `: ${exp.note}` : ''}`,
+          user: (exp.recordedBy as any)?.name || 'Staff',
+          timestamp: exp.createdAt || exp.date,
+          metadata: { id: exp._id, amount: exp.amount, category: exp.category }
+        });
+      }
+
+      // Map feed stocks
+      for (const fs of feedStocks) {
+        const catFormatted = fs.category.replace(/_/g, ' ');
+        activities.push({
+          type: 'feed_stock',
+          description: `Feed purchased: ${fs.bags} bags of ${catFormatted} (৳${fs.totalCost?.toLocaleString() || 0})`,
+          user: (fs.recordedBy as any)?.name || 'Staff',
+          timestamp: fs.createdAt || fs.date,
+          metadata: { id: fs._id, bags: fs.bags, totalCost: fs.totalCost }
+        });
+      }
+
+      // Map batches
+      for (const b of batches) {
+        activities.push({
+          type: 'batch',
+          description: `Flock created: '${b.name}' (${b.breed}, ${b.initialCount} birds)`,
+          user: 'Admin',
+          timestamp: b.createdAt || b.startDate,
+          metadata: { id: b._id, name: b.name, breed: b.breed, count: b.initialCount }
+        });
+      }
+
+      // Map health records
+      for (const h of healthRecords) {
+        const batchName = (h.batchId as any)?.name || 'Flock';
+        activities.push({
+          type: 'health',
+          description: `Health record (${h.type.toUpperCase()}) on ${batchName}: ${h.description}`,
+          user: (h.createdBy as any)?.name || h.performedBy || 'Vet',
+          timestamp: h.createdAt || h.date,
+          metadata: { id: h._id, type: h.type }
+        });
+      }
+
+      // Map payments
+      for (const p of payments) {
+        const custName = p.customerName || (p.customerId as any)?.name || 'Customer';
+        activities.push({
+          type: 'payment',
+          description: `Payment received: ৳${p.amount.toLocaleString()} from ${custName} via ${p.method.toUpperCase()}`,
+          user: (p.recordedBy as any)?.name || 'Staff',
+          timestamp: p.createdAt || p.date,
+          metadata: { id: p._id, amount: p.amount, method: p.method }
+        });
+      }
+
+      // Sort all combined activities by timestamp DESC and return the last 50
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      const last50 = activities.slice(0, 50);
+
+      return ResponseView.success(res, last50);
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
     }

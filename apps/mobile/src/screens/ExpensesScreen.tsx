@@ -15,7 +15,7 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch, showAlert } from "../config";
 import { colors, common } from "../styles";
 import { DatePickerInput } from "../components/DatePickerInput";
-import { Plus, CircleDollarSign, Bird, User, Package, Wheat, Calendar, Trash2, HeartPulse, Filter } from "lucide-react-native";
+import { Plus, CircleDollarSign, Bird, User, Package, Wheat, Calendar, Trash2, HeartPulse, Filter, Pencil, Zap, Pill, Stethoscope, HardHat, Lightbulb, Wrench, FileText, AlertTriangle, Syringe, X } from "lucide-react-native";
 
 const CATEGORIES = [
   "feed",
@@ -499,7 +499,7 @@ export const ExpensesScreen: React.FC = () => {
                     date: l.date,
                     category: "feed_consumption",
                     amount: amount,
-                    note: `🌾 Feed Consumed: ${feedKg} kg (${feedBags} bags @ ৳${avgFeedCostPerKg.toFixed(1)}/kg)`,
+                    note: `Feed Consumed: ${feedKg} kg (${feedBags} bags @ ৳${avgFeedCostPerKg.toFixed(1)}/kg)`,
                     isFeedConsumption: true,
                     feedKg,
                     feedBags,
@@ -551,16 +551,18 @@ export const ExpensesScreen: React.FC = () => {
                       borderColor: "rgba(217, 164, 65, 0.3)",
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: "800",
-                        color: colors.amber,
-                        marginBottom: 8,
-                      }}
-                    >
-                      🌾 Batch Feed Consumption Costs:
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <Wheat size={14} color={colors.amber} />
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "800",
+                          color: colors.amber,
+                        }}
+                      >
+                        Batch Feed Consumption Costs:
+                      </Text>
+                    </View>
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}
@@ -605,43 +607,50 @@ export const ExpensesScreen: React.FC = () => {
                               minWidth: 180,
                             }}
                           >
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                fontWeight: "800",
-                                color: colors.textMain,
-                              }}
-                            >
-                              🐔 {b.name}
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                fontWeight: "800",
-                                color: colors.amber,
-                                marginTop: 2,
-                              }}
-                            >
-                              🌾 {totalFeedKg.toLocaleString()} kg{" "}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Bird size={14} color={colors.textMain} />
                               <Text
                                 style={{
-                                  fontSize: 10,
-                                  color: colors.textMuted,
+                                  fontSize: 12,
+                                  fontWeight: "800",
+                                  color: colors.textMain,
                                 }}
                               >
-                                ({totalFeedBags} bags)
+                                {b.name}
                               </Text>
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                fontWeight: "900",
-                                color: colors.brand,
-                                marginTop: 2,
-                              }}
-                            >
-                              ⚡ Cost: ৳{consumedFeedCost.toLocaleString()}
-                            </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                              <Wheat size={14} color={colors.amber} />
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: "800",
+                                  color: colors.amber,
+                                }}
+                              >
+                                {totalFeedKg.toLocaleString()} kg{" "}
+                                <Text
+                                  style={{
+                                    fontSize: 10,
+                                    color: colors.textMuted,
+                                  }}
+                                >
+                                  ({totalFeedBags} bags)
+                                </Text>
+                              </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                              <Zap size={14} color={colors.brand} />
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: "900",
+                                  color: colors.brand,
+                                }}
+                              >
+                                Cost: ৳{consumedFeedCost.toLocaleString()}
+                              </Text>
+                            </View>
                             <Text
                               style={{
                                 fontSize: 10,
@@ -791,6 +800,7 @@ export const ExpensesScreen: React.FC = () => {
                                   gap: 4,
                                 }}
                               >
+                                <Pencil size={12} color={colors.blue} />
                                 <Text
                                   style={{
                                     fontSize: 12,
@@ -798,7 +808,7 @@ export const ExpensesScreen: React.FC = () => {
                                     color: colors.blue,
                                   }}
                                 >
-                                  ✏️ Edit
+                                  Edit
                                 </Text>
                               </TouchableOpacity>
                               {canManage && (
@@ -810,6 +820,7 @@ export const ExpensesScreen: React.FC = () => {
                                     gap: 4,
                                   }}
                                 >
+                                  <Trash2 size={12} color="#DC2626" />
                                   <Text
                                     style={{
                                       fontSize: 12,
@@ -817,7 +828,7 @@ export const ExpensesScreen: React.FC = () => {
                                       color: "#DC2626",
                                     }}
                                   >
-                                    🗑️ Delete
+                                    Delete
                                   </Text>
                                 </TouchableOpacity>
                               )}
@@ -876,16 +887,18 @@ export const ExpensesScreen: React.FC = () => {
                         📅 {hr.date}
                       </Text>
                     </View>
-                    <Text
-                      style={{
-                        color: colors.blue,
-                        fontSize: 11,
-                        fontWeight: "700",
-                        marginTop: 4,
-                      }}
-                    >
-                      🐔 Flock: {bObj ? bObj.name : "—"}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                      <Bird size={12} color={colors.blue} />
+                      <Text
+                        style={{
+                          color: colors.blue,
+                          fontSize: 11,
+                          fontWeight: "700",
+                        }}
+                      >
+                        Flock: {bObj ? bObj.name : "—"}
+                      </Text>
+                    </View>
                     <Text
                       style={{
                         color: colors.textMain,
@@ -896,25 +909,29 @@ export const ExpensesScreen: React.FC = () => {
                       {hr.description}
                     </Text>
                     {hr.medicineUsed && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                        <Pill size={12} color={colors.blue} />
+                        <Text
+                          style={{
+                            color: colors.blue,
+                            fontSize: 12,
+                          }}
+                        >
+                          {hr.medicineUsed}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                      <Stethoscope size={12} color={colors.textMuted} />
                       <Text
                         style={{
-                          color: colors.blue,
+                          color: colors.textMuted,
                           fontSize: 12,
-                          marginTop: 4,
                         }}
                       >
-                        💊 {hr.medicineUsed}
+                        {hr.performedBy}
                       </Text>
-                    )}
-                    <Text
-                      style={{
-                        color: colors.textMuted,
-                        fontSize: 12,
-                        marginTop: 4,
-                      }}
-                    >
-                      👨‍⚕️ {hr.performedBy}
-                    </Text>
+                    </View>
                   </View>
                 );
               })
@@ -927,18 +944,24 @@ export const ExpensesScreen: React.FC = () => {
       <Modal visible={expModal} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <ScrollView style={s.modalCard}>
-            <Text
-              style={{
-                color: colors.textMain,
-                fontSize: 18,
-                fontWeight: "800",
-                marginBottom: 16,
-              }}
-            >
-              {expCategory === "feed"
-                ? "🌾 Add Feed Stock Purchase"
-                : "💸 Add Farm Expense"}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              {expCategory === "feed" ? (
+                <Wheat size={20} color={colors.textMain} />
+              ) : (
+                <CircleDollarSign size={20} color={colors.textMain} />
+              )}
+              <Text
+                style={{
+                  color: colors.textMain,
+                  fontSize: 18,
+                  fontWeight: "800",
+                }}
+              >
+                {expCategory === "feed"
+                  ? "Add Feed Stock Purchase"
+                  : "Add Farm Expense"}
+              </Text>
+            </View>
 
             <Text style={common.label}>Expense Category *</Text>
             <View style={s.pickerWrapper}>
@@ -948,21 +971,21 @@ export const ExpensesScreen: React.FC = () => {
                 dropdownIconColor={colors.textMain}
                 style={s.pickerStyle}
               >
-                <Picker.Item label="🌾 Feed Stock (খাবার Stock)" value="feed" />
+                <Picker.Item label="Feed Stock (খাবার Stock)" value="feed" />
                 <Picker.Item
-                  label="💊 Medicine (ঔষধ / ভ্যাকসিন)"
+                  label="Medicine (ঔষধ / ভ্যাকসিন)"
                   value="medicine"
                 />
-                <Picker.Item label="👷 Labor (শ্রমিক বেতন)" value="labor" />
+                <Picker.Item label="Labor (শ্রমিক বেতন)" value="labor" />
                 <Picker.Item
-                  label="💡 Utility (বিদ্যুৎ / পানি)"
+                  label="Utility (বিদ্যুৎ / পানি)"
                   value="utility"
                 />
                 <Picker.Item
-                  label="🔧 Equipment (যন্ত্রপাতি)"
+                  label="Equipment (যন্ত্রপাতি)"
                   value="equipment"
                 />
-                <Picker.Item label="📝 Other (অন্যান্য)" value="other" />
+                <Picker.Item label="Other (অন্যান্য)" value="other" />
               </Picker>
             </View>
 
@@ -1004,7 +1027,7 @@ export const ExpensesScreen: React.FC = () => {
                   style={common.input}
                   keyboardType="numeric"
                   placeholder="10"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={colors.textMuted}
                   value={stockBags}
                   onChangeText={setStockBags}
                 />
@@ -1025,7 +1048,7 @@ export const ExpensesScreen: React.FC = () => {
                   style={common.input}
                   keyboardType="numeric"
                   placeholder="2500"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={colors.textMuted}
                   value={bagPrice}
                   onChangeText={setBagPrice}
                 />
@@ -1056,7 +1079,7 @@ export const ExpensesScreen: React.FC = () => {
                     {batches.map((b) => (
                       <Picker.Item
                         key={b._id}
-                        label={`🐔 ${b.name} (${b.breed})`}
+                        label={`${b.name} (${b.breed})`}
                         value={b._id}
                       />
                     ))}
@@ -1094,7 +1117,7 @@ export const ExpensesScreen: React.FC = () => {
                             {assignedWorkers.map((w) => (
                               <Picker.Item
                                 key={w._id}
-                                label={`👷 ${w.name}`}
+                                label={`${w.name}`}
                                 value={w._id}
                               />
                             ))}
@@ -1109,16 +1132,20 @@ export const ExpensesScreen: React.FC = () => {
                             marginBottom: 14,
                           }}
                         >
-                          <Text
-                            style={{
-                              color: colors.rose,
-                              fontSize: 13,
-                              fontWeight: "700",
-                            }}
-                          >
-                            ⚠️ No workers assigned to this batch. Please assign
-                            a worker first.
-                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <AlertTriangle size={16} color={colors.rose} />
+                            <Text
+                              style={{
+                                color: colors.rose,
+                                fontSize: 13,
+                                fontWeight: "700",
+                                flex: 1,
+                              }}
+                            >
+                              No workers assigned to this batch. Please assign
+                              a worker first.
+                            </Text>
+                          </View>
                         </View>
                       );
                     })()}
@@ -1130,7 +1157,7 @@ export const ExpensesScreen: React.FC = () => {
                   style={common.input}
                   keyboardType="numeric"
                   placeholder="5000"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor={colors.textMuted}
                   value={expAmount}
                   onChangeText={setExpAmount}
                 />
@@ -1141,7 +1168,7 @@ export const ExpensesScreen: React.FC = () => {
             <TextInput
               style={common.input}
               placeholder="Receipt or vendor details..."
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={expNote}
               onChangeText={setExpNote}
             />
@@ -1195,7 +1222,7 @@ export const ExpensesScreen: React.FC = () => {
                 {batches.map((b) => (
                   <Picker.Item
                     key={b._id}
-                    label={`🐔 ${b.name} (${b.breed})`}
+                    label={`${b.name} (${b.breed})`}
                     value={b._id}
                   />
                 ))}
@@ -1218,15 +1245,15 @@ export const ExpensesScreen: React.FC = () => {
                 style={s.pickerStyle}
               >
                 <Picker.Item
-                  label="💉 Vaccination (টিকা)"
+                  label="Vaccination (টিকা)"
                   value="vaccination"
                 />
                 <Picker.Item
-                  label="🩺 Checkup (চিকিৎসা পরীক্ষা)"
+                  label="Checkup (চিকিৎসা পরীক্ষা)"
                   value="checkup"
                 />
-                <Picker.Item label="💉 Injection (ইনজেকশন)" value="injection" />
-                <Picker.Item label="💊 Treatment (চিকিৎসা)" value="treatment" />
+                <Picker.Item label="Injection (ইনজেকশন)" value="injection" />
+                <Picker.Item label="Treatment (চিকিৎসা)" value="treatment" />
               </Picker>
             </View>
 
@@ -1234,7 +1261,7 @@ export const ExpensesScreen: React.FC = () => {
             <TextInput
               style={common.input}
               placeholder="e.g. Gumboro Vaccine 1st Dose"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={healthDesc}
               onChangeText={setHealthDesc}
             />
@@ -1243,7 +1270,7 @@ export const ExpensesScreen: React.FC = () => {
             <TextInput
               style={common.input}
               placeholder="Vaccine/Medicine Name"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={healthMedicine}
               onChangeText={setHealthMedicine}
             />
@@ -1252,7 +1279,7 @@ export const ExpensesScreen: React.FC = () => {
             <TextInput
               style={common.input}
               placeholder="Dr. Rahat / Staff Name"
-              placeholderTextColor="#64748b"
+              placeholderTextColor={colors.textMuted}
               value={healthVet}
               onChangeText={setHealthVet}
             />
@@ -1292,20 +1319,15 @@ export const ExpensesScreen: React.FC = () => {
                 marginBottom: 12,
               }}
             >
-              <Text>✏️ Edit Expense Record</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Pencil size={18} color={colors.textMain} />
+                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.textMain }}>Edit Expense Record</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setEditExpModal(false)}
                 style={{ padding: 4 }}
               >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "900",
-                    color: colors.textMuted,
-                  }}
-                >
-                  ✕
-                </Text>
+                <X size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
