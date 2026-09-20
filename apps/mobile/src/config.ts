@@ -1,11 +1,13 @@
 import { Alert, AlertButton, ToastAndroid, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Local Machine Development API
+// Production & Local API Base URL
 const debuggerHost = Constants.expoConfig?.hostUri;
 const localhostIp = debuggerHost ? debuggerHost.split(':')[0] : 'localhost';
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${localhostIp}:4000/api`;
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  (__DEV__ ? `http://${localhostIp}:4000/api` : 'https://poultrydex.vercel.app/api');
 
 let activeFarmIdMemory: string | null = null;
 
