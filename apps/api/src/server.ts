@@ -36,7 +36,25 @@ app.use(async (req: Request, res: Response, next: any) => {
   }
 });
 
-// Health Check
+// Health Check & Root
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    message: 'Welcome to PoultryDex API',
+    status: 'online',
+    version: '1.1.0',
+    healthCheck: '/api/health-check'
+  });
+});
+
+app.get('/api', (req: Request, res: Response) => {
+  res.json({
+    message: 'PoultryDex API Root',
+    status: 'online',
+    version: '1.1.0',
+    healthCheck: '/api/health-check'
+  });
+});
+
 app.get('/api/health-check', (req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'PoultryDex API v1.1.0', timestamp: new Date().toISOString() });
 });
