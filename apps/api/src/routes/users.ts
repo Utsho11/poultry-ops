@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { createUserSchema } from '@poultry-ops/validation';
 import { UserModel, BatchModel } from '../models/schemas';
@@ -132,6 +133,10 @@ router.post('/invite', requireRole(['owner', 'manager']), handleAddUser);
 // Toggle active status
 router.patch('/:id/toggle-active', requireRole(['owner']), async (req: AuthRequest, res: Response) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     const user = await UserModel.findOne({ _id: req.params.id, farmId: req.farmId });
     if (!user) return res.status(404).json({ error: 'User not found' });
     user.isActive = !user.isActive;
@@ -146,6 +151,9 @@ router.patch('/:id/toggle-active', requireRole(['owner']), async (req: AuthReque
 router.delete('/:id', requireRole(['owner']), async (req: AuthRequest, res: Response) => {
   try {
     const userIdToDelete = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(userIdToDelete)) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     // Prevent owner from deleting themselves
     if (userIdToDelete === req.user?.userId) {

@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { createFarmSchema } from '@poultry-ops/validation';
+import mongoose from 'mongoose';
 import { FarmModel, UserModel, BatchModel, DailyLogModel, ExpenseModel, SaleModel, FeedStockModel, CustomerModel, PaymentModel, HealthRecordModel } from '../models/schemas';
 import { AuthRequest, generateToken } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
@@ -71,12 +72,17 @@ export class FarmController {
   static async getFarms(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      const farms = await FarmModel.find({
-        $or: [
-          { ownerId: userId },
-          { _id: req.user?.farmId }
-        ]
-      }).sort({ createdAt: -1 });
+      const orConditions: any[] = [];
+      if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+        orConditions.push({ ownerId: userId });
+      }
+      if (req.user?.farmId && mongoose.Types.ObjectId.isValid(req.user.farmId)) {
+        orConditions.push({ _id: req.user.farmId });
+      }
+
+      const farms = orConditions.length > 0
+        ? await FarmModel.find({ $or: orConditions }).sort({ createdAt: -1 })
+        : [];
 
       return ResponseView.success(res, farms);
     } catch (error: any) {
@@ -88,6 +94,10 @@ export class FarmController {
   static async getFarmById(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return ResponseView.notFound(res, 'Firm not found');
+      }
+
       const userId = req.user?.userId;
       const farm = await FarmModel.findById(id);
       if (!farm) {
@@ -110,6 +120,10 @@ export class FarmController {
   static async updateFarm(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return ResponseView.notFound(res, 'Firm not found');
+      }
+
       const userId = req.user?.userId;
       const { name, animalType, date, location } = req.body;
 
@@ -139,6 +153,10 @@ export class FarmController {
   static async deleteFarm(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return ResponseView.notFound(res, 'Firm not found');
+      }
+
       const farm = await FarmModel.findById(id);
       if (!farm) {
         return ResponseView.notFound(res, 'Firm not found');

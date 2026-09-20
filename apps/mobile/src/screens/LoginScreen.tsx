@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   ActivityIndicator, StyleSheet, ScrollView, Image
 } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, showAlert } from '../config';
 import { colors, STATUS_BAR_PADDING } from '../styles';
@@ -11,6 +12,7 @@ export const LoginScreen: React.FC = () => {
   const { login } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Login fields (Email OR Phone)
   const [identifier, setIdentifier] = useState('');
@@ -83,13 +85,19 @@ export const LoginScreen: React.FC = () => {
       <View style={s.tabBar}>
         <TouchableOpacity
           style={[s.tab, !isRegister && s.tabActive]}
-          onPress={() => setIsRegister(false)}
+          onPress={() => {
+            setIsRegister(false);
+            setShowPassword(false);
+          }}
         >
           <Text style={[s.tabText, !isRegister && s.tabTextActive]}>Sign In</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[s.tab, isRegister && s.tabActive]}
-          onPress={() => setIsRegister(true)}
+          onPress={() => {
+            setIsRegister(true);
+            setShowPassword(false);
+          }}
         >
           <Text style={[s.tabText, isRegister && s.tabTextActive]}>Create Account</Text>
         </TouchableOpacity>
@@ -110,14 +118,31 @@ export const LoginScreen: React.FC = () => {
             />
 
             <Text style={s.label}>Password *</Text>
-            <TextInput
-              style={s.input}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={s.passwordContainer}>
+              <TextInput
+                style={s.passwordInput}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                style={s.eyeBtn}
+                onPress={() => setShowPassword(prev => !prev)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                accessibilityRole="button"
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.brand} />
+                ) : (
+                  <Eye size={20} color={colors.textMuted} />
+                )}
+              </TouchableOpacity>
+            </View>
           </>
         ) : (
           <>
@@ -152,14 +177,31 @@ export const LoginScreen: React.FC = () => {
             />
 
             <Text style={s.label}>Password *</Text>
-            <TextInput
-              style={s.input}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={s.passwordContainer}>
+              <TextInput
+                style={s.passwordInput}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                style={s.eyeBtn}
+                onPress={() => setShowPassword(prev => !prev)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                accessibilityRole="button"
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.brand} />
+                ) : (
+                  <Eye size={20} color={colors.textMuted} />
+                )}
+              </TouchableOpacity>
+            </View>
           </>
         )}
 
@@ -192,7 +234,37 @@ const s = StyleSheet.create({
   tabTextActive: { color: '#fff', fontWeight: '800' },
   card: { backgroundColor: colors.surface, borderRadius: 16, padding: 22, borderWidth: 1, borderColor: colors.border },
   label: { color: colors.textMain, fontSize: 13, fontWeight: '600', marginBottom: 6 },
-  input: { backgroundColor: colors.surfaceElevated, color: colors.textMain, padding: 12, borderRadius: 10, marginBottom: 14, fontSize: 15 },
+  input: {
+    backgroundColor: colors.surfaceElevated,
+    color: colors.textMain,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 14,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: 10,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingRight: 10,
+  },
+  passwordInput: {
+    flex: 1,
+    color: colors.textMain,
+    padding: 12,
+    fontSize: 15,
+  },
+  eyeBtn: {
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   btn: { backgroundColor: colors.brand, padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 6 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

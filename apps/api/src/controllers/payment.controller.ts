@@ -57,6 +57,10 @@ export class PaymentController {
 
       const { customerId, saleId, amount, date, method, notes } = parseResult.data;
 
+      if (!mongoose.Types.ObjectId.isValid(customerId)) {
+        return ResponseView.notFound(res, 'Customer not found');
+      }
+
       const customer = await CustomerModel.findOne({ _id: customerId, farmId: req.farmId });
       if (!customer) {
         return ResponseView.notFound(res, 'Customer not found');

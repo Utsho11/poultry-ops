@@ -146,12 +146,20 @@ export class SaleController {
         }
       }
 
+      const primaryItem = itemsToSave[0];
+      const effectiveItemType = itemType || primaryItem?.type;
+      const effectiveQuantity = quantity !== undefined ? quantity : itemsToSave.reduce((s, i) => s + (i.quantity || 0), 0);
+      const effectiveUnitPrice = unitPrice !== undefined ? unitPrice : (primaryItem?.unitPrice || 0);
+
       const sale = new SaleModel({
         farmId: req.farmId,
         batchId,
         customerId: targetCustomerId,
         customerName,
         customerPhone,
+        itemType: effectiveItemType,
+        quantity: effectiveQuantity,
+        unitPrice: effectiveUnitPrice,
         date,
         items: itemsToSave,
         totalAmount: calculatedTotal,
@@ -198,6 +206,10 @@ export class SaleController {
   // Delete sale
   static async deleteSale(req: AuthRequest, res: Response) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Sale record not found');
+      }
+
       const sale = await SaleModel.findOne({ _id: req.params.id, farmId: req.farmId });
       if (!sale) {
         return ResponseView.notFound(res, 'Sale record not found');

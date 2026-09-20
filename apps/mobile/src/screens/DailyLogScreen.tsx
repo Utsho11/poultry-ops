@@ -87,6 +87,9 @@ export const DailyLogScreen: React.FC = () => {
       setSuccess(true);
       setCrates('0');
       setLooseEggs('0');
+      setBrokenEggCount('0');
+      setDeadCount('0');
+      setNotes('');
       setTimeout(() => setSuccess(false), 3000);
       load();
     } catch (err: any) {

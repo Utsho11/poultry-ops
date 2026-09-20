@@ -329,12 +329,18 @@ export class ReportController {
 
       const currentEggCount = Math.max(0, allTimeEggCount - allTimeBrokenCount - totalEggsSold);
 
+      // Normalize egg laying rate and feed per bird by the number of distinct recorded days
+      const distinctLogDays = await DailyLogModel.distinct('date', logMatch);
+      const daysCount = Math.max(1, distinctLogDays.length);
+
+      const avgDailyEggs = logMetrics.totalEggs / daysCount;
       const eggLayingRate = totalCurrentBirds > 0
-        ? Number(((logMetrics.totalEggs / totalCurrentBirds) * 100).toFixed(1))
+        ? Number(((avgDailyEggs / totalCurrentBirds) * 100).toFixed(1))
         : 0;
 
+      const avgDailyFeedKg = logMetrics.totalFeedKg / daysCount;
       const feedPerChickenGrams = totalCurrentBirds > 0
-        ? Math.round((logMetrics.totalFeedKg * 1000) / totalCurrentBirds)
+        ? Math.round((avgDailyFeedKg * 1000) / totalCurrentBirds)
         : 0;
 
       const feedPerChickenPercentage = Number(((feedPerChickenGrams / 110) * 100).toFixed(1));
@@ -537,6 +543,14 @@ export class ReportController {
               resultMap[d].chickensSold += item.birdCount || item.quantity || 0;
             }
           });
+        } else {
+          if (sale.itemType === 'egg') {
+            resultMap[d].eggSalesRevenue += sale.totalAmount || 0;
+            resultMap[d].eggsSold += sale.quantity || 0;
+          } else if (sale.itemType === 'chicken') {
+            resultMap[d].chickenSalesRevenue += sale.totalAmount || 0;
+            resultMap[d].chickensSold += sale.quantity || 0;
+          }
         }
       });
 
@@ -555,11 +569,15 @@ export class ReportController {
   static async getBatchDashboard(req: AuthRequest, res: Response) {
     try {
       const { batchId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(batchId)) {
+        return ResponseView.notFound(res, 'Batch not found');
+      }
+
       const farmObjectId = toObjectId(req.farmId as string);
       const batchObjectId = toObjectId(batchId);
 
       const batch = await BatchModel.findOne({
-        _id: { $in: [batchObjectId, batchId] },
+        _id: batchObjectId,
         $or: [{ farmId: farmObjectId }, { farmId: req.farmId }]
       }).populate('assignedWorkerIds', 'name email phone role');
 
@@ -567,19 +585,22 @@ export class ReportController {
         return ResponseView.notFound(res, 'Batch not found');
       }
 
-      // Fetch batch logs
+      // Fetch batch logs strictly scoped to this farm tenant
       const logs = await DailyLogModel.find({
-        $or: [{ batchId: batchObjectId }, { batchId }]
+        batchId: batch._id,
+        $or: [{ farmId: farmObjectId }, { farmId: req.farmId }]
       }).sort({ date: -1 });
 
-      // Fetch batch sales
+      // Fetch batch sales strictly scoped to this farm tenant
       const sales = await SaleModel.find({
-        $or: [{ batchId: batchObjectId }, { batchId }]
+        batchId: batch._id,
+        $or: [{ farmId: farmObjectId }, { farmId: req.farmId }]
       }).sort({ date: -1 });
 
-      // Fetch batch expenses
+      // Fetch batch expenses strictly scoped to this farm tenant
       const expenses = await ExpenseModel.find({
-        $or: [{ batchId: batchObjectId }, { batchId }]
+        batchId: batch._id,
+        $or: [{ farmId: farmObjectId }, { farmId: req.farmId }]
       }).sort({ date: -1 });
 
       // Aggregations
@@ -629,18 +650,24 @@ export class ReportController {
         ? Number(((totalDead / batch.initialCount) * 100).toFixed(2))
         : 0;
 
+      const distinctDays = Math.max(1, new Set(logs.map(l => l.date)).size);
+      const avgDailyEggs = totalEggs / distinctDays;
       const eggLayingRate = batch.currentCount > 0
-        ? Number(((totalEggs / batch.currentCount) * 100).toFixed(1))
+        ? Number(((avgDailyEggs / batch.currentCount) * 100).toFixed(1))
         : 0;
 
       const costPerEgg = totalEggs > 0 ? Number((grandTotalCost / totalEggs).toFixed(2)) : 0;
 
       const latestLog = logs[0];
+      const latestLayingRate = batch.currentCount > 0 && latestLog
+        ? Number((((latestLog.eggCount || 0) / batch.currentCount) * 100).toFixed(1))
+        : 0;
+
       const latestLogSection = {
         date: latestLog?.date || 'N/A',
         totalEggs: latestLog?.eggCount || 0,
         brokenEggs: latestLog?.brokenEggCount || 0,
-        layingRate: eggLayingRate,
+        layingRate: latestLayingRate,
         feedKg: latestLog?.feedGivenKg || 0,
         feedPerBirdGrams: batch.currentCount > 0 ? Math.round(((latestLog?.feedGivenKg || 0) * 1000) / batch.currentCount) : 0,
         waterLiters: latestLog?.waterGivenLiters || 0,
@@ -687,10 +714,11 @@ export class ReportController {
         netProfit: totalIncome - grandTotalCost
       };
 
+      const avgDailyBatchFeedKg = totalFeedKg / distinctDays;
       const foodSection = {
         totalFeedKg,
         totalWaterLiters,
-        avgFeedPerChickenGrams: batch.currentCount > 0 ? Math.round((totalFeedKg * 1000) / batch.currentCount) : 0
+        avgFeedPerChickenGrams: batch.currentCount > 0 ? Math.round((avgDailyBatchFeedKg * 1000) / batch.currentCount) : 0
       };
 
       return ResponseView.success(res, {

@@ -13,7 +13,6 @@ import { Egg, Bird, AlertTriangle, CircleDollarSign, Wheat, Calendar } from 'luc
 export const ReportsScreen: React.FC = () => {
   const { token, user, activeFarm } = useAuth();
   const [summary, setSummary] = useState<any>(null);
-  const [batchData, setBatchData] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,18 +42,17 @@ export const ReportsScreen: React.FC = () => {
 
       const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
 
-      const [sum, batchRes, salesRes, allBatches] = await Promise.all([
+      const [sum, salesRes, allBatches] = await Promise.all([
         apiFetch(`/reports/summary${queryString}`, {}, token),
-        apiFetch('/reports/batch-breakdown', {}, token),
         apiFetch('/sales', {}, token),
         apiFetch('/batches', {}, token),
       ]);
       setSummary(sum);
-      setBatchData(batchRes);
       setSalesData(salesRes);
       setBatches(allBatches);
-    } catch (e) {}
-    finally { setLoading(false); setRefreshing(false); }
+    } catch (e: any) {
+      console.warn('ReportsScreen load error:', e?.message || e);
+    } finally { setLoading(false); setRefreshing(false); }
   }, [selectedDays, selectedBatchId, token]);
 
   useEffect(() => { load(); }, [load]);
@@ -255,22 +253,29 @@ export const ReportsScreen: React.FC = () => {
           {salesData.length === 0 ? (
             <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 10 }}>No sales recorded yet.</Text>
           ) : (
-            salesData.slice(0, 5).map(sale => (
-              <View key={sale._id} style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10, marginTop: 8 }}>
-                <View style={common.row}>
-                  <Text style={{ color: colors.textMain, fontWeight: '800', fontSize: 14 }}>
-                    {sale.itemType === 'egg' ? 'Egg Sale' : 'Chicken Sale'}
-                  </Text>
-                  <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 14 }}>+৳{sale.totalAmount.toLocaleString()}</Text>
+            salesData.slice(0, 5).map(sale => {
+              const primaryItem = sale.items?.[0];
+              const itemType = sale.itemType || primaryItem?.type;
+              const quantity = sale.quantity !== undefined ? sale.quantity : (primaryItem?.quantity || 0);
+              const unitPrice = sale.unitPrice !== undefined ? sale.unitPrice : (primaryItem?.unitPrice || 0);
+
+              return (
+                <View key={sale._id} style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10, marginTop: 8 }}>
+                  <View style={common.row}>
+                    <Text style={{ color: colors.textMain, fontWeight: '800', fontSize: 14 }}>
+                      {itemType === 'egg' ? 'Egg Sale' : 'Chicken Sale'}
+                    </Text>
+                    <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 14 }}>+৳{(sale.totalAmount || 0).toLocaleString()}</Text>
+                  </View>
+                  <View style={[common.row, { marginTop: 4 }]}>
+                    <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+                      Qty: {itemType === 'egg' ? formatEggCount(quantity) : `${quantity} birds`} @ ৳{unitPrice}
+                    </Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 11 }}>{sale.date}</Text>
+                  </View>
                 </View>
-                <View style={[common.row, { marginTop: 4 }]}>
-                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                    Qty: {sale.itemType === 'egg' ? formatEggCount(sale.quantity) : `${sale.quantity} birds`} @ ৳{sale.unitPrice}
-                  </Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>{sale.date}</Text>
-                </View>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
 

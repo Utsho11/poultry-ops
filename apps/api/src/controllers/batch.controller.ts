@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { createBatchSchema } from '@poultry-ops/validation';
 import { BatchModel, FarmModel, DailyLogModel, HealthRecordModel, ExpenseModel, SaleModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
@@ -57,6 +58,10 @@ export class BatchController {
   // Get Batch by ID
   static async getBatchById(req: AuthRequest, res: Response) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Flock/Batch not found');
+      }
+
       const batch = await BatchModel.findOne({ _id: req.params.id, farmId: req.farmId })
         .populate('assignedWorkerIds', 'name email phone role');
 
@@ -72,6 +77,10 @@ export class BatchController {
   // Update Batch
   static async updateBatch(req: AuthRequest, res: Response) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Flock/Batch not found');
+      }
+
       const { name, breed, type, startDate, initialCount, currentCount, status, assignedWorkerIds } = req.body;
       const batch = await BatchModel.findOne({ _id: req.params.id, farmId: req.farmId });
 
@@ -102,6 +111,10 @@ export class BatchController {
   static async deleteBatch(req: AuthRequest, res: Response) {
     try {
       const batchId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(batchId)) {
+        return ResponseView.notFound(res, 'Flock/Batch not found');
+      }
+
       const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
       if (!batch) {
         return ResponseView.notFound(res, 'Flock/Batch not found');

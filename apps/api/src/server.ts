@@ -25,6 +25,17 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
+// Database connection middleware (ensures active connection for both local & Vercel serverless)
+app.use(async (req: Request, res: Response, next: any) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err: any) {
+    console.error('Database connection middleware error:', err);
+    res.status(503).json({ error: 'Database service unavailable. Please verify MONGODB_URI in environment variables.' });
+  }
+});
+
 // Health Check
 app.get('/api/health-check', (req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'PoultryDex API v1.1.0', timestamp: new Date().toISOString() });
@@ -52,10 +63,12 @@ app.use((err: any, req: Request, res: Response, next: any) => {
   res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
 
-// Start Server
-app.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`PoultryDex API Server v1.1.0 running on port ${PORT} (0.0.0.0)`);
-  connectDB();
-});
+// Start Server (Listen when not running in Vercel serverless container)
+if (!process.env.VERCEL) {
+  app.listen(Number(PORT), '0.0.0.0', () => {
+    console.log(`PoultryDex API Server v1.1.0 running on port ${PORT} (0.0.0.0)`);
+    connectDB().catch(err => console.error('Initial DB connect error:', err));
+  });
+}
 
 export default app;
