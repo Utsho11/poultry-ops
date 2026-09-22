@@ -77,7 +77,8 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
   }, [batchId, token, canManage]);
 
   const handleOpenAssignModal = () => {
-    const ids = (data?.batch?.assignedWorkerIds || []).map((id: any) =>
+    const rawList = data?.batch?.assignedWorkerIds || data?.batch?.assignedWorkers || data?.assignedWorkers || [];
+    const ids = rawList.map((id: any) =>
       String(id?._id || id),
     );
     setSelectedWorkerIds(ids);
@@ -533,7 +534,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
             )}
           </View>
 
-          {data.assignedWorkers && data.assignedWorkers.length > 0 ? (
+          {((data.assignedWorkers && data.assignedWorkers.length > 0) || (data.batch?.assignedWorkers && data.batch.assignedWorkers.length > 0)) ? (
             <View
               style={{
                 flexDirection: "row",
@@ -542,7 +543,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                 marginTop: 8,
               }}
             >
-              {data.assignedWorkers.map((w: any) => (
+              {(data.assignedWorkers || data.batch?.assignedWorkers || []).map((w: any) => (
                 <View key={w._id} style={s.workerChip}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <HardHat size={12} color={colors.textMuted} style={{ marginRight: 4 }} />

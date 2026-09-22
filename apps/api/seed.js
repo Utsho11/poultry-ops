@@ -23,6 +23,7 @@ async function seed() {
       const oldFarmId = existingFarm._id;
       await Promise.all([
         db.collection('batches').deleteMany({ farmId: oldFarmId }),
+        db.collection('batch_workers').deleteMany({ farmId: oldFarmId }),
         db.collection('dailylogs').deleteMany({ farmId: oldFarmId }),
         db.collection('expenses').deleteMany({ farmId: oldFarmId }),
         db.collection('sales').deleteMany({ farmId: oldFarmId }),
@@ -96,7 +97,15 @@ async function seed() {
       initialCount: 1000,
       currentCount: 985,
       status: 'active',
-      assignedWorkerIds: [workerId],
+      createdAt: thirtyDaysAgo
+    });
+
+    // 4b. Assign Worker to Batch (BatchWorker junction collection)
+    await db.collection('batch_workers').insertOne({
+      farmId: farmId,
+      batchId: batchId,
+      workerId: workerId,
+      assignedAt: thirtyDaysAgo,
       createdAt: thirtyDaysAgo
     });
 

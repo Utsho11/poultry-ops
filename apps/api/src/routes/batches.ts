@@ -13,6 +13,7 @@ router.post('/', requireRole(['owner', 'manager']), verifyPasswordConfirmation, 
 router.get('/', BatchController.getBatches);
 router.get('/:id', BatchController.getBatchById);
 router.put('/:id', requireRole(['owner', 'manager']), BatchController.updateBatch);
+router.patch('/:id/assign-workers', requireRole(['owner', 'manager']), BatchController.assignWorkers);
 router.post('/:id/close', requireRole(['owner', 'manager']), verifyPasswordConfirmation, BatchController.closeBatch);
 router.delete('/:id', requireRole(['owner']), verifyPasswordConfirmation, BatchController.deleteBatch);
 

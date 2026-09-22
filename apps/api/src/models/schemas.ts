@@ -76,7 +76,6 @@ export interface IBatchDoc extends Document {
   initialCount: number;
   currentCount: number;
   status: 'active' | 'closed';
-  assignedWorkerIds: Schema.Types.ObjectId[];
   lastLogDate?: string;
   closedAt?: Date;
   createdAt: Date;
@@ -93,13 +92,33 @@ const batchSchema = new Schema<IBatchDoc>({
   initialCount: { type: Number, required: true, min: 1 },
   currentCount: { type: Number, required: true, min: 0 },
   status: { type: String, enum: ['active', 'closed'], default: 'active', index: true },
-  assignedWorkerIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   lastLogDate: { type: String },
   closedAt: { type: Date }
 }, { timestamps: true });
 
 batchSchema.index({ farmId: 1, status: 1 });
 export const BatchModel = model<IBatchDoc>('Batch', batchSchema);
+
+// BatchWorker Junction Schema (Foreign Keys to Farm, Batch, and User)
+export interface IBatchWorkerDoc extends Document {
+  farmId: Schema.Types.ObjectId;
+  batchId: Schema.Types.ObjectId;
+  workerId: Schema.Types.ObjectId;
+  assignedAt: Date;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+const batchWorkerSchema = new Schema<IBatchWorkerDoc>({
+  farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
+  batchId: { type: Schema.Types.ObjectId, ref: 'Batch', required: true, index: true },
+  workerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  assignedAt: { type: Date, default: Date.now }
+}, { timestamps: true });
+
+batchWorkerSchema.index({ farmId: 1, batchId: 1, workerId: 1 }, { unique: true });
+batchWorkerSchema.index({ farmId: 1, workerId: 1 });
+export const BatchWorkerModel = model<IBatchWorkerDoc>('BatchWorker', batchWorkerSchema);
 
 // DailyLog Schema
 export interface IDailyLogDoc extends Document {

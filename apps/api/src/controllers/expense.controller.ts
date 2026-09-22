@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { expenseSchema } from '@poultry-ops/validation';
-import { ExpenseModel, BatchModel } from '../models/schemas';
+import { ExpenseModel, BatchModel, BatchWorkerModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -53,11 +53,16 @@ export class ExpenseController {
         if (!batch) {
           return ResponseView.notFound(res, 'Selected batch not found.');
         }
-        if (!batch.assignedWorkerIds || batch.assignedWorkerIds.length === 0) {
+        const assignedWorkersCount = await BatchWorkerModel.countDocuments({ batchId, farmId: req.farmId });
+        if (assignedWorkersCount === 0) {
           return ResponseView.error(res, 'Cannot add labor expense to this batch because no workers are assigned. Please assign a worker first.');
         }
         if (!workerId) {
           return ResponseView.error(res, 'Worker selection is required for labor expenses.');
+        }
+        const isWorkerAssigned = await BatchWorkerModel.exists({ batchId, workerId, farmId: req.farmId });
+        if (!isWorkerAssigned) {
+          return ResponseView.error(res, 'The selected worker is not assigned to this flock.');
         }
       }
 
@@ -106,8 +111,8 @@ export class ExpenseController {
       const { feedBags, feedKg } = req.body;
 
       if (category === 'labor' && batchId) {
-        const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
-        if (!batch || !batch.assignedWorkerIds || batch.assignedWorkerIds.length === 0) {
+        const assignedWorkersCount = await BatchWorkerModel.countDocuments({ batchId, farmId: req.farmId });
+        if (assignedWorkersCount === 0) {
           return ResponseView.error(res, 'Cannot assign labor expense to a batch without assigned workers.');
         }
       }

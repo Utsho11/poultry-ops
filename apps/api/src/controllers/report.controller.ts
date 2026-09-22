@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
-import { DailyLogModel, ExpenseModel, BatchModel, SaleModel, FeedStockModel, HealthRecordModel, PaymentModel } from '../models/schemas';
+import { DailyLogModel, ExpenseModel, BatchModel, BatchWorkerModel, SaleModel, FeedStockModel, HealthRecordModel, PaymentModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -579,11 +579,21 @@ export class ReportController {
       const batch = await BatchModel.findOne({
         _id: batchObjectId,
         $or: [{ farmId: farmObjectId }, { farmId: req.farmId }]
-      }).populate('assignedWorkerIds', 'name email phone role');
+      });
 
       if (!batch) {
         return ResponseView.notFound(res, 'Batch not found');
       }
+
+      const assignments = await BatchWorkerModel.find({
+        batchId: batch._id,
+        $or: [{ farmId: farmObjectId }, { farmId: req.farmId }]
+      }).populate('workerId', 'name email phone role');
+
+      const batchObj: any = batch.toObject();
+      const workers = assignments.map(a => a.workerId).filter(Boolean);
+      batchObj.assignedWorkers = workers;
+      batchObj.assignedWorkerIds = workers;
 
       // Fetch batch logs strictly scoped to this farm tenant
       const logs = await DailyLogModel.find({
@@ -722,7 +732,8 @@ export class ReportController {
       };
 
       return ResponseView.success(res, {
-        batch,
+        batch: batchObj,
+        assignedWorkers: workers,
         latestLogSection,
         eggSection,
         mortalitySection,

@@ -53,8 +53,18 @@ export interface IBatch {
   currentCount: number;
   status: BatchStatus;
   assignedWorkerIds?: string[];
+  assignedWorkers?: IUser[];
   lastLogDate?: string;
   closedAt?: string | Date;
+  createdAt?: string | Date;
+}
+
+export interface IBatchWorker {
+  _id: string;
+  farmId: string;
+  batchId: string;
+  workerId: string;
+  assignedAt?: string | Date;
   createdAt?: string | Date;
 }
 

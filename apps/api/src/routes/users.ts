@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { createUserSchema } from '@poultry-ops/validation';
-import { UserModel, BatchModel } from '../models/schemas';
+import { UserModel, BatchModel, BatchWorkerModel } from '../models/schemas';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
@@ -229,11 +229,8 @@ router.delete('/:id', requireRole(['owner']), async (req: AuthRequest, res: Resp
     const user = await UserModel.findOne({ _id: userIdToDelete, farmId: req.farmId });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // 1. Remove worker from all assigned batches
-    await BatchModel.updateMany(
-      { farmId: req.farmId },
-      { $pull: { assignedWorkerIds: userIdToDelete } }
-    );
+    // 1. Remove worker from all assigned batches in BatchWorker collection
+    await BatchWorkerModel.deleteMany({ workerId: userIdToDelete, farmId: req.farmId });
 
     // 2. Delete user document from DB
     await UserModel.deleteOne({ _id: userIdToDelete, farmId: req.farmId });
