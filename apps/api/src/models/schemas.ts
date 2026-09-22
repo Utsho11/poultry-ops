@@ -43,8 +43,17 @@ const userSchema = new Schema<IUserDoc>({
   farmId: { type: Schema.Types.ObjectId, ref: 'Farm', index: true },
   activeFarmId: { type: Schema.Types.ObjectId, ref: 'Farm', index: true },
   name: { type: String, required: true, trim: true },
-  email: { type: String, trim: true, lowercase: true },
-  phone: { type: String, trim: true },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    set: (v: any) => (v && typeof v === 'string' && v.trim() ? v.trim().toLowerCase() : undefined)
+  },
+  phone: {
+    type: String,
+    trim: true,
+    set: (v: any) => (v && typeof v === 'string' && v.trim() ? v.trim() : undefined)
+  },
   passwordHash: { type: String, required: true },
   role: { type: String, enum: ['owner', 'manager', 'worker'], default: 'owner' },
   fcmTokens: [{ type: String }],
@@ -94,6 +103,7 @@ export const BatchModel = model<IBatchDoc>('Batch', batchSchema);
 export interface IDailyLogDoc extends Document {
   farmId: Schema.Types.ObjectId;
   batchId: Schema.Types.ObjectId;
+  entryId?: string;
   date: string; // YYYY-MM-DD
   eggCount: number;
   brokenEggCount: number;
@@ -109,6 +119,7 @@ export interface IDailyLogDoc extends Document {
 const dailyLogSchema = new Schema<IDailyLogDoc>({
   farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
   batchId: { type: Schema.Types.ObjectId, ref: 'Batch', required: true, index: true },
+  entryId: { type: String, trim: true, index: true },
   date: { type: String, required: true },
   eggCount: { type: Number, default: 0, min: 0 },
   brokenEggCount: { type: Number, default: 0, min: 0 },

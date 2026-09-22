@@ -4,7 +4,7 @@ import {
   Modal, RefreshControl, StyleSheet, ActivityIndicator, Alert
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../config';
+import { apiFetch, showAlert } from '../config';
 import { colors, common, STATUS_BAR_PADDING } from '../styles';
 import { formatEggCount } from '../utils/crates';
 
@@ -125,11 +125,18 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
       if (logs.length > 0) {
         setExpandedDates({ [logs[0].date]: true });
       }
-    } catch (e) {}
+    } catch (e: any) {
+      console.warn('Failed to load daily report:', e?.message || e);
+      showAlert('Error', e?.message || 'Failed to load report data');
+    }
     finally { setLoading(false); setRefreshing(false); }
   }, [routeBatchId, token]);
 
-  useEffect(() => { loadLogs(); }, [loadLogs]);
+  useEffect(() => {
+    let mounted = true;
+    loadLogs();
+    return () => { mounted = false; };
+  }, [loadLogs]);
 
   const onRefresh = () => { setRefreshing(true); loadLogs(); };
 

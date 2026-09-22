@@ -31,9 +31,21 @@ const handleAddUser = async (req: AuthRequest, res: Response) => {
 
     const { name, email, password, role, phone } = parseResult.data;
 
-    const existing = await UserModel.findOne({ farmId: req.farmId, email });
-    if (existing) {
-      return res.status(400).json({ error: 'A user with this email already exists in your farm' });
+    const trimmedEmail = email && email.trim() ? email.trim().toLowerCase() : undefined;
+    const trimmedPhone = phone && phone.trim() ? phone.trim() : undefined;
+
+    if (trimmedEmail) {
+      const existingEmail = await UserModel.findOne({ email: trimmedEmail });
+      if (existingEmail) {
+        return res.status(400).json({ error: 'An account with this email address already exists' });
+      }
+    }
+
+    if (trimmedPhone) {
+      const existingPhone = await UserModel.findOne({ phone: trimmedPhone });
+      if (existingPhone) {
+        return res.status(400).json({ error: 'An account with this phone number already exists' });
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -41,10 +53,10 @@ const handleAddUser = async (req: AuthRequest, res: Response) => {
     const user = new UserModel({
       farmId: req.farmId,
       name,
-      email,
+      email: trimmedEmail,
       passwordHash,
       role,
-      phone,
+      phone: trimmedPhone,
       isActive: true
     });
 
@@ -142,6 +154,60 @@ router.patch('/:id/toggle-active', requireRole(['owner']), async (req: AuthReque
     user.isActive = !user.isActive;
     await user.save();
     return res.json({ _id: user._id, isActive: user.isActive });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Update team member role (Owner only)
+router.patch('/:id/role', requireRole(['owner']), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { role } = req.body;
+    if (!role || !['manager', 'worker'].includes(role)) {
+      return res.status(400).json({ error: 'Role must be either manager or worker' });
+    }
+
+    const user = await UserModel.findOne({ _id: req.params.id, farmId: req.farmId });
+    if (!user) return res.status(404).json({ error: 'User not found in this farm' });
+
+    user.role = role;
+    await user.save();
+
+    return res.json({ _id: user._id, name: user.name, role: user.role });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Update team member details (Owner only)
+router.patch('/:id', requireRole(['owner']), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { name, role, phone, isActive } = req.body;
+    const user = await UserModel.findOne({ _id: req.params.id, farmId: req.farmId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (name !== undefined && name.trim()) user.name = name.trim();
+    if (role !== undefined && ['manager', 'worker'].includes(role)) user.role = role;
+    if (phone !== undefined) user.phone = phone && phone.trim() ? phone.trim() : undefined;
+    if (isActive !== undefined) user.isActive = Boolean(isActive);
+
+    await user.save();
+    return res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      isActive: user.isActive
+    });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

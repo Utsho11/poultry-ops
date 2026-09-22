@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../config';
+import { apiFetch, showAlert } from '../config';
 import { colors, common } from '../styles';
 import { formatEggCount } from '../utils/crates';
 import { DailyLogModal } from '../components/DailyLogModal';
@@ -31,11 +31,18 @@ export const DailyLogScreen: React.FC = () => {
       ]);
       setBatches(batchData);
       setLogs(logData);
-    } catch (e) {}
+    } catch (e: any) {
+      console.warn('Failed to load daily logs:', e?.message || e);
+      showAlert('Connection Error', e?.message || 'Failed to load daily logs');
+    }
     finally { setRefreshing(false); }
   }, [token, filterBatchId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let mounted = true;
+    load();
+    return () => { mounted = false; };
+  }, [load]);
 
   return (
     <View style={common.screen}>

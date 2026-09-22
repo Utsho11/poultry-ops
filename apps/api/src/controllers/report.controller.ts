@@ -896,4 +896,45 @@ export class ReportController {
       return ResponseView.serverError(res, error.message);
     }
   }
+
+  // 5. Data Export (CSV / JSON format)
+  static async exportReport(req: AuthRequest, res: Response) {
+    try {
+      const { format, batchId, from, to } = req.query;
+      const farmObjectId = toObjectId(req.farmId as string);
+
+      const logMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+      if (batchId) {
+        const bObjId = toObjectId(batchId as string);
+        logMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(batchId) }] }];
+      }
+      if (from || to) {
+        logMatch.date = {};
+        if (from) logMatch.date.$gte = from;
+        if (to) logMatch.date.$lte = to;
+      }
+
+      const logs = await DailyLogModel.find(logMatch).sort({ date: -1 });
+
+      if (format === 'csv') {
+        const headers = 'Date,EggCount,BrokenEggCount,DeadCount,FeedGivenKg,WaterGivenLiters,Notes\n';
+        const rows = logs.map(l =>
+          `${l.date},${l.eggCount},${l.brokenEggCount},${l.deadCount},${l.feedGivenKg},${l.waterGivenLiters},"${(l.notes || '').replace(/"/g, '""')}"`
+        ).join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="farm-report-${new Date().toISOString().split('T')[0]}.csv"`);
+        return res.send(headers + rows);
+      }
+
+      return ResponseView.success(res, {
+        recordCount: logs.length,
+        exportedAt: new Date().toISOString(),
+        logs
+      });
+    } catch (error: any) {
+      return ResponseView.serverError(res, error.message);
+    }
+  }
 }
+

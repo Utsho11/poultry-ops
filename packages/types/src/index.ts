@@ -67,6 +67,7 @@ export interface IDailyLog {
   _id: string;
   farmId: string;
   batchId: string;
+  entryId?: string;
   date: string; // ISO date string (YYYY-MM-DD)
   eggCount: number;
   brokenEggCount: number;
@@ -231,3 +232,17 @@ export interface IAuthResponse {
   accessToken: string;
   refreshToken?: string;
 }
+
+export interface IApiErrorResponse {
+  error: string;
+  details?: any;
+}
+
+export interface IApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  details?: any;
+  message?: string;
+}
+

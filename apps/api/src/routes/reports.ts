@@ -12,5 +12,7 @@ router.get('/summary', ReportController.getSummaryReport);
 router.get('/daily', ReportController.getDailyReport);
 router.get('/batch-dashboard/:batchId', ReportController.getBatchDashboard);
 router.get('/activity-log', ReportController.getActivityLog);
+router.get('/export', ReportController.exportReport);
 
 export default router;
+

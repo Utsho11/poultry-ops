@@ -61,11 +61,18 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
       if (Array.isArray(usersData)) {
         setTeamWorkers(usersData.filter((u: any) => u.role === 'worker' || u.role === 'manager'));
       }
-    } catch (e) {}
+    } catch (e: any) {
+      console.warn('Failed to load batches:', e?.message || e);
+      showAlert('Connection Error', e?.message || 'Failed to load flocks. Please check your internet connection.');
+    }
     finally { setLoading(false); setRefreshing(false); }
   }, [canManage, token, activeFarm?._id]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let mounted = true;
+    load();
+    return () => { mounted = false; };
+  }, [load]);
 
   const loadBatchDashboard = async (batchId: string) => {
     setLoadingDashboard(true);

@@ -12,8 +12,26 @@ async function seed() {
     const db = mongoose.connection.db;
 
     // Remove existing test data if any
-    await db.collection('users').deleteMany({ email: { $in: ['test@farm.com', 'worker@farm.com'] } });
-    await db.collection('farms').deleteMany({ name: 'Green Valley Farm' });
+    await db.collection('users').deleteMany({
+      $or: [
+        { email: { $in: ['test@farm.com', 'worker@farm.com'] } },
+        { phone: { $in: ['01700000000', '01800000000'] } }
+      ]
+    });
+    const existingFarm = await db.collection('farms').findOne({ name: 'Green Valley Farm' });
+    if (existingFarm) {
+      const oldFarmId = existingFarm._id;
+      await Promise.all([
+        db.collection('batches').deleteMany({ farmId: oldFarmId }),
+        db.collection('dailylogs').deleteMany({ farmId: oldFarmId }),
+        db.collection('expenses').deleteMany({ farmId: oldFarmId }),
+        db.collection('sales').deleteMany({ farmId: oldFarmId }),
+        db.collection('customers').deleteMany({ farmId: oldFarmId }),
+        db.collection('feedstocks').deleteMany({ farmId: oldFarmId }),
+        db.collection('healthrecords').deleteMany({ farmId: oldFarmId }),
+        db.collection('farms').deleteOne({ _id: oldFarmId })
+      ]);
+    }
 
     const passwordHash = await bcrypt.hash('password123', 10);
 
@@ -166,9 +184,10 @@ async function seed() {
         }
       ],
       totalAmount: 31050,
-      paidAmount: 31050,
-      paymentMethod: 'cash',
-      paymentStatus: 'paid',
+      amountPaid: 31050,
+      amountDue: 0,
+      status: 'paid',
+      notes: 'Initial test sale',
       recordedBy: ownerId,
       createdAt: new Date()
     });

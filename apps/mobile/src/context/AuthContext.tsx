@@ -1,22 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { IAuthUser as AuthUser, AnimalType, UserRole } from '@poultry-ops/types';
 import { setActiveFarmIdMemory } from '../config';
 
-export interface AuthUser {
-  userId: string;
-  farmId?: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  role: 'owner' | 'manager' | 'worker';
-  farmName?: string;
-  animalType?: 'poultry' | 'layer' | 'broiler';
-}
+export type { AuthUser };
 
 export interface IFirm {
   _id: string;
   name: string;
-  animalType: 'poultry' | 'layer' | 'broiler';
+  animalType: AnimalType;
   date?: string;
   location?: string;
 }

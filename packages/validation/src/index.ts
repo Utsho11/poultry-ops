@@ -43,12 +43,12 @@ export const createBatchSchema = z.object({
   type: z.enum(['layer', 'broiler']).optional(),
   startDate: z.string().or(z.date()),
   initialCount: z.coerce.number().int().positive('Initial count must be greater than 0'),
-  assignedWorkerIds: z.array(z.string()).optional(),
-  password: z.string().optional()
+  assignedWorkerIds: z.array(z.string()).optional()
 });
 
 export const dailyLogSchema = z.object({
   batchId: z.string().min(1, 'Batch ID is required'),
+  entryId: z.string().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be formatted as YYYY-MM-DD'),
   eggCount: z.number().min(0, 'Egg count cannot be negative').default(0),
   brokenEggCount: z.number().min(0, 'Broken egg count cannot be negative').default(0),
@@ -147,10 +147,17 @@ export const healthRecordSchema = z.object({
 
 export const createUserSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['manager', 'worker']),
-  phone: z.string().optional()
+  phone: z.string().min(6, 'Phone number must be at least 6 digits').optional().or(z.literal(''))
+}).refine(data => (data.email && data.email.trim().length > 0) || (data.phone && data.phone.trim().length > 0), {
+  message: 'Please provide either an email address or a phone number for the team member',
+  path: ['email']
+});
+
+export const updateUserRoleSchema = z.object({
+  role: z.enum(['manager', 'worker'])
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -165,4 +172,6 @@ export type SaleInput = z.infer<typeof saleSchema>;
 export type PaymentInput = z.infer<typeof paymentSchema>;
 export type HealthRecordInput = z.infer<typeof healthRecordSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;
 export type FeedStockInput = z.infer<typeof feedStockSchema>;
+

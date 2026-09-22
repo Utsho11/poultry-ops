@@ -35,15 +35,22 @@ export const TeamScreen: React.FC = () => {
     try {
       const data = await apiFetch('/team', {}, token);
       setTeam(data);
-    } catch (e) {}
+    } catch (e: any) {
+      console.warn('Failed to load team members:', e?.message || e);
+      showAlert('Connection Error', e?.message || 'Failed to load team members');
+    }
     finally { setRefreshing(false); }
   }, [token]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let mounted = true;
+    load();
+    return () => { mounted = false; };
+  }, [load]);
 
   const handleAddMember = async () => {
-    if (!memberName || !memberEmail || !memberPassword) {
-      showAlert('Error', 'Name, email, and password are required');
+    if (!memberName.trim() || (!memberEmail.trim() && !memberPhone.trim()) || !memberPassword) {
+      showAlert('Error', 'Name, password, and at least an email or phone number are required');
       return;
     }
     setSubmitting(true);

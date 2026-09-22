@@ -54,8 +54,8 @@ export const ActivityLogScreen: React.FC<any> = ({ navigation }) => {
     try {
       const data = await apiFetch("/reports/activity-log", {}, token, activeFarm?._id);
       setActivities(data || []);
-    } catch (e) {
-      // Endpoint may not exist yet, show empty state
+    } catch (e: any) {
+      console.warn('Failed to load activity logs:', e?.message || e);
       setActivities([]);
     } finally {
       setLoading(false);
@@ -64,7 +64,9 @@ export const ActivityLogScreen: React.FC<any> = ({ navigation }) => {
   }, [token, activeFarm?._id]);
 
   useEffect(() => {
+    let mounted = true;
     load();
+    return () => { mounted = false; };
   }, [load]);
 
   const formatTime = (ts: string) => {
