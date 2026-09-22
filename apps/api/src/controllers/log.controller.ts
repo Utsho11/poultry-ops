@@ -9,7 +9,7 @@ export class LogController {
   // Get daily logs for active Firm
   static async getLogs(req: AuthRequest, res: Response) {
     try {
-      const { batchId, from, to } = req.query;
+      const { batchId, from, to, page, limit } = req.query;
       const query: any = { farmId: req.farmId };
 
       if (batchId) {
@@ -23,11 +23,18 @@ export class LogController {
         if (to) query.date.$lte = to as string;
       }
 
-      const logs = await DailyLogModel.find(query)
+      let logQuery = DailyLogModel.find(query)
         .sort({ date: -1 })
         .populate('recordedBy', 'name role')
         .populate('batchId', 'name breed type');
 
+      if (limit) {
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 50));
+        const pageNum = Math.max(1, parseInt(page as string) || 1);
+        logQuery = logQuery.skip((pageNum - 1) * limitNum).limit(limitNum);
+      }
+
+      const logs = await logQuery;
       return ResponseView.success(res, logs);
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
@@ -134,6 +141,12 @@ export class LogController {
       const log = await DailyLogModel.findOne({ _id: req.params.id, farmId: req.farmId });
       if (!log) {
         return ResponseView.notFound(res, 'Daily log record not found');
+      }
+
+      // Restrict workers to editing logs entered today; managers and owners can edit historical logs
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (req.user?.role === 'worker' && log.date !== todayStr) {
+        return ResponseView.forbidden(res, 'Workers can only edit daily logs on the day of entry. Please ask a manager or owner.');
       }
 
       const oldDead = log.deadCount || 0;

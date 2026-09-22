@@ -41,6 +41,7 @@ export const createBatchSchema = z.object({
   name: z.string().min(2, 'Batch name must be at least 2 characters'),
   breed: z.string().min(1, 'Breed is required'),
   type: z.enum(['layer', 'broiler']).optional(),
+  shed: z.string().optional(),
   startDate: z.string().or(z.date()),
   initialCount: z.coerce.number().int().positive('Initial count must be greater than 0'),
   assignedWorkerIds: z.array(z.string()).optional()
@@ -160,6 +161,16 @@ export const updateUserRoleSchema = z.object({
   role: z.enum(['manager', 'worker'])
 });
 
+export const reminderSchema = z.object({
+  batchId: z.string().optional(),
+  type: z.enum(['feed', 'water', 'medicine', 'custom']),
+  message: z.string().min(1, 'Message is required'),
+  cronExpression: z.string().min(1, 'Cron expression is required'),
+  assignedTo: z.array(z.string()).optional(),
+  channel: z.array(z.enum(['push', 'sms'])).default(['push']),
+  active: z.boolean().default(true)
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type RegisterFarmInput = z.infer<typeof registerFarmSchema>;
 export type CreateFarmInput = z.infer<typeof createFarmSchema>;
@@ -174,4 +185,6 @@ export type HealthRecordInput = z.infer<typeof healthRecordSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;
 export type FeedStockInput = z.infer<typeof feedStockSchema>;
+export type ReminderInput = z.infer<typeof reminderSchema>;
+
 

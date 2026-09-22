@@ -47,6 +47,7 @@ export interface IBatch {
   name: string;
   breed: string;
   type?: BatchType;
+  shed?: string;
   startDate: string | Date;
   initialCount: number;
   currentCount: number;
@@ -92,6 +93,23 @@ export interface IHealthRecord {
   performedBy: string;
   cost?: number;
   attachmentUrls?: string[];
+  createdBy: string;
+  createdAt?: string | Date;
+}
+
+export type ReminderType = 'feed' | 'water' | 'medicine' | 'custom';
+export type ReminderChannel = 'push' | 'sms';
+
+export interface IReminder {
+  _id: string;
+  farmId: string;
+  batchId?: string;
+  type: ReminderType;
+  message: string;
+  cronExpression: string;
+  assignedTo?: string[];
+  channel: ReminderChannel[];
+  active: boolean;
   createdBy: string;
   createdAt?: string | Date;
 }

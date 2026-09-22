@@ -71,6 +71,7 @@ export interface IBatchDoc extends Document {
   name: string;
   breed: string;
   type?: 'layer' | 'broiler';
+  shed?: string;
   startDate: Date;
   initialCount: number;
   currentCount: number;
@@ -79,6 +80,7 @@ export interface IBatchDoc extends Document {
   lastLogDate?: string;
   closedAt?: Date;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 const batchSchema = new Schema<IBatchDoc>({
@@ -86,15 +88,15 @@ const batchSchema = new Schema<IBatchDoc>({
   name: { type: String, required: true, trim: true },
   breed: { type: String, required: true },
   type: { type: String, enum: ['layer', 'broiler'] },
+  shed: { type: String, trim: true },
   startDate: { type: Date, required: true },
   initialCount: { type: Number, required: true, min: 1 },
   currentCount: { type: Number, required: true, min: 0 },
   status: { type: String, enum: ['active', 'closed'], default: 'active', index: true },
   assignedWorkerIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   lastLogDate: { type: String },
-  closedAt: { type: Date },
-  createdAt: { type: Date, default: Date.now }
-});
+  closedAt: { type: Date }
+}, { timestamps: true });
 
 batchSchema.index({ farmId: 1, status: 1 });
 export const BatchModel = model<IBatchDoc>('Batch', batchSchema);
@@ -112,6 +114,7 @@ export interface IDailyLogDoc extends Document {
   waterGivenLiters: number;
   medicineGiven?: { name: string; dose: string; unit: string }[];
   recordedBy: Schema.Types.ObjectId;
+  recordedByName?: string;
   notes?: string;
   createdAt: Date;
 }
@@ -132,9 +135,9 @@ const dailyLogSchema = new Schema<IDailyLogDoc>({
     unit: String
   }],
   recordedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  notes: { type: String },
-  createdAt: { type: Date, default: Date.now }
-});
+  recordedByName: { type: String, trim: true },
+  notes: { type: String }
+}, { timestamps: true });
 
 dailyLogSchema.index({ farmId: 1, batchId: 1, date: -1 }, { unique: true });
 export const DailyLogModel = model<IDailyLogDoc>('DailyLog', dailyLogSchema);
@@ -379,3 +382,34 @@ const healthRecordSchema = new Schema<IHealthRecordDoc>({
 
 healthRecordSchema.index({ farmId: 1, batchId: 1, date: -1 });
 export const HealthRecordModel = model<IHealthRecordDoc>('HealthRecord', healthRecordSchema);
+
+// Reminder Schema
+export interface IReminderDoc extends Document {
+  farmId: Schema.Types.ObjectId;
+  batchId?: Schema.Types.ObjectId;
+  type: 'feed' | 'water' | 'medicine' | 'custom';
+  message: string;
+  cronExpression: string;
+  assignedTo: Schema.Types.ObjectId[];
+  channel: ('push' | 'sms')[];
+  active: boolean;
+  createdBy: Schema.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const reminderSchema = new Schema<IReminderDoc>({
+  farmId: { type: Schema.Types.ObjectId, ref: 'Farm', required: true, index: true },
+  batchId: { type: Schema.Types.ObjectId, ref: 'Batch' },
+  type: { type: String, enum: ['feed', 'water', 'medicine', 'custom'], required: true },
+  message: { type: String, required: true },
+  cronExpression: { type: String, required: true },
+  assignedTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  channel: [{ type: String, enum: ['push', 'sms'], default: 'push' }],
+  active: { type: Boolean, default: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
+}, { timestamps: true });
+
+reminderSchema.index({ farmId: 1, active: 1 });
+export const ReminderModel = model<IReminderDoc>('Reminder', reminderSchema);
+

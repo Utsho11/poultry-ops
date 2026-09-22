@@ -13,6 +13,7 @@ import healthRoutes from './routes/health';
 import reportRoutes from './routes/reports';
 import userRoutes from './routes/users';
 import feedStockRoutes from './routes/feedStock';
+import reminderRoutes from './routes/reminders';
 
 import farmRoutes from './routes/farms';
 
@@ -74,6 +75,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/team', userRoutes); // Alias for team management
 app.use('/api/feed-stock', feedStockRoutes);
+app.use('/api/reminders', reminderRoutes);
 
 // Error Handler
 app.use((err: any, req: Request, res: Response, next: any) => {
