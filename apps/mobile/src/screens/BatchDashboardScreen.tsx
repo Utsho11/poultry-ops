@@ -14,6 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch, showAlert } from "../config";
 import { colors, common, STATUS_BAR_PADDING } from "../styles";
 import { formatEggCount, cratesAndLooseToTotal } from "../utils/crates";
+import { DailyLogModal } from "../components/DailyLogModal";
 import { Zap, Tag, Calendar, Egg, Wheat, Skull, TrendingUp, CircleDollarSign, Bird, Package, X, Plus, MapPin, Droplets, HardHat, Settings, ClipboardList, ArrowLeft } from "lucide-react-native";
 
 export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
@@ -26,16 +27,8 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
 
-  // Quick Daily Log Modal State for this batch
+  // Daily Log Modal State for this batch
   const [quickLogOpen, setQuickLogOpen] = useState(false);
-  const [crates, setCrates] = useState("0");
-  const [looseEggs, setLooseEggs] = useState("0");
-  const [brokenEggCount, setBrokenEggCount] = useState("0");
-  const [deadCount, setDeadCount] = useState("0");
-  const [feedBags, setFeedBags] = useState("1");
-  const [feedLooseKg, setFeedLooseKg] = useState("0");
-  const [waterGivenLiters, setWaterGivenLiters] = useState("");
-  const [submittingLog, setSubmittingLog] = useState(false);
 
   // Record Sale Modal State for this batch
   const [saleModalOpen, setSaleModalOpen] = useState(false);
@@ -125,58 +118,10 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
     loadData();
   };
 
-  const totalLogEggs = cratesAndLooseToTotal(crates, looseEggs);
   const totalSaleEggQty =
     saleItemType === "egg"
       ? cratesAndLooseToTotal(saleCrates, saleLooseEggs)
       : Number(saleChickenQty || 0);
-
-  const totalLogFeedKg = Number(feedBags || 0) * 50 + Number(feedLooseKg || 0);
-
-  const handleQuickLog = async () => {
-    if (totalLogEggs <= 0 || totalLogFeedKg <= 0 || !waterGivenLiters) {
-      showAlert(
-        "Error",
-        "Please enter Egg count (Crates/Loose), Feed, and Water",
-      );
-      return;
-    }
-    setSubmittingLog(true);
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      await apiFetch(
-        "/logs",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            batchId,
-            date: today,
-            eggCount: totalLogEggs,
-            brokenEggCount: Number(brokenEggCount || 0),
-            deadCount: Number(deadCount || 0),
-            feedGivenKg: totalLogFeedKg,
-            waterGivenLiters: Number(waterGivenLiters),
-          }),
-        },
-        token,
-      );
-      setQuickLogOpen(false);
-      setCrates("0");
-      setLooseEggs("0");
-      setFeedBags("1");
-      setFeedLooseKg("0");
-      setWaterGivenLiters("");
-      loadData();
-      showAlert(
-        "Success",
-        `Logged ${formatEggCount(totalLogEggs)} successfully!`,
-      );
-    } catch (err: any) {
-      showAlert("Error", err.message);
-    } finally {
-      setSubmittingLog(false);
-    }
-  };
 
   const handleRecordSale = async () => {
     if (totalSaleEggQty <= 0 || !saleUnitPrice) {
@@ -350,6 +295,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                 style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}
               >
                 Started: {new Date(batch.startDate).toLocaleDateString()}
+                {batch.lastLogDate ? ` • Last Log: ${batch.lastLogDate}` : " • No logs yet"}
               </Text>
             </View>
             <View
@@ -1070,169 +1016,14 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
         )}
       </ScrollView>
 
-      {/* QUICK LOG MODAL */}
-      <Modal visible={quickLogOpen} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <View style={s.modalContainer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Zap size={18} color={colors.brand} />
-              <Text style={[s.modalTitle, { marginBottom: 0 }]}>Log Daily Yield ({batch.name})</Text>
-            </View>
-            <ScrollView>
-              <View style={s.eggInputBox}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                  <Egg size={14} color={colors.secondary} />
-                  <Text
-                    style={{
-                      color: colors.secondary,
-                      fontWeight: "800",
-                      fontSize: 13,
-                    }}
-                  >
-                    Eggs Collected (1 Crate = 30 Eggs)
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={common.label}>Full Crates</Text>
-                    <TextInput
-                      style={common.input}
-                      keyboardType="numeric"
-                      value={crates}
-                      onChangeText={setCrates}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={common.label}>Loose Eggs</Text>
-                    <TextInput
-                      style={common.input}
-                      keyboardType="numeric"
-                      value={looseEggs}
-                      onChangeText={setLooseEggs}
-                    />
-                  </View>
-                </View>
-                <Text
-                  style={{
-                    color: colors.secondary,
-                    fontWeight: "800",
-                    marginTop: 6,
-                    fontSize: 13,
-                  }}
-                >
-                  Total: {formatEggCount(totalLogEggs)} ({totalLogEggs} eggs)
-                </Text>
-              </View>
-
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={common.label}>Broken Eggs</Text>
-                  <TextInput
-                    style={common.input}
-                    keyboardType="numeric"
-                    value={brokenEggCount}
-                    onChangeText={setBrokenEggCount}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={common.label}>Dead Birds</Text>
-                  <TextInput
-                    style={common.input}
-                    keyboardType="numeric"
-                    value={deadCount}
-                    onChangeText={setDeadCount}
-                  />
-                </View>
-              </View>
-
-              <View
-                style={[
-                  s.eggInputBox,
-                  {
-                    borderColor: "rgba(217, 164, 65, 0.3)",
-                    backgroundColor: "rgba(217, 164, 65, 0.08)",
-                  },
-                ]}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                  <Wheat size={14} color={colors.amber} />
-                  <Text
-                    style={{
-                      color: colors.amber,
-                      fontWeight: "800",
-                      fontSize: 13,
-                    }}
-                  >
-                    Feed Given (Full Bags + Loose kg)
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={common.label}>Full Bags (50kg/bag)</Text>
-                    <TextInput
-                      style={common.input}
-                      keyboardType="numeric"
-                      value={feedBags}
-                      onChangeText={setFeedBags}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={common.label}>Loose kg</Text>
-                    <TextInput
-                      style={common.input}
-                      keyboardType="numeric"
-                      value={feedLooseKg}
-                      onChangeText={setFeedLooseKg}
-                    />
-                  </View>
-                </View>
-                <Text
-                  style={{
-                    color: colors.amber,
-                    fontWeight: "700",
-                    fontSize: 12,
-                    marginTop: 6,
-                  }}
-                >
-                  Total: {totalLogFeedKg} kg ({feedBags || 0} Bags +{" "}
-                  {feedLooseKg || 0} kg)
-                </Text>
-              </View>
-
-              <Text style={common.label}>Water Given (L)</Text>
-              <TextInput
-                style={common.input}
-                keyboardType="numeric"
-                placeholder="200"
-                placeholderTextColor={colors.textMuted}
-                value={waterGivenLiters}
-                onChangeText={setWaterGivenLiters}
-              />
-            </ScrollView>
-
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
-              <TouchableOpacity
-                style={s.cancelBtn}
-                onPress={() => setQuickLogOpen(false)}
-              >
-                <Text style={s.btnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.submitBtn}
-                onPress={handleQuickLog}
-                disabled={submittingLog}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <Zap size={14} color="#fff" />
-                  <Text style={s.btnText}>
-                    {submittingLog ? "Saving..." : "Save Log"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* DAILY LOG MODAL (AUTO-SELECTS THIS BATCH) */}
+      <DailyLogModal
+        visible={quickLogOpen}
+        initialBatchId={batchId}
+        onClose={() => setQuickLogOpen(false)}
+        onSuccess={loadData}
+        batches={batches}
+      />
 
       {/* RECORD SALE MODAL */}
       <Modal visible={saleModalOpen} animationType="slide" transparent>

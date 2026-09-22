@@ -265,7 +265,22 @@ async function runTests() {
     record('Get Feed Stock History', false, e.message);
   }
 
-  // 6. Daily Logs
+  // 6a. Reject log dated earlier than batch startDate
+  try {
+    const pastDate = '2020-01-01';
+    const res = await request('POST', '/logs', {
+      batchId: batchId,
+      date: pastDate,
+      feedGivenKg: 10,
+      deadCount: 0
+    }, authHeader);
+    const ok = res.status === 400;
+    record('Reject Log Before Batch Start Date', ok, `status: ${res.status}`);
+  } catch (e) {
+    record('Reject Log Before Batch Start Date', false, e.message);
+  }
+
+  // 6b. Daily Logs
   let logId = '';
   try {
     const res = await request('POST', '/logs', {
@@ -281,6 +296,15 @@ async function runTests() {
     record('Create Daily Log', ok, `logId: ${logId}, status: ${res.status}`);
   } catch (e) {
     record('Create Daily Log', false, e.message);
+  }
+
+  // Check that batch.lastLogDate was updated
+  try {
+    const res = await request('GET', `/batches/${batchId}`, null, authHeader);
+    const ok = res.status === 200 && res.body.lastLogDate === new Date().toISOString().split('T')[0];
+    record('Batch lastLogDate Tracked', ok, `lastLogDate: ${res.body?.lastLogDate}`);
+  } catch (e) {
+    record('Batch lastLogDate Tracked', false, e.message);
   }
 
   // Verify mortality reflection in Batch

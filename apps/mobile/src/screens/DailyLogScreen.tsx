@@ -1,101 +1,41 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  TextInput, Modal, RefreshControl,
-  StyleSheet, ActivityIndicator
+  RefreshControl, StyleSheet
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch, showAlert } from '../config';
+import { apiFetch } from '../config';
 import { colors, common } from '../styles';
-import { formatEggCount, cratesAndLooseToTotal } from '../utils/crates';
-import { DatePickerInput } from '../components/DatePickerInput';
-import { Plus, Zap, Egg, Bird, AlertCircle, Wheat, Droplets, Calendar, Filter, FileText } from 'lucide-react-native';
+import { formatEggCount } from '../utils/crates';
+import { DailyLogModal } from '../components/DailyLogModal';
+import { Zap, Egg, Bird, FileText } from 'lucide-react-native';
 
 export const DailyLogScreen: React.FC = () => {
-  const { token, user, activeFarm } = useAuth();
+  const { token, activeFarm } = useAuth();
   const [batches, setBatches] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Form Section: 'log' vs 'stock'
-  const [formSection, setFormSection] = useState<'log' | 'stock'>('log');
-  const [summaryData, setSummaryData] = useState<any>(null);
-
-  // Filter state (separate from form selectedBatchId)
+  // Filter state
   const [filterBatchId, setFilterBatchId] = useState<string>('all');
-
-  const [selectedBatchId, setSelectedBatchId] = useState('');
-  const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
-  const [crates, setCrates] = useState('0');
-  const [looseEggs, setLooseEggs] = useState('0');
-  const [brokenEggCount, setBrokenEggCount] = useState('0');
-  const [deadCount, setDeadCount] = useState('0');
-  const [feedBags, setFeedBags] = useState('1');
-  const [feedLooseKg, setFeedLooseKg] = useState('5');
-  const [waterGivenLiters, setWaterGivenLiters] = useState('100');
-  const [notes, setNotes] = useState('');
 
   const load = useCallback(async () => {
     try {
       const logsQuery = filterBatchId !== 'all' ? `?batchId=${filterBatchId}` : '';
-      const [batchData, logData, summaryRes] = await Promise.all([
+      const [batchData, logData] = await Promise.all([
         apiFetch('/batches?status=active', {}, token),
-        apiFetch(`/logs${logsQuery}`, {}, token),
-        apiFetch('/reports/summary', {}, token)
+        apiFetch(`/logs${logsQuery}`, {}, token)
       ]);
       setBatches(batchData);
-      if (batchData.length > 0 && !selectedBatchId) setSelectedBatchId(batchData[0]._id);
       setLogs(logData);
-      setSummaryData(summaryRes);
     } catch (e) {}
     finally { setRefreshing(false); }
-  }, [token, selectedBatchId, filterBatchId]);
+  }, [token, filterBatchId]);
 
   useEffect(() => { load(); }, [load]);
-
-  const totalCalculatedEggs = cratesAndLooseToTotal(crates, looseEggs);
-  const totalFeedGivenKg = (Number(feedBags || 0) * 50) + Number(feedLooseKg || 0);
-
-  const availableStockKg = summaryData?.availableFeedStockKg ?? Infinity;
-  const isFeedExceeded = (summaryData?.purchasedFeedKg || 0) > 0 && totalFeedGivenKg > availableStockKg;
-
-  const handleSubmit = async () => {
-    if (!selectedBatchId) {
-      showAlert('Validation Error', 'Please select an active flock/batch');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await apiFetch('/logs', {
-        method: 'POST',
-        body: JSON.stringify({
-          batchId: selectedBatchId,
-          date: logDate,
-          eggCount: totalCalculatedEggs,
-          brokenEggCount: Number(brokenEggCount || 0),
-          deadCount: Number(deadCount || 0),
-          feedGivenKg: Number(totalFeedGivenKg || 0),
-          waterGivenLiters: Number(waterGivenLiters || 0),
-          notes
-        })
-      }, token);
-      setModalVisible(false);
-      setSuccess(true);
-      setCrates('0');
-      setLooseEggs('0');
-      setBrokenEggCount('0');
-      setDeadCount('0');
-      setNotes('');
-      setTimeout(() => setSuccess(false), 3000);
-      load();
-    } catch (err: any) {
-      showAlert('Submission Error', err.message);
-    } finally { setSubmitting(false); }
-  };
 
   return (
     <View style={common.screen}>
@@ -138,7 +78,7 @@ export const DailyLogScreen: React.FC = () => {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Zap size={14} color={colors.brand} />
               <Text style={{ color: colors.brand, fontWeight: '700' }}>
-                Daily log saved! Recorded {activeFarm?.animalType === 'layer' ? formatEggCount(totalCalculatedEggs) : `${totalFeedGivenKg}kg feed`}.
+                Daily log saved successfully!
               </Text>
             </View>
           </View>
@@ -194,131 +134,17 @@ export const DailyLogScreen: React.FC = () => {
         }
       </ScrollView>
 
-      {/* Submit Log Modal */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <ScrollView style={s.modalCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Zap size={18} color={colors.brand} />
-              <Text style={{ color: colors.textMain, fontSize: 16, fontWeight: '800' }}>Log Daily Yield & Feeding</Text>
-            </View>
-
-            {/* Batch selector */}
-            <Text style={common.label}>Select Batch *</Text>
-            <View style={s.pickerWrapper}>
-              <Picker
-                selectedValue={selectedBatchId}
-                onValueChange={(val) => setSelectedBatchId(val)}
-                dropdownIconColor={colors.brand}
-                style={s.pickerStyle}
-              >
-                {batches
-                  .filter(b => b.type === (activeFarm?.animalType === 'broiler' ? 'broiler' : 'layer'))
-                  .map(b => (
-                    <Picker.Item key={b._id} label={`${b.name} (${b.breed || 'Flock'})`} value={b._id} />
-                  ))}
-              </Picker>
-            </View>
-
-            <DatePickerInput
-              label="Log Date *"
-              value={logDate}
-              onChange={setLogDate}
-              style={{ marginBottom: 14 }}
-            />
-
-            {activeFarm?.animalType === 'layer' && (
-              <>
-                <View style={s.crateBox}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <Egg size={14} color={colors.brand} />
-                    <Text style={{ color: colors.brand, fontWeight: '800', fontSize: 14 }}>Eggs Collected (1 Crate = 30 Eggs)</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Full Crates</Text>
-                      <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textMuted} value={crates} onChangeText={setCrates} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Loose Eggs</Text>
-                      <TextInput style={common.input} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textMuted} value={looseEggs} onChangeText={setLooseEggs} />
-                    </View>
-                  </View>
-                  <Text style={{ color: colors.brand, fontWeight: '700', fontSize: 13, marginTop: 6 }}>
-                    Total: {formatEggCount(totalCalculatedEggs)} ({totalCalculatedEggs} eggs)
-                  </Text>
-                </View>
-
-                <Text style={common.label}>Broken Eggs</Text>
-                <TextInput style={common.input} keyboardType="numeric" value={brokenEggCount} onChangeText={setBrokenEggCount} />
-              </>
-            )}
-
-            <Text style={common.label}>Dead Birds</Text>
-            <TextInput style={common.input} keyboardType="numeric" value={deadCount} onChangeText={setDeadCount} />
-
-            {/* DUAL FEED INPUT (Full Bags + Loose kg) WITH STOCK LIMIT CHECK */}
-            <View style={[s.feedBox, isFeedExceeded && { borderColor: colors.rose, backgroundColor: 'rgba(244,63,94,0.1)' }]}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Wheat size={14} color={isFeedExceeded ? colors.rose : colors.amber} />
-                  <Text style={{ color: isFeedExceeded ? colors.rose : colors.amber, fontWeight: '800', fontSize: 13 }}>
-                    Feed Given (Full Bags + Loose kg) *
-                  </Text>
-                </View>
-              </View>
-              <Text style={{ color: colors.secondary, fontSize: 11, fontWeight: '700', marginBottom: 8 }}>
-                Stock Available: {(summaryData?.availableFeedStockKg || 0).toLocaleString()} kg ({summaryData?.availableFeedStockBags || 0} Bags)
-              </Text>
-
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={common.label}>Full Bags (50kg/bag)</Text>
-                  <TextInput style={common.input} keyboardType="numeric" placeholder="1" value={feedBags} onChangeText={setFeedBags} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={common.label}>Loose kg</Text>
-                  <TextInput style={common.input} keyboardType="numeric" placeholder="5" value={feedLooseKg} onChangeText={setFeedLooseKg} />
-                </View>
-              </View>
-
-              <Text style={{ color: isFeedExceeded ? colors.rose : colors.textMain, fontWeight: '800', fontSize: 13, marginTop: 8 }}>
-                Total: {totalFeedGivenKg.toLocaleString()} kg ({feedBags || 0} Bags + {feedLooseKg || 0} kg)
-              </Text>
-              {isFeedExceeded && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                  <AlertCircle size={12} color={colors.rose} />
-                  <Text style={{ color: colors.rose, fontWeight: '800', fontSize: 11 }}>
-                    Exceeds store feed stock ({availableStockKg.toLocaleString()} kg max)!
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <Text style={common.label}>Water Given (Liters)</Text>
-                <TextInput style={common.input} keyboardType="numeric" value={waterGivenLiters} onChangeText={setWaterGivenLiters} />
-
-                <Text style={common.label}>Notes / Observations</Text>
-                <TextInput
-                  style={[common.input, { minHeight: 50 }]}
-                  placeholder="Optional health notes..."
-                  placeholderTextColor={colors.textMuted}
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline
-                />
-
-                <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, marginBottom: 30 }}>
-                  <TouchableOpacity style={[common.btnSecondary, { flex: 1 }]} onPress={() => setModalVisible(false)}>
-                    <Text style={common.btnSecondaryText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[common.btn, { flex: 1 }]} onPress={handleSubmit} disabled={submitting}>
-                    {submitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={common.btnText}>Save Log</Text>}
-                  </TouchableOpacity>
-                </View>
-          </ScrollView>
-        </View>
-      </Modal>
+      {/* Shared Daily Log Modal */}
+      <DailyLogModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSuccess={() => {
+          setSuccess(true);
+          setTimeout(() => setSuccess(false), 3000);
+          load();
+        }}
+        batches={batches}
+      />
     </View>
   );
 };

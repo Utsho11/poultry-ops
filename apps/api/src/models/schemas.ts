@@ -67,6 +67,7 @@ export interface IBatchDoc extends Document {
   currentCount: number;
   status: 'active' | 'closed';
   assignedWorkerIds: Schema.Types.ObjectId[];
+  lastLogDate?: string;
   closedAt?: Date;
   createdAt: Date;
 }
@@ -81,6 +82,7 @@ const batchSchema = new Schema<IBatchDoc>({
   currentCount: { type: Number, required: true, min: 0 },
   status: { type: String, enum: ['active', 'closed'], default: 'active', index: true },
   assignedWorkerIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  lastLogDate: { type: String },
   closedAt: { type: Date },
   createdAt: { type: Date, default: Date.now }
 });

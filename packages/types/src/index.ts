@@ -52,6 +52,7 @@ export interface IBatch {
   currentCount: number;
   status: BatchStatus;
   assignedWorkerIds?: string[];
+  lastLogDate?: string;
   closedAt?: string | Date;
   createdAt?: string | Date;
 }

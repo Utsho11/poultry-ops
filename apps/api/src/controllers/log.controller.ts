@@ -50,6 +50,16 @@ export class LogController {
         return ResponseView.notFound(res, 'Selected flock/batch not found');
       }
 
+      // Check that log date is not earlier than batch start date
+      const batchStartDateStr = new Date(batch.startDate).toISOString().split('T')[0];
+      if (date < batchStartDateStr) {
+        return ResponseView.error(
+          res,
+          `Log date (${date}) cannot be earlier than flock start date (${batchStartDateStr})`,
+          400
+        );
+      }
+
       // Check duplicate log for same date & batch
       const existingLog = await DailyLogModel.findOne({ farmId: req.farmId, batchId, date });
       if (existingLog) {
@@ -93,9 +103,17 @@ export class LogController {
 
       await log.save();
 
-      // Auto-update mortality count on batch
+      // Auto-update mortality count and lastLogDate on batch
+      let batchModified = false;
       if (deadCount > 0) {
         batch.currentCount = Math.max(0, batch.currentCount - deadCount);
+        batchModified = true;
+      }
+      if (!batch.lastLogDate || date > batch.lastLogDate) {
+        batch.lastLogDate = date;
+        batchModified = true;
+      }
+      if (batchModified) {
         await batch.save();
       }
 
@@ -176,15 +194,21 @@ export class LogController {
         return ResponseView.notFound(res, 'Daily log record not found');
       }
 
-      if (log.deadCount > 0 && log.batchId) {
+      await DailyLogModel.deleteOne({ _id: req.params.id, farmId: req.farmId });
+
+      if (log.batchId) {
         const batch = await BatchModel.findOne({ _id: log.batchId, farmId: req.farmId });
         if (batch) {
-          batch.currentCount += log.deadCount;
+          if (log.deadCount > 0) {
+            batch.currentCount += log.deadCount;
+          }
+          // Re-sync latest log date for this batch
+          const latestLog = await DailyLogModel.findOne({ farmId: req.farmId, batchId: log.batchId }).sort({ date: -1 });
+          batch.lastLogDate = latestLog?.date || undefined;
           await batch.save();
         }
       }
 
-      await DailyLogModel.deleteOne({ _id: req.params.id, farmId: req.farmId });
       return ResponseView.success(res, { message: 'Daily log entry deleted successfully' });
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
