@@ -66,6 +66,7 @@ export interface IBatchWorker {
   workerId: string;
   assignedAt?: string | Date;
   createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 
 export interface IMedicineDose {

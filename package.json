@@ -13,7 +13,7 @@
     "build": "npm run build:packages && npm run build:api",
     "seed:api": "npm run seed --workspace=@poultry-ops/api",
     "dev:api": "npm run dev --workspace=@poultry-ops/api",
-    "dev": "npm run dev:api"
+    "dev": "npm run build:packages && npm run dev:api"
   },
   "devDependencies": {
     "typescript": "^5.4.5"

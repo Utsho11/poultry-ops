@@ -10,6 +10,7 @@ router.use(resolveTenant);
 
 router.get('/', SaleController.getSales);
 router.post('/', requireRole(['owner', 'manager']), SaleController.createSale);
+router.put('/:id', requireRole(['owner', 'manager']), SaleController.updateSale);
 router.delete('/:id', requireRole(['owner']), SaleController.deleteSale);
 
 export default router;

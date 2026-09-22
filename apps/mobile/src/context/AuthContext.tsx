@@ -16,7 +16,6 @@ export interface IFirm {
 interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
-  farms: IFirm[];
   activeFarm: IFirm | null;
   login: (token: string, user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
@@ -31,7 +30,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [farms, setFarms] = useState<IFirm[]>([]);
   const [activeFarm, setActiveFarm] = useState<IFirm | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -101,7 +99,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     setUser(null);
     setActiveFarm(null);
-    setFarms([]);
     await SecureStore.deleteItemAsync('poultry_token');
     await SecureStore.deleteItemAsync('poultry_user');
     await SecureStore.deleteItemAsync('poultry_active_farm');
@@ -112,7 +109,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         token,
-        farms,
         activeFarm,
         login,
         logout,

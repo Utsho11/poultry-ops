@@ -18,7 +18,7 @@ const roleColor: Record<string, string> = {
 };
 
 export const TeamScreen: React.FC = () => {
-  const { token, user, logout } = useAuth();
+  const { token, user, activeFarm, logout } = useAuth();
   const [team, setTeam] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -114,7 +114,7 @@ export const TeamScreen: React.FC = () => {
           <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 6 }}>{user?.email}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
             <Home size={14} color={colors.brand} style={{ marginRight: 4 }} />
-            <Text style={{ color: colors.brand, fontSize: 13 }}>{user?.farmName}</Text>
+            <Text style={{ color: colors.brand, fontSize: 13 }}>{activeFarm?.name || user?.farmName}</Text>
           </View>
         </View>
 

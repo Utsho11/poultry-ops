@@ -10,5 +10,7 @@ router.use(resolveTenant);
 
 router.get('/', HealthController.getHealthRecords);
 router.post('/', requireRole(['owner', 'manager']), HealthController.createHealthRecord);
+router.put('/:id', requireRole(['owner', 'manager']), HealthController.updateHealthRecord);
+router.delete('/:id', requireRole(['owner', 'manager']), HealthController.deleteHealthRecord);
 
 export default router;

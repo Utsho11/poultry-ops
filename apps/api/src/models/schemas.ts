@@ -114,7 +114,7 @@ const batchWorkerSchema = new Schema<IBatchWorkerDoc>({
   batchId: { type: Schema.Types.ObjectId, ref: 'Batch', required: true, index: true },
   workerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   assignedAt: { type: Date, default: Date.now }
-}, { timestamps: true });
+}, { timestamps: true, collection: 'batch_workers' });
 
 batchWorkerSchema.index({ farmId: 1, batchId: 1, workerId: 1 }, { unique: true });
 batchWorkerSchema.index({ farmId: 1, workerId: 1 });

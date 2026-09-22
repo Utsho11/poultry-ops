@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { createFarmSchema } from '@poultry-ops/validation';
 import mongoose from 'mongoose';
-import { FarmModel, UserModel, BatchModel, DailyLogModel, ExpenseModel, SaleModel, FeedStockModel, CustomerModel, PaymentModel, HealthRecordModel } from '../models/schemas';
+import { FarmModel, UserModel, BatchModel, BatchWorkerModel, DailyLogModel, ExpenseModel, SaleModel, FeedStockModel, CustomerModel, PaymentModel, HealthRecordModel, ReminderModel } from '../models/schemas';
 import { AuthRequest, generateToken } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -169,6 +169,8 @@ export class FarmController {
       // Cascade delete all tenant records
       await Promise.all([
         BatchModel.deleteMany({ farmId: id }),
+        BatchWorkerModel.deleteMany({ farmId: id }),
+        ReminderModel.deleteMany({ farmId: id }),
         DailyLogModel.deleteMany({ farmId: id }),
         ExpenseModel.deleteMany({ farmId: id }),
         SaleModel.deleteMany({ farmId: id }),

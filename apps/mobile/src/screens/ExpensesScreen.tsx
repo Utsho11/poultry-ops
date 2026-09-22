@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -57,7 +57,13 @@ export const ExpensesScreen: React.FC = () => {
   const [expWorkerId, setExpWorkerId] = useState("");
   const [teamWorkers, setTeamWorkers] = useState<any[]>([]);
   const [expCategory, setExpCategory] = useState("feed");
-  const [feedCategory, setFeedCategory] = useState("layer_layer_1");
+  const defaultFeedCategory = activeFarm?.animalType === 'layer' ? 'layer_layer_1' : 'broiler_starter';
+  const [feedCategory, setFeedCategory] = useState(defaultFeedCategory);
+
+  useEffect(() => {
+    setFeedCategory(activeFarm?.animalType === 'layer' ? 'layer_layer_1' : 'broiler_starter');
+  }, [activeFarm?.animalType]);
+
   const [stockBags, setStockBags] = useState("10");
   const [bagPrice, setBagPrice] = useState("2500");
   const [expAmount, setExpAmount] = useState("");
@@ -126,6 +132,75 @@ export const ExpensesScreen: React.FC = () => {
       }
     }
   }, [expCategory, expBatchId, batches, teamWorkers]);
+
+  const { combinedExpenses, filteredList, avgFeedCostPerKg } = useMemo(() => {
+    const totalFeedExpAmount = expenses
+      .filter((e) => e.category === "feed")
+      .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const totalFeedExpKg = expenses
+      .filter((e) => e.category === "feed")
+      .reduce(
+        (acc, e) =>
+          acc + (Number(e.feedKg) || Number(e.feedBags) * 50 || 0),
+        0,
+      );
+    const avgCost = totalFeedExpKg > 0 ? totalFeedExpAmount / totalFeedExpKg : 50;
+
+    // Build feed consumption expense entries from daily logs
+    const feedConsumptionEntries = dailyLogs
+      .filter((l: any) => Number(l.feedGivenKg) > 0)
+      .map((l: any) => {
+        const feedKg = Number(l.feedGivenKg) || 0;
+        const feedBags = Number((feedKg / 50).toFixed(1));
+        const amount = Math.round(feedKg * avgCost);
+        const bId = String(l.batchId?._id || l.batchId);
+        return {
+          _id: `feed-consumed-${l._id}`,
+          batchId: bId,
+          date: l.date,
+          category: "feed_consumption",
+          amount: amount,
+          note: `Feed Consumed: ${feedKg} kg (${feedBags} bags @ ৳${avgCost.toFixed(1)}/kg)`,
+          isFeedConsumption: true,
+          feedKg,
+          feedBags,
+        };
+      });
+
+    const combined = [
+      ...expenses,
+      ...feedConsumptionEntries,
+    ].sort(
+      (a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+
+    const filtered = combined.filter((exp) => {
+      const eBatchId =
+        typeof exp.batchId === "object"
+          ? String((exp.batchId as any)?._id)
+          : String(exp.batchId);
+      if (
+        filterBatchId !== "all" &&
+        eBatchId !== String(filterBatchId)
+      )
+        return false;
+      if (filterCategory !== "all") {
+        if (filterCategory === "feed") {
+          if (
+            exp.category !== "feed" &&
+            exp.category !== "feed_consumption"
+          )
+            return false;
+        } else if (exp.category !== filterCategory) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return { combinedExpenses: combined, filteredList: filtered, avgFeedCostPerKg: avgCost };
+  }, [expenses, dailyLogs, filterBatchId, filterCategory]);
 
   const handleCreateExpense = async () => {
     if (!expDate) {
@@ -471,76 +546,8 @@ export const ExpensesScreen: React.FC = () => {
               </View>
             </View>
 
-            {(() => {
-              const totalFeedExpAmount = expenses
-                .filter((e) => e.category === "feed")
-                .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
-              const totalFeedExpKg = expenses
-                .filter((e) => e.category === "feed")
-                .reduce(
-                  (acc, e) =>
-                    acc + (Number(e.feedKg) || Number(e.feedBags) * 50 || 0),
-                  0,
-                );
-              const avgFeedCostPerKg =
-                totalFeedExpKg > 0 ? totalFeedExpAmount / totalFeedExpKg : 50;
-
-              // Build feed consumption expense entries from daily logs
-              const feedConsumptionEntries = dailyLogs
-                .filter((l: any) => Number(l.feedGivenKg) > 0)
-                .map((l: any) => {
-                  const feedKg = Number(l.feedGivenKg) || 0;
-                  const feedBags = Number((feedKg / 50).toFixed(1));
-                  const amount = Math.round(feedKg * avgFeedCostPerKg);
-                  const bId = String(l.batchId?._id || l.batchId);
-                  return {
-                    _id: `feed-consumed-${l._id}`,
-                    batchId: bId,
-                    date: l.date,
-                    category: "feed_consumption",
-                    amount: amount,
-                    note: `Feed Consumed: ${feedKg} kg (${feedBags} bags @ ৳${avgFeedCostPerKg.toFixed(1)}/kg)`,
-                    isFeedConsumption: true,
-                    feedKg,
-                    feedBags,
-                  };
-                });
-
-              const combinedExpenses = [
-                ...expenses,
-                ...feedConsumptionEntries,
-              ].sort(
-                (a, b) =>
-                  new Date(b.date).getTime() - new Date(a.date).getTime(),
-              );
-
-              const filteredList = combinedExpenses.filter((exp) => {
-                const eBatchId =
-                  typeof exp.batchId === "object"
-                    ? String((exp.batchId as any)?._id)
-                    : String(exp.batchId);
-                if (
-                  filterBatchId !== "all" &&
-                  eBatchId !== String(filterBatchId)
-                )
-                  return false;
-                if (filterCategory !== "all") {
-                  if (filterCategory === "feed") {
-                    if (
-                      exp.category !== "feed" &&
-                      exp.category !== "feed_consumption"
-                    )
-                      return false;
-                  } else if (exp.category !== filterCategory) {
-                    return false;
-                  }
-                }
-                return true;
-              });
-
-              return (
-                <>
-                  {/* 🌾 BATCH FEED CONSUMPTION & COST SUMMARY CARDS (MOBILE) */}
+            <>
+              {/* 🌾 BATCH FEED CONSUMPTION & COST SUMMARY CARDS (MOBILE) */}
                   <View
                     style={{
                       marginBottom: 16,
@@ -838,9 +845,7 @@ export const ExpensesScreen: React.FC = () => {
                       );
                     })
                   )}
-                </>
-              );
-            })()}
+            </>
           </>
         ) : (
           <>

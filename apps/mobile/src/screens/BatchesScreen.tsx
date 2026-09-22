@@ -197,9 +197,9 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
   const handleSaveAssignments = async () => {
     if (!assignModalBatch) return;
     try {
-      await apiFetch(`/batches/${assignModalBatch._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ assignedWorkerIds: selectedWorkerIds })
+      await apiFetch(`/batches/${assignModalBatch._id}/assign-workers`, {
+        method: 'PATCH',
+        body: JSON.stringify({ workerIds: selectedWorkerIds })
       }, token);
       showAlert('Success', 'Worker assignments updated');
       setAssignModalBatch(null);

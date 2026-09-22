@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { dailyLogSchema } from '@poultry-ops/validation';
-import { DailyLogModel, BatchModel, FeedStockModel } from '../models/schemas';
+import { DailyLogModel, BatchModel, FeedStockModel, ExpenseModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -73,13 +73,19 @@ export class LogController {
         return ResponseView.error(res, `A daily log entry already exists for batch '${batch.name}' on ${date}`, 409);
       }
 
-      // Check feed stock availability
+      // Check feed stock availability (combining FeedStock deliveries and Feed Expenses)
       if (feedGivenKg > 0) {
-        const feedStockAgg = await FeedStockModel.aggregate([
-          { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string) } },
-          { $group: { _id: null, totalKg: { $sum: '$totalKg' } } }
+        const [feedStockAgg, feedExpenseAgg] = await Promise.all([
+          FeedStockModel.aggregate([
+            { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string) } },
+            { $group: { _id: null, totalKg: { $sum: '$totalKg' } } }
+          ]),
+          ExpenseModel.aggregate([
+            { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string), category: 'feed' } },
+            { $group: { _id: null, totalKg: { $sum: { $ifNull: ['$feedKg', { $multiply: ['$feedBags', 50] }] } } } }
+          ])
         ]);
-        const totalStockKg = feedStockAgg[0]?.totalKg || 0;
+        const totalStockKg = (feedStockAgg[0]?.totalKg || 0) + (feedExpenseAgg[0]?.totalKg || 0);
 
         const loggedFeedAgg = await DailyLogModel.aggregate([
           { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string) } },
@@ -150,15 +156,33 @@ export class LogController {
       }
 
       const oldDead = log.deadCount || 0;
-      const { eggCount, brokenEggCount, deadCount, feedGivenKg, waterGivenLiters, medicineGiven, notes } = parseResult.data;
+      const { date, eggCount, brokenEggCount, deadCount, feedGivenKg, waterGivenLiters, medicineGiven, notes } = parseResult.data;
 
-      // Check feed stock if updated
+      // Validate date against batch start date if updated
+      if (date && date !== log.date && log.batchId) {
+        const batch = await BatchModel.findOne({ _id: log.batchId, farmId: req.farmId });
+        if (batch && batch.startDate) {
+          const batchStartDateStr = new Date(batch.startDate).toISOString().split('T')[0];
+          if (date < batchStartDateStr) {
+            return ResponseView.error(res, `Log date (${date}) cannot be earlier than flock start date (${batchStartDateStr})`, 400);
+          }
+        }
+        log.date = date;
+      }
+
+      // Check feed stock if updated (combining FeedStock deliveries and Feed Expenses)
       if (feedGivenKg !== undefined && feedGivenKg > 0) {
-        const feedStockAgg = await FeedStockModel.aggregate([
-          { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string) } },
-          { $group: { _id: null, totalKg: { $sum: '$totalKg' } } }
+        const [feedStockAgg, feedExpenseAgg] = await Promise.all([
+          FeedStockModel.aggregate([
+            { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string) } },
+            { $group: { _id: null, totalKg: { $sum: '$totalKg' } } }
+          ]),
+          ExpenseModel.aggregate([
+            { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string), category: 'feed' } },
+            { $group: { _id: null, totalKg: { $sum: { $ifNull: ['$feedKg', { $multiply: ['$feedBags', 50] }] } } } }
+          ])
         ]);
-        const totalStockKg = feedStockAgg[0]?.totalKg || 0;
+        const totalStockKg = (feedStockAgg[0]?.totalKg || 0) + (feedExpenseAgg[0]?.totalKg || 0);
 
         const loggedFeedAgg = await DailyLogModel.aggregate([
           { $match: { farmId: new mongoose.Types.ObjectId(req.farmId as string), _id: { $ne: log._id } } },

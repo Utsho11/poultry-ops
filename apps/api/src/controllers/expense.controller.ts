@@ -42,8 +42,7 @@ export class ExpenseController {
         return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
       }
 
-      const { batchId, workerId, category, amount, currency, date, note, receiptUrl } = parseResult.data;
-      const { feedBags, feedKg } = req.body;
+      const { batchId, workerId, category, amount, currency, date, note, receiptUrl, feedBags, feedKg } = parseResult.data;
 
       if (category === 'labor') {
         if (!batchId) {
@@ -66,8 +65,8 @@ export class ExpenseController {
         }
       }
 
-      let computedBags = feedBags ? Number(feedBags) : undefined;
-      let computedKg = feedKg ? Number(feedKg) : undefined;
+      let computedBags = feedBags !== undefined ? Number(feedBags) : undefined;
+      let computedKg = feedKg !== undefined ? Number(feedKg) : undefined;
       if (category === 'feed' && computedBags && !computedKg) {
         computedKg = computedBags * 50;
       }
@@ -107,13 +106,25 @@ export class ExpenseController {
         return ResponseView.notFound(res, 'Expense record not found');
       }
 
-      const { batchId, workerId, category, amount, date, note } = parseResult.data;
-      const { feedBags, feedKg } = req.body;
+      const { batchId, workerId, category, amount, date, note, receiptUrl, feedBags, feedKg } = parseResult.data;
 
-      if (category === 'labor' && batchId) {
-        const assignedWorkersCount = await BatchWorkerModel.countDocuments({ batchId, farmId: req.farmId });
+      const targetCategory = category !== undefined ? category : expense.category;
+      const targetBatchId = batchId !== undefined ? batchId : expense.batchId;
+
+      if (targetCategory === 'labor') {
+        if (!targetBatchId) {
+          return ResponseView.error(res, 'Batch selection is required for labor expenses.');
+        }
+        const assignedWorkersCount = await BatchWorkerModel.countDocuments({ batchId: targetBatchId, farmId: req.farmId });
         if (assignedWorkersCount === 0) {
           return ResponseView.error(res, 'Cannot assign labor expense to a batch without assigned workers.');
+        }
+        const targetWorkerId = workerId !== undefined ? workerId : expense.workerId;
+        if (targetWorkerId) {
+          const isWorkerAssigned = await BatchWorkerModel.exists({ batchId: targetBatchId, workerId: targetWorkerId, farmId: req.farmId });
+          if (!isWorkerAssigned) {
+            return ResponseView.error(res, 'The selected worker is not assigned to this flock.');
+          }
         }
       }
 
@@ -123,6 +134,7 @@ export class ExpenseController {
       if (amount !== undefined) expense.amount = Number(amount);
       if (date !== undefined) expense.date = date;
       if (note !== undefined) expense.note = note;
+      if (receiptUrl !== undefined) expense.receiptUrl = receiptUrl;
       if (feedBags !== undefined) expense.feedBags = Number(feedBags);
       if (feedKg !== undefined) expense.feedKg = Number(feedKg);
 

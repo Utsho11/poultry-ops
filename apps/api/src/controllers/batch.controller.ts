@@ -14,7 +14,7 @@ export class BatchController {
         return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
       }
 
-      const { name, breed, type, shed, startDate, initialCount, assignedWorkerIds } = parseResult.data as any;
+      const { name, breed, type, shed, startDate, initialCount, assignedWorkerIds } = parseResult.data;
 
       // Find firm to check animal type fallback
       const firm = await FarmModel.findById(req.farmId);
@@ -55,7 +55,7 @@ export class BatchController {
       const batchObj: any = batch.toObject();
       const workers = assignments.map(a => a.workerId).filter(Boolean);
       batchObj.assignedWorkers = workers;
-      batchObj.assignedWorkerIds = workers;
+      batchObj.assignedWorkerIds = workers.map((w: any) => String(w._id || w));
 
       return ResponseView.created(res, batchObj);
     } catch (error: any) {
@@ -92,7 +92,7 @@ export class BatchController {
         const bObj: any = b.toObject();
         const workers = assignmentsByBatch.get(String(b._id)) || [];
         bObj.assignedWorkers = workers;
-        bObj.assignedWorkerIds = workers;
+        bObj.assignedWorkerIds = workers.map((w: any) => String(w._id || w));
         return bObj;
       });
 
@@ -120,7 +120,7 @@ export class BatchController {
       const batchObj: any = batch.toObject();
       const workers = assignments.map(a => a.workerId).filter(Boolean);
       batchObj.assignedWorkers = workers;
-      batchObj.assignedWorkerIds = workers;
+      batchObj.assignedWorkerIds = workers.map((w: any) => String(w._id || w));
 
       return ResponseView.success(res, batchObj);
     } catch (error: any) {
@@ -178,7 +178,7 @@ export class BatchController {
       const batchObj: any = batch.toObject();
       const workers = assignments.map(a => a.workerId).filter(Boolean);
       batchObj.assignedWorkers = workers;
-      batchObj.assignedWorkerIds = workers;
+      batchObj.assignedWorkerIds = workers.map((w: any) => String(w._id || w));
 
       return ResponseView.success(res, batchObj);
     } catch (error: any) {
@@ -219,7 +219,7 @@ export class BatchController {
       const batchObj: any = batch.toObject();
       const workers = assignments.map(a => a.workerId).filter(Boolean);
       batchObj.assignedWorkers = workers;
-      batchObj.assignedWorkerIds = workers;
+      batchObj.assignedWorkerIds = workers.map((w: any) => String(w._id || w));
 
       return ResponseView.success(res, batchObj);
     } catch (error: any) {

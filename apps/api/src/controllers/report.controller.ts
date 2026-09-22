@@ -250,7 +250,7 @@ export class ReportController {
       };
 
       expenseAgg.forEach((item) => {
-        if (item._id && costByCategory[item._id] !== undefined) {
+        if (item._id && costByCategory[item._id] !== undefined && item._id !== 'feed') {
           costByCategory[item._id] += item.total;
         }
       });
@@ -593,7 +593,7 @@ export class ReportController {
       const batchObj: any = batch.toObject();
       const workers = assignments.map(a => a.workerId).filter(Boolean);
       batchObj.assignedWorkers = workers;
-      batchObj.assignedWorkerIds = workers;
+      batchObj.assignedWorkerIds = workers.map((w: any) => String(w._id || w));
 
       // Fetch batch logs strictly scoped to this farm tenant
       const logs = await DailyLogModel.find({
@@ -646,15 +646,36 @@ export class ReportController {
       });
 
       let totalExpenses = 0;
+      let otherExpenses = 0;
+      const costByCategory: Record<string, number> = {
+        feed: 0,
+        medicine: 0,
+        labor: 0,
+        utility: 0,
+        equipment: 0,
+        other: 0
+      };
+
       expenses.forEach(e => {
-        totalExpenses += e.amount || 0;
+        const amt = e.amount || 0;
+        totalExpenses += amt;
+        const cat = e.category || 'other';
+        if (cat !== 'feed') {
+          otherExpenses += amt;
+          if (costByCategory[cat] !== undefined) {
+            costByCategory[cat] += amt;
+          } else {
+            costByCategory.other += amt;
+          }
+        }
       });
 
       const { totalFeedExpense: calculatedFeedExpense, avgCostPerKg: avgFeedCostPerKg } = await calculateFifoFeedCost(
         req.farmId,
         batchId
       );
-      const grandTotalCost = totalExpenses + calculatedFeedExpense;
+      costByCategory.feed = calculatedFeedExpense;
+      const grandTotalCost = otherExpenses + calculatedFeedExpense;
 
       const mortalityRate = batch.initialCount > 0
         ? Number(((totalDead / batch.initialCount) * 100).toFixed(2))
@@ -701,15 +722,8 @@ export class ReportController {
       const expenseSection = {
         totalExpenses: grandTotalCost,
         calculatedFeedExpense,
-        otherExpenses: totalExpenses,
-        costByCategory: {
-          feed: calculatedFeedExpense,
-          medicine: 0,
-          labor: 0,
-          utility: 0,
-          equipment: 0,
-          other: totalExpenses
-        },
+        otherExpenses,
+        costByCategory,
         costPerEgg,
         costPerBird: batch.currentCount > 0 ? Number((grandTotalCost / batch.currentCount).toFixed(2)) : 0
       };

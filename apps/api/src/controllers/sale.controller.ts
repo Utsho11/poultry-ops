@@ -243,4 +243,42 @@ export class SaleController {
       return ResponseView.serverError(res, error.message);
     }
   }
+
+  // Update sale
+  static async updateSale(req: AuthRequest, res: Response) {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Sale record not found');
+      }
+
+      const parseResult = saleSchema.partial().safeParse(req.body);
+      if (!parseResult.success) {
+        return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
+      }
+
+      const sale = await SaleModel.findOne({ _id: req.params.id, farmId: req.farmId });
+      if (!sale) {
+        return ResponseView.notFound(res, 'Sale record not found');
+      }
+
+      const { date, notes, amountPaid } = parseResult.data;
+      if (date !== undefined) sale.date = date;
+      if (notes !== undefined) sale.notes = notes;
+      if (amountPaid !== undefined) {
+        sale.amountPaid = Number(amountPaid);
+        sale.amountDue = Math.max(0, sale.totalAmount - sale.amountPaid);
+        sale.status = sale.amountDue === 0 ? 'paid' : (sale.amountPaid > 0 ? 'partial' : 'due');
+      }
+
+      await sale.save();
+
+      if (sale.customerId) {
+        await syncCustomerTotalDue(req.farmId, sale.customerId);
+      }
+
+      return ResponseView.success(res, sale);
+    } catch (error: any) {
+      return ResponseView.serverError(res, error.message);
+    }
+  }
 }
