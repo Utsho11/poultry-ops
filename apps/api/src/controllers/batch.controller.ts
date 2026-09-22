@@ -14,7 +14,7 @@ export class BatchController {
         return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
       }
 
-      const { name, breed, type, startDate, initialCount } = parseResult.data;
+      const { name, breed, type, startDate, initialCount, assignedWorkerIds } = parseResult.data as any;
 
       // Find firm to check animal type fallback
       const firm = await FarmModel.findById(req.farmId);
@@ -28,6 +28,7 @@ export class BatchController {
         startDate: new Date(startDate),
         initialCount,
         currentCount: initialCount,
+        assignedWorkerIds: assignedWorkerIds || [],
         status: 'active'
       });
 
@@ -101,6 +102,28 @@ export class BatchController {
       if (assignedWorkerIds !== undefined) batch.assignedWorkerIds = assignedWorkerIds;
 
       await batch.save();
+      return ResponseView.success(res, batch);
+    } catch (error: any) {
+      return ResponseView.serverError(res, error.message);
+    }
+  }
+
+  // Close Batch
+  static async closeBatch(req: AuthRequest, res: Response) {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Flock/Batch not found');
+      }
+
+      const batch = await BatchModel.findOne({ _id: req.params.id, farmId: req.farmId });
+      if (!batch) {
+        return ResponseView.notFound(res, 'Flock/Batch not found');
+      }
+
+      batch.status = 'closed';
+      batch.closedAt = new Date();
+      await batch.save();
+
       return ResponseView.success(res, batch);
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);

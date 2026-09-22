@@ -4,6 +4,7 @@ const BASE_URL = 'http://127.0.0.1:4000/api';
 
 async function request(method, path, body = null, headers = {}) {
   const url = new URL(BASE_URL + path);
+  const payload = body ? JSON.stringify(body) : null;
   const options = {
     method,
     hostname: url.hostname,
@@ -11,6 +12,7 @@ async function request(method, path, body = null, headers = {}) {
     path: url.pathname + url.search,
     headers: {
       'Content-Type': 'application/json',
+      ...(payload ? { 'Content-Length': Buffer.byteLength(payload) } : {}),
       ...headers
     }
   };
@@ -171,8 +173,9 @@ async function runTests() {
     'x-farm-id': farmId
   };
 
-  // 4. Batch Creation
+  // 4. Batch Creation & Password Security Checks
   let batchId = '';
+  // 4a. Should reject batch creation without password
   try {
     const res = await request('POST', '/batches', {
       name: 'Batch Alpha-01',
@@ -181,11 +184,43 @@ async function runTests() {
       initialCount: 1000,
       startDate: new Date().toISOString()
     }, authHeader);
+    const ok = res.status === 400;
+    record('Create Batch Without Password (Reject 400)', ok, `status: ${res.status}`);
+  } catch (e) {
+    record('Create Batch Without Password (Reject 400)', false, e.message);
+  }
+
+  // 4b. Should reject batch creation with incorrect password
+  try {
+    const res = await request('POST', '/batches', {
+      name: 'Batch Alpha-01',
+      breed: 'Cobb 500',
+      type: 'broiler',
+      initialCount: 1000,
+      startDate: new Date().toISOString(),
+      password: 'WrongPassword999!'
+    }, authHeader);
+    const ok = res.status === 401;
+    record('Create Batch With Wrong Password (Reject 401)', ok, `status: ${res.status}`);
+  } catch (e) {
+    record('Create Batch With Wrong Password (Reject 401)', false, e.message);
+  }
+
+  // 4c. Should succeed with correct password
+  try {
+    const res = await request('POST', '/batches', {
+      name: 'Batch Alpha-01',
+      breed: 'Cobb 500',
+      type: 'broiler',
+      initialCount: 1000,
+      startDate: new Date().toISOString(),
+      password: testPassword
+    }, authHeader);
     const ok = (res.status === 200 || res.status === 201) && res.body._id;
     batchId = res.body._id;
-    record('Create Batch', ok, `batchId: ${batchId}, status: ${res.status}`);
+    record('Create Batch With Valid Password', ok, `batchId: ${batchId}, status: ${res.status}`);
   } catch (e) {
-    record('Create Batch', false, e.message);
+    record('Create Batch With Valid Password', false, e.message);
   }
 
   // Batch listing
@@ -418,10 +453,20 @@ async function runTests() {
     }
   }
 
-  // Clean up batch
+  // Close batch with password verification
   if (batchId) {
     try {
-      const res = await request('DELETE', `/batches/${batchId}`, null, authHeader);
+      const res = await request('POST', `/batches/${batchId}/close`, { password: testPassword }, authHeader);
+      record('Close Batch With Valid Password', res.status === 200 && res.body.status === 'closed', `status: ${res.status}`);
+    } catch (e) {
+      record('Close Batch With Valid Password', false, e.message);
+    }
+  }
+
+  // Clean up batch with password verification
+  if (batchId) {
+    try {
+      const res = await request('DELETE', `/batches/${batchId}`, { password: testPassword }, authHeader);
       record('Delete Batch', res.status === 200, `status: ${res.status}`);
     } catch (e) {
       record('Delete Batch', false, e.message);

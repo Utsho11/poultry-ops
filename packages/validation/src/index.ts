@@ -42,7 +42,9 @@ export const createBatchSchema = z.object({
   breed: z.string().min(1, 'Breed is required'),
   type: z.enum(['layer', 'broiler']).optional(),
   startDate: z.string().or(z.date()),
-  initialCount: z.coerce.number().int().positive('Initial count must be greater than 0')
+  initialCount: z.coerce.number().int().positive('Initial count must be greater than 0'),
+  assignedWorkerIds: z.array(z.string()).optional(),
+  password: z.string().optional()
 });
 
 export const dailyLogSchema = z.object({

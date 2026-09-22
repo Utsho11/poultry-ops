@@ -1,5 +1,5 @@
 {
-  "name": "poultry-ops",
+  "name": "poultryDex",
   "private": true,
   "version": "1.0.0",
   "description": "Multi-tenant Poultry Farm Management SaaS (Web + Mobile + API)",
