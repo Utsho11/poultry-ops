@@ -17,7 +17,7 @@ const farmSchema = new Schema<IFarmDoc>({
   animalType: { type: String, enum: ['poultry', 'layer', 'broiler'], default: 'layer', required: true },
   date: { type: Date },
   location: { type: String, trim: true },
-  ownerId: { type: Schema.Types.ObjectId, ref: 'User' },
+  ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   plan: { type: String, enum: ['free', 'pro'], default: 'free' },
   timezone: { type: String, default: 'Asia/Dhaka' },
   createdAt: { type: Date, default: Date.now }
@@ -195,6 +195,7 @@ const expenseSchema = new Schema<IExpenseDoc>({
 });
 
 expenseSchema.index({ farmId: 1, date: -1 });
+expenseSchema.index({ farmId: 1, batchId: 1, date: -1 });
 export const ExpenseModel = model<IExpenseDoc>('Expense', expenseSchema);
 
 // Feed Stock Schema
@@ -336,6 +337,7 @@ const saleSchema = new Schema<ISaleDoc>({
 
 saleSchema.index({ farmId: 1, date: -1 });
 saleSchema.index({ farmId: 1, customerId: 1, date: -1 });
+saleSchema.index({ farmId: 1, batchId: 1, date: -1 });
 export const SaleModel = model<ISaleDoc>('Sale', saleSchema);
 
 // Payment Ledger Schema (Due Settlements)
@@ -368,6 +370,7 @@ const paymentSchema = new Schema<IPaymentDoc>({
 });
 
 paymentSchema.index({ farmId: 1, customerId: 1, date: -1 });
+paymentSchema.index({ farmId: 1, saleId: 1 });
 export const PaymentModel = model<IPaymentDoc>('Payment', paymentSchema);
 
 // HealthRecord Schema

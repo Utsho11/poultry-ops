@@ -10,7 +10,7 @@ import { ResponseView } from '../views/response.view';
  */
 export const verifyPasswordConfirmation = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const password = req.body?.password || (req.headers['x-password'] as string) || (req.query?.password as string);
+    const password = req.body?.password || (req.headers['x-password'] as string);
 
     if (!password || typeof password !== 'string' || password.trim() === '') {
       return ResponseView.error(res, 'Account password is required for security verification', 400);

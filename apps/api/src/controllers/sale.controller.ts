@@ -81,22 +81,16 @@ export class SaleController {
         notes
       } = parseResult.data;
 
-      // Resolve customer ID
+      // Resolve customer ID atomically to prevent race condition
       let targetCustomerId = reqCustomerId;
       if (!targetCustomerId && customerName && customerPhone) {
-        let customer = await CustomerModel.findOne({
-          farmId: req.farmId,
-          phone: customerPhone.trim()
-        });
-        if (!customer) {
-          customer = new CustomerModel({
-            farmId: req.farmId,
-            name: customerName.trim(),
-            phone: customerPhone.trim(),
-            totalDue: 0
-          });
-          await customer.save();
-        }
+        const trimmedPhone = customerPhone.trim();
+        const trimmedName = customerName.trim();
+        const customer = await CustomerModel.findOneAndUpdate(
+          { farmId: req.farmId, phone: trimmedPhone },
+          { $setOnInsert: { farmId: req.farmId, name: trimmedName, phone: trimmedPhone, totalDue: 0 } },
+          { upsert: true, new: true }
+        );
         targetCustomerId = (customer._id as any).toString();
       }
 
@@ -130,19 +124,30 @@ export class SaleController {
       if (amountDue === 0) status = 'paid';
       else if (amountPaid > 0) status = 'partial';
 
-      // Deduct sold chickens from batch with inventory validation
+      // Deduct sold chickens from batch with atomic inventory validation
       const totalChickensSold = itemsToSave
         .filter(i => i.type === 'chicken')
         .reduce((sum, i) => sum + (i.birdCount || i.quantity || 0), 0);
 
-      let batchDoc: any = null;
       if (batchId) {
-        batchDoc = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
-        if (!batchDoc) {
-          return ResponseView.notFound(res, 'Selected flock/batch not found in this firm');
-        }
-        if (totalChickensSold > 0 && batchDoc.currentCount < totalChickensSold) {
-          return ResponseView.error(res, `Cannot sell ${totalChickensSold} chickens. Current flock count is only ${batchDoc.currentCount} birds.`);
+        if (totalChickensSold > 0) {
+          const updatedBatch = await BatchModel.findOneAndUpdate(
+            { _id: batchId, farmId: req.farmId, currentCount: { $gte: totalChickensSold } },
+            { $inc: { currentCount: -totalChickensSold } },
+            { new: true }
+          );
+          if (!updatedBatch) {
+            const currentBatch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
+            if (!currentBatch) {
+              return ResponseView.notFound(res, 'Selected flock/batch not found in this firm');
+            }
+            return ResponseView.error(res, `Cannot sell ${totalChickensSold} chickens. Current flock count is only ${currentBatch.currentCount} birds.`);
+          }
+        } else {
+          const exists = await BatchModel.exists({ _id: batchId, farmId: req.farmId });
+          if (!exists) {
+            return ResponseView.notFound(res, 'Selected flock/batch not found in this firm');
+          }
         }
       }
 
@@ -171,11 +176,6 @@ export class SaleController {
       });
 
       await sale.save();
-
-      if (totalChickensSold > 0 && batchDoc) {
-        batchDoc.currentCount = Math.max(0, batchDoc.currentCount - totalChickensSold);
-        await batchDoc.save();
-      }
 
       // Record upfront payment if amountPaid > 0
       if (amountPaid > 0 && targetCustomerId) {
@@ -221,17 +221,18 @@ export class SaleController {
           : sale.itemType === 'chicken' ? (sale.quantity || 0) : 0;
 
         if (totalChickensSold > 0) {
-          const batch = await BatchModel.findOne({ _id: sale.batchId, farmId: req.farmId });
-          if (batch) {
-            batch.currentCount += totalChickensSold;
-            await batch.save();
-          }
+          await BatchModel.updateOne(
+            { _id: sale.batchId, farmId: req.farmId },
+            { $inc: { currentCount: totalChickensSold } }
+          );
         }
       }
 
       const customerId = sale.customerId;
 
-      await PaymentModel.deleteMany({ farmId: req.farmId, saleId: sale._id });
+      // Delete only automated upfront payment; preserve genuine customer installment payments and unlink them from the deleted invoice
+      await PaymentModel.deleteMany({ farmId: req.farmId, saleId: sale._id, notes: { $regex: /^Upfront payment/i } });
+      await PaymentModel.updateMany({ farmId: req.farmId, saleId: sale._id }, { $unset: { saleId: 1 } });
       await SaleModel.deleteOne({ _id: req.params.id, farmId: req.farmId });
 
       if (customerId) {
@@ -265,9 +266,45 @@ export class SaleController {
       if (date !== undefined) sale.date = date;
       if (notes !== undefined) sale.notes = notes;
       if (amountPaid !== undefined) {
-        sale.amountPaid = Number(amountPaid);
+        const newPaid = Number(amountPaid);
+        sale.amountPaid = newPaid;
         sale.amountDue = Math.max(0, sale.totalAmount - sale.amountPaid);
         sale.status = sale.amountDue === 0 ? 'paid' : (sale.amountPaid > 0 ? 'partial' : 'due');
+
+        // Synchronize upfront payment record in PaymentModel
+        if (sale.customerId) {
+          if (newPaid > 0) {
+            const existingUpfront = await PaymentModel.findOne({
+              farmId: req.farmId,
+              saleId: sale._id,
+              notes: { $regex: /^Upfront payment/i }
+            });
+
+            if (existingUpfront) {
+              existingUpfront.amount = newPaid;
+              if (date) existingUpfront.date = date;
+              await existingUpfront.save();
+            } else {
+              const newPayment = new PaymentModel({
+                farmId: req.farmId,
+                customerId: sale.customerId,
+                saleId: sale._id,
+                amount: newPaid,
+                date: date || sale.date,
+                method: 'cash',
+                notes: `Upfront payment for Sale Invoice #${sale._id.toString().slice(-6)}`,
+                recordedBy: req.user?.userId
+              });
+              await newPayment.save();
+            }
+          } else {
+            await PaymentModel.deleteOne({
+              farmId: req.farmId,
+              saleId: sale._id,
+              notes: { $regex: /^Upfront payment/i }
+            });
+          }
+        }
       }
 
       await sale.save();

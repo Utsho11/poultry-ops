@@ -81,7 +81,10 @@ export class PaymentController {
 
       // If linked to a specific sale, update the sale invoice's paid/due/status
       if (saleId) {
-        const sale = await SaleModel.findOne({ _id: saleId, farmId: req.farmId });
+        if (!mongoose.Types.ObjectId.isValid(saleId)) {
+          return ResponseView.error(res, 'Invalid sale ID', 400);
+        }
+        const sale = await SaleModel.findOne({ _id: saleId, customerId: customer._id, farmId: req.farmId });
         if (sale) {
           sale.amountPaid = (sale.amountPaid || 0) + amount;
           sale.amountDue = Math.max(0, (sale.totalAmount || 0) - sale.amountPaid);
@@ -95,6 +98,44 @@ export class PaymentController {
       await syncCustomerTotalDue(req.farmId, customerId);
 
       return ResponseView.created(res, payment);
+    } catch (error: any) {
+      return ResponseView.serverError(res, error.message);
+    }
+  }
+
+  // Delete payment record
+  static async deletePayment(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return ResponseView.notFound(res, 'Payment not found');
+      }
+
+      const payment = await PaymentModel.findOne({ _id: id, farmId: req.farmId });
+      if (!payment) {
+        return ResponseView.notFound(res, 'Payment not found');
+      }
+
+      // Revert sale amountPaid if linked to a specific sale
+      if (payment.saleId) {
+        const sale = await SaleModel.findOne({ _id: payment.saleId, farmId: req.farmId });
+        if (sale) {
+          sale.amountPaid = Math.max(0, (sale.amountPaid || 0) - payment.amount);
+          sale.amountDue = Math.max(0, (sale.totalAmount || 0) - sale.amountPaid);
+          if (sale.amountDue === 0) sale.status = 'paid';
+          else if (sale.amountPaid > 0) sale.status = 'partial';
+          else sale.status = 'due';
+          await sale.save();
+        }
+      }
+
+      const customerId = payment.customerId;
+      await PaymentModel.deleteOne({ _id: id, farmId: req.farmId });
+
+      // Recalculate customer due
+      await syncCustomerTotalDue(req.farmId, customerId);
+
+      return ResponseView.success(res, { message: 'Payment deleted successfully', id });
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
     }

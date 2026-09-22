@@ -134,7 +134,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, selectedBatchId, canManageBatches]);
+  }, [token, selectedBatchId, canManageBatches, activeFarm?._id]);
 
   useEffect(() => {
     load();
@@ -304,6 +304,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
             name: batchName,
             breed,
             type: activeFarm?.animalType === 'broiler' ? 'broiler' : 'layer',
+            shed: shed.trim() || undefined,
             initialCount: Number(initialCount),
             startDate,
             assignedWorkerIds: selectedWorkerIds,
@@ -315,6 +316,7 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
       setSecurityModalVisible(false);
       setBatchName("");
       setBreed("");
+      setShed("");
       setInitialCount("");
       setSelectedWorkerIds([]);
       showAlert("Success", `Flock '${batchName}' created successfully!`);
@@ -773,7 +775,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                             >
                               <Calendar size={10} color={colors.secondary} style={{ marginBottom: -2 }} /> Age:{" "}
                               {(batch as any).formattedAge ||
-                                `${Math.floor(Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) / 7)}W ${Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) % 7}D`}
+                                (batch.startDate && !isNaN(new Date(batch.startDate).getTime())
+                                  ? `${Math.floor(Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) / 7)}W ${Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) % 7}D`
+                                  : "N/A")}
                             </Text>
                           </View>
                         </View>
@@ -932,10 +936,10 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <ScrollView>
                 <View style={[common.row, { marginBottom: 14 }]}>
                   <View>
-                    <Text style={s.modalTitle}>{batchDashData.batch.name}</Text>
+                    <Text style={s.modalTitle}>{batchDashData.batch?.name || 'Flock Details'}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                      Breed: {batchDashData.batch.breed} • Shed:{" "}
-                      {batchDashData.batch.shed || "Main Shed"}
+                      Breed: {batchDashData.batch?.breed || 'Standard'} • Shed:{" "}
+                      {batchDashData.batch?.shed || "Main Shed"}
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -956,19 +960,19 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Eggs Collected:</Text>
                     <Text style={[s.dashVal, { color: colors.secondary }]}>
-                      {formatEggCount(batchDashData.eggSection.totalEggs)}
+                      {formatEggCount(batchDashData.eggSection?.totalEggs ?? 0)}
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Broken Eggs:</Text>
                     <Text style={[s.dashVal, { color: colors.rose }]}>
-                      {batchDashData.eggSection.totalBrokenEggs} eggs
+                      {batchDashData.eggSection?.totalBrokenEggs ?? 0} eggs
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Laying Rate %:</Text>
                     <Text style={s.dashVal}>
-                      {batchDashData.eggSection.eggLayingRate}%
+                      {batchDashData.eggSection?.eggLayingRate ?? 0}%
                     </Text>
                   </View>
                 </View>
@@ -984,20 +988,20 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Dead Birds:</Text>
                     <Text style={[s.dashVal, { color: colors.rose }]}>
-                      {batchDashData.mortalitySection.totalDead} birds
+                      {batchDashData.mortalitySection?.totalDead ?? 0} birds
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Mortality Rate %:</Text>
                     <Text style={[s.dashVal, { color: colors.rose }]}>
-                      {batchDashData.mortalitySection.mortalityRate}%
+                      {batchDashData.mortalitySection?.mortalityRate ?? 0}%
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Active / Initial Birds:</Text>
                     <Text style={s.dashVal}>
-                      {batchDashData.mortalitySection.currentCount} /{" "}
-                      {batchDashData.mortalitySection.initialCount}
+                      {batchDashData.mortalitySection?.currentCount ?? 0} /{" "}
+                      {batchDashData.mortalitySection?.initialCount ?? 0}
                     </Text>
                   </View>
                 </View>
@@ -1014,19 +1018,19 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                     <Text style={s.dashLabel}>Total Batch Expense:</Text>
                     <Text style={[s.dashVal, { color: colors.amber }]}>
                       ৳
-                      {batchDashData.expenseSection.totalExpenses.toLocaleString()}
+                      {(batchDashData.expenseSection?.totalExpenses ?? 0).toLocaleString()}
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Cost / Bird:</Text>
                     <Text style={s.dashVal}>
-                      ৳{batchDashData.expenseSection.costPerBird}
+                      ৳{batchDashData.expenseSection?.costPerBird ?? 0}
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Cost / Egg:</Text>
                     <Text style={s.dashVal}>
-                      ৳{batchDashData.expenseSection.costPerEgg}
+                      ৳{batchDashData.expenseSection?.costPerEgg ?? 0}
                     </Text>
                   </View>
                 </View>
@@ -1042,13 +1046,13 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Eggs Sold:</Text>
                     <Text style={[s.dashVal, { color: colors.blue }]}>
-                      {formatEggCount(batchDashData.sellSection.totalEggsSold)}
+                      {formatEggCount(batchDashData.sellSection?.totalEggsSold ?? 0)}
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Chickens Sold:</Text>
                     <Text style={s.dashVal}>
-                      {batchDashData.sellSection.totalChickensSold.toLocaleString()}{" "}
+                      {(batchDashData.sellSection?.totalChickensSold ?? 0).toLocaleString()}{" "}
                       birds
                     </Text>
                   </View>

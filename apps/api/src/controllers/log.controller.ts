@@ -94,7 +94,7 @@ export class LogController {
         const totalUsedKg = loggedFeedAgg[0]?.sum || 0;
         const availableStockKg = Math.max(0, totalStockKg - totalUsedKg);
 
-        if (totalStockKg > 0 && feedGivenKg > availableStockKg) {
+        if (feedGivenKg > availableStockKg) {
           const availBags = (availableStockKg / 50).toFixed(1);
           return ResponseView.error(res, `Invalid Feed Amount! You entered ${feedGivenKg} kg feed, but available Store Feed Stock is only ${availableStockKg.toLocaleString()} kg (${availBags} Bags). Please add feed stock first.`);
         }
@@ -116,18 +116,18 @@ export class LogController {
 
       await log.save();
 
-      // Auto-update mortality count and lastLogDate on batch
-      let batchModified = false;
+      // Auto-update mortality count and lastLogDate on batch atomically
       if (deadCount > 0) {
-        batch.currentCount = Math.max(0, batch.currentCount - deadCount);
-        batchModified = true;
+        await BatchModel.updateOne(
+          { _id: batchId, farmId: req.farmId },
+          { $inc: { currentCount: -deadCount } }
+        );
       }
       if (!batch.lastLogDate || date > batch.lastLogDate) {
-        batch.lastLogDate = date;
-        batchModified = true;
-      }
-      if (batchModified) {
-        await batch.save();
+        await BatchModel.updateOne(
+          { _id: batchId, farmId: req.farmId },
+          { $set: { lastLogDate: date } }
+        );
       }
 
       return ResponseView.created(res, log);
@@ -191,7 +191,7 @@ export class LogController {
         const otherUsedKg = loggedFeedAgg[0]?.sum || 0;
         const availableStockKg = Math.max(0, totalStockKg - otherUsedKg);
 
-        if (totalStockKg > 0 && feedGivenKg > availableStockKg) {
+        if (feedGivenKg > availableStockKg) {
           const availBags = (availableStockKg / 50).toFixed(1);
           return ResponseView.error(res, `Invalid Feed Amount! You entered ${feedGivenKg} kg feed, but available Store Feed Stock is only ${availableStockKg.toLocaleString()} kg (${availBags} Bags).`);
         }
@@ -201,11 +201,10 @@ export class LogController {
       const deadDiff = newDead - oldDead;
 
       if (deadDiff !== 0 && log.batchId) {
-        const batch = await BatchModel.findOne({ _id: log.batchId, farmId: req.farmId });
-        if (batch) {
-          batch.currentCount = Math.max(0, batch.currentCount - deadDiff);
-          await batch.save();
-        }
+        await BatchModel.updateOne(
+          { _id: log.batchId, farmId: req.farmId },
+          { $inc: { currentCount: -deadDiff } }
+        );
       }
 
       if (eggCount !== undefined) log.eggCount = Number(eggCount);
@@ -226,6 +225,10 @@ export class LogController {
   // Delete daily log entry
   static async deleteLog(req: AuthRequest, res: Response) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Daily log record not found');
+      }
+
       const log = await DailyLogModel.findOne({ _id: req.params.id, farmId: req.farmId });
       if (!log) {
         return ResponseView.notFound(res, 'Daily log record not found');
@@ -234,19 +237,21 @@ export class LogController {
       await DailyLogModel.deleteOne({ _id: req.params.id, farmId: req.farmId });
 
       if (log.batchId) {
-        const batch = await BatchModel.findOne({ _id: log.batchId, farmId: req.farmId });
-        if (batch) {
-          if (log.deadCount > 0) {
-            batch.currentCount += log.deadCount;
-          }
-          // Re-sync latest log date for this batch
-          const latestLog = await DailyLogModel.findOne({ farmId: req.farmId, batchId: log.batchId }).sort({ date: -1 });
-          batch.lastLogDate = latestLog?.date || undefined;
-          await batch.save();
+        if (log.deadCount > 0) {
+          await BatchModel.updateOne(
+            { _id: log.batchId, farmId: req.farmId },
+            { $inc: { currentCount: log.deadCount } }
+          );
         }
+        // Re-sync latest log date for this batch
+        const latestLog = await DailyLogModel.findOne({ farmId: req.farmId, batchId: log.batchId }).sort({ date: -1 });
+        await BatchModel.updateOne(
+          { _id: log.batchId, farmId: req.farmId },
+          { $set: { lastLogDate: latestLog?.date || undefined } }
+        );
       }
 
-      return ResponseView.success(res, { message: 'Daily log entry deleted successfully' });
+      return ResponseView.success(res, { message: 'Daily log entry deleted successfully', id: req.params.id });
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
     }

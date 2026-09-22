@@ -69,7 +69,7 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, selectedBatchId]);
+  }, [token, activeFarm?._id, selectedBatchId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -302,7 +302,7 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
                 <Text style={s.label}>Due: <Text style={[s.val, { color: sale.amountDue > 0 ? colors.rose : colors.textMain }]}>৳{sale.amountDue}</Text></Text>
               </View>
 
-              {!isWorker && (
+              {user?.role === 'owner' && (
                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border }}>
                   <TouchableOpacity
                     onPress={() => {

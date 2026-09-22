@@ -40,7 +40,7 @@ export const TeamScreen: React.FC = () => {
       showAlert('Connection Error', e?.message || 'Failed to load team members');
     }
     finally { setRefreshing(false); }
-  }, [token]);
+  }, [token, activeFarm?._id]);
 
   useEffect(() => {
     let mounted = true;

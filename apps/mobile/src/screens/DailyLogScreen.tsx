@@ -36,7 +36,7 @@ export const DailyLogScreen: React.FC = () => {
       showAlert('Connection Error', e?.message || 'Failed to load daily logs');
     }
     finally { setRefreshing(false); }
-  }, [token, filterBatchId]);
+  }, [token, activeFarm?._id, filterBatchId]);
 
   useEffect(() => {
     let mounted = true;
@@ -127,7 +127,7 @@ export const DailyLogScreen: React.FC = () => {
                 <View style={[s.chip, log.deadCount > 0 && { backgroundColor: 'rgba(244,63,94,0.15)' }]}>
                   <Text style={[s.chipText, log.deadCount > 0 && { color: colors.rose }]}>Dead: {log.deadCount}</Text>
                 </View>
-                <View style={s.chip}><Text style={s.chipText}>Feed: {log.feedGivenKg}kg ({(log.feedGivenKg / 50).toFixed(1)} Bags)</Text></View>
+                <View style={s.chip}><Text style={s.chipText}>Feed: {log.feedGivenKg || 0}kg ({(((log.feedGivenKg || 0) / 50)).toFixed(1)} Bags)</Text></View>
                 <View style={s.chip}><Text style={s.chipText}>Water: {log.waterGivenLiters}L</Text></View>
               </View>
               {log.notes ? (

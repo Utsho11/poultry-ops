@@ -1,6 +1,7 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { healthRecordSchema } from '@poultry-ops/validation';
-import { HealthRecordModel } from '../models/schemas';
+import { HealthRecordModel, BatchModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -9,7 +10,12 @@ export class HealthController {
     try {
       const { batchId } = req.query;
       const query: any = { farmId: req.farmId };
-      if (batchId) query.batchId = batchId;
+      if (batchId) {
+        if (!mongoose.Types.ObjectId.isValid(batchId as string)) {
+          return ResponseView.success(res, []);
+        }
+        query.batchId = batchId;
+      }
 
       const records = await HealthRecordModel.find(query).sort({ date: -1 });
       return ResponseView.success(res, records);
@@ -26,6 +32,16 @@ export class HealthController {
       }
 
       const { batchId, date, type, description, medicineUsed, performedBy, cost, attachmentUrls } = parseResult.data;
+
+      if (batchId) {
+        if (!mongoose.Types.ObjectId.isValid(batchId)) {
+          return ResponseView.notFound(res, 'Invalid flock/batch ID');
+        }
+        const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
+        if (!batch) {
+          return ResponseView.notFound(res, 'Selected flock/batch not found in this firm');
+        }
+      }
 
       const record = new HealthRecordModel({
         farmId: req.farmId,
@@ -49,6 +65,10 @@ export class HealthController {
 
   static async updateHealthRecord(req: AuthRequest, res: Response) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Health record not found');
+      }
+
       const parseResult = healthRecordSchema.partial().safeParse(req.body);
       if (!parseResult.success) {
         return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
@@ -61,7 +81,18 @@ export class HealthController {
 
       const { batchId, date, type, description, medicineUsed, performedBy, cost, attachmentUrls } = parseResult.data;
 
-      if (batchId !== undefined) record.batchId = batchId as any;
+      if (batchId !== undefined) {
+        if (batchId) {
+          if (!mongoose.Types.ObjectId.isValid(batchId)) {
+            return ResponseView.notFound(res, 'Invalid flock/batch ID');
+          }
+          const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
+          if (!batch) {
+            return ResponseView.notFound(res, 'Selected flock/batch not found in this firm');
+          }
+        }
+        record.batchId = batchId as any;
+      }
       if (date !== undefined) record.date = date;
       if (type !== undefined) record.type = type;
       if (description !== undefined) record.description = description;
@@ -79,11 +110,15 @@ export class HealthController {
 
   static async deleteHealthRecord(req: AuthRequest, res: Response) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Health record not found');
+      }
+
       const record = await HealthRecordModel.findOneAndDelete({ _id: req.params.id, farmId: req.farmId });
       if (!record) {
         return ResponseView.notFound(res, 'Health record not found');
       }
-      return ResponseView.success(res, { message: 'Health record deleted successfully' });
+      return ResponseView.success(res, { message: 'Health record deleted successfully', id: req.params.id });
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
     }

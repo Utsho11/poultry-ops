@@ -27,7 +27,7 @@ import {
 } from "lucide-react-native";
 
 export const FirmHeader: React.FC = () => {
-  const { token, activeFarm, switchFarm } = useAuth();
+  const { token, user, activeFarm, switchFarm } = useAuth();
   const { toggleDrawer } = useDrawer();
   const [modalVisible, setModalVisible] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -180,16 +180,18 @@ export const FirmHeader: React.FC = () => {
               </ScrollView>
             )}
 
-            <TouchableOpacity
-              style={s.createBtn}
-              onPress={() => {
-                setModalVisible(false);
-                setCreateModalVisible(true);
-              }}
-            >
-              <Plus size={16} color="#fff" style={{ marginRight: 6 }} />
-              <Text style={s.createBtnText}>Create New Firm</Text>
-            </TouchableOpacity>
+            {user?.role === "owner" && (
+              <TouchableOpacity
+                style={s.createBtn}
+                onPress={() => {
+                  setModalVisible(false);
+                  setCreateModalVisible(true);
+                }}
+              >
+                <Plus size={16} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={s.createBtnText}>Create New Firm</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </Modal>

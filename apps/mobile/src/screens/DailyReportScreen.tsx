@@ -130,7 +130,7 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
       showAlert('Error', e?.message || 'Failed to load report data');
     }
     finally { setLoading(false); setRefreshing(false); }
-  }, [routeBatchId, token]);
+  }, [routeBatchId, token, activeFarm?._id]);
 
   useEffect(() => {
     let mounted = true;
@@ -340,7 +340,7 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
                         <>
                           <View style={s.detailBox}>
                             <Text style={[s.boxTitle, { color: colors.secondary }]}>DAILY FEED GIVEN</Text>
-                            <Text style={s.boxValue}>{log.feedGivenKg} kg ({ (log.feedGivenKg / 50).toFixed(1) } 50kg bags)</Text>
+                            <Text style={s.boxValue}>{log.feedGivenKg || 0} kg ({ (((log.feedGivenKg || 0) / 50)).toFixed(1) } 50kg bags)</Text>
                           </View>
                           <View style={s.detailBox}>
                             <Text style={[s.boxTitle, { color: colors.blue }]}>DAILY WATER PROVIDED</Text>
@@ -349,17 +349,19 @@ export const DailyReportScreen: React.FC<any> = ({ route, navigation }) => {
                         </>
                       )}
 
-                    {/* ALWAYS VISIBLE Edit / Delete Actions */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
-                      <TouchableOpacity onPress={() => openEditModal(log)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(61, 107, 140, 0.12)', borderRadius: 6 }}>
-                        <Pencil size={12} color={colors.blue} />
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: colors.blue }}>Edit Log</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDeleteLog(log)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(220, 38, 38, 0.12)', borderRadius: 6 }}>
-                        <Trash2 size={12} color="#DC2626" />
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>Delete Log</Text>
-                      </TouchableOpacity>
-                    </View>
+                    {/* ALWAYS VISIBLE Edit / Delete Actions (Managers and Owners only) */}
+                    {user?.role !== 'worker' && (
+                      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+                        <TouchableOpacity onPress={() => openEditModal(log)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(61, 107, 140, 0.12)', borderRadius: 6 }}>
+                          <Pencil size={12} color={colors.blue} />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: colors.blue }}>Edit Log</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleDeleteLog(log)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: 'rgba(220, 38, 38, 0.12)', borderRadius: 6 }}>
+                          <Trash2 size={12} color="#DC2626" />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#DC2626' }}>Delete Log</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>

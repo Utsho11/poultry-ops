@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
-import { createBatchSchema } from '@poultry-ops/validation';
-import { BatchModel, BatchWorkerModel, FarmModel, DailyLogModel, HealthRecordModel, ExpenseModel, SaleModel } from '../models/schemas';
+import { createBatchSchema, updateBatchSchema } from '@poultry-ops/validation';
+import { BatchModel, BatchWorkerModel, FarmModel, DailyLogModel, HealthRecordModel, ExpenseModel, SaleModel, ReminderModel, UserModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -38,14 +38,18 @@ export class BatchController {
       if (assignedWorkerIds && Array.isArray(assignedWorkerIds) && assignedWorkerIds.length > 0) {
         const validWorkerIds = assignedWorkerIds.filter(id => mongoose.Types.ObjectId.isValid(id));
         if (validWorkerIds.length > 0) {
-          await BatchWorkerModel.insertMany(
-            validWorkerIds.map(wId => ({
-              farmId: req.farmId,
-              batchId: batch._id,
-              workerId: wId
-            })),
-            { ordered: false }
-          );
+          const farmWorkers = await UserModel.find({ _id: { $in: validWorkerIds }, farmId: req.farmId }).select('_id');
+          const verifiedWorkerIds = farmWorkers.map(w => w._id);
+          if (verifiedWorkerIds.length > 0) {
+            await BatchWorkerModel.insertMany(
+              verifiedWorkerIds.map(wId => ({
+                farmId: req.farmId,
+                batchId: batch._id,
+                workerId: wId
+              })),
+              { ordered: false }
+            );
+          }
         }
       }
 
@@ -135,7 +139,13 @@ export class BatchController {
         return ResponseView.notFound(res, 'Flock/Batch not found');
       }
 
-      const { name, breed, type, shed, startDate, initialCount, currentCount, status } = req.body;
+      const parseResult = updateBatchSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
+      }
+
+      const { name, breed, type, shed, startDate, initialCount } = parseResult.data;
+      const { currentCount, status } = req.body;
       const workerIdsInput = req.body.assignedWorkerIds !== undefined ? req.body.assignedWorkerIds : req.body.workerIds;
       const batch = await BatchModel.findOne({ _id: req.params.id, farmId: req.farmId });
 
@@ -162,14 +172,18 @@ export class BatchController {
         await BatchWorkerModel.deleteMany({ batchId: batch._id, farmId: req.farmId });
         const validWorkerIds = workerIdsInput.filter(id => mongoose.Types.ObjectId.isValid(id));
         if (validWorkerIds.length > 0) {
-          await BatchWorkerModel.insertMany(
-            validWorkerIds.map(wId => ({
-              farmId: req.farmId,
-              batchId: batch._id,
-              workerId: wId
-            })),
-            { ordered: false }
-          );
+          const farmWorkers = await UserModel.find({ _id: { $in: validWorkerIds }, farmId: req.farmId }).select('_id');
+          const verifiedWorkerIds = farmWorkers.map(w => w._id);
+          if (verifiedWorkerIds.length > 0) {
+            await BatchWorkerModel.insertMany(
+              verifiedWorkerIds.map(wId => ({
+                farmId: req.farmId,
+                batchId: batch._id,
+                workerId: wId
+              })),
+              { ordered: false }
+            );
+          }
         }
       }
 
@@ -203,14 +217,18 @@ export class BatchController {
         await BatchWorkerModel.deleteMany({ batchId: batch._id, farmId: req.farmId });
         const validWorkerIds = workerIds.filter(id => mongoose.Types.ObjectId.isValid(id));
         if (validWorkerIds.length > 0) {
-          await BatchWorkerModel.insertMany(
-            validWorkerIds.map(wId => ({
-              farmId: req.farmId,
-              batchId: batch._id,
-              workerId: wId
-            })),
-            { ordered: false }
-          );
+          const farmWorkers = await UserModel.find({ _id: { $in: validWorkerIds }, farmId: req.farmId }).select('_id');
+          const verifiedWorkerIds = farmWorkers.map(w => w._id);
+          if (verifiedWorkerIds.length > 0) {
+            await BatchWorkerModel.insertMany(
+              verifiedWorkerIds.map(wId => ({
+                farmId: req.farmId,
+                batchId: batch._id,
+                workerId: wId
+              })),
+              { ordered: false }
+            );
+          }
         }
       }
 
@@ -262,10 +280,11 @@ export class BatchController {
         return ResponseView.notFound(res, 'Flock/Batch not found');
       }
 
-      // Cascade delete daily logs, health records, batch worker assignments, and unset references in expenses/sales
+      // Cascade delete daily logs, health records, reminders, batch worker assignments, and unset references in expenses/sales
       await Promise.all([
         DailyLogModel.deleteMany({ batchId, farmId: req.farmId }),
         HealthRecordModel.deleteMany({ batchId, farmId: req.farmId }),
+        ReminderModel.deleteMany({ batchId, farmId: req.farmId }),
         BatchWorkerModel.deleteMany({ batchId, farmId: req.farmId }),
         ExpenseModel.updateMany({ batchId, farmId: req.farmId }, { $unset: { batchId: 1 } }),
         SaleModel.updateMany({ batchId, farmId: req.farmId }, { $unset: { batchId: 1 } }),

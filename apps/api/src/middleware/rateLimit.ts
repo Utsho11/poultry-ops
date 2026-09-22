@@ -7,6 +7,18 @@ interface RateLimitRecord {
 
 const requestCounts: Record<string, RateLimitRecord> = {};
 
+// Periodic cleanup of expired rate limit records to prevent memory leak
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, rec] of Object.entries(requestCounts)) {
+      if (now > rec.resetTime) {
+        delete requestCounts[k];
+      }
+    }
+  }, 5 * 60 * 1000).unref?.();
+}
+
 /**
  * Lightweight in-memory rate limiter for sensitive authentication endpoints.
  * @param maxRequests Maximum allowed requests in the time window (default: 20)

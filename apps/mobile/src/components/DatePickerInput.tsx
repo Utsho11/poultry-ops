@@ -36,13 +36,21 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowPicker(false);
-    }
-    if (selectedDate) {
-      const yyyy = selectedDate.getFullYear();
-      const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const dd = String(selectedDate.getDate()).padStart(2, '0');
-      const formatted = `${yyyy}-${mm}-${dd}`;
-      onChange(formatted);
+      if (event?.type === 'set' && selectedDate) {
+        const yyyy = selectedDate.getFullYear();
+        const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(selectedDate.getDate()).padStart(2, '0');
+        const formatted = `${yyyy}-${mm}-${dd}`;
+        onChange(formatted);
+      }
+    } else {
+      if (selectedDate) {
+        const yyyy = selectedDate.getFullYear();
+        const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(selectedDate.getDate()).padStart(2, '0');
+        const formatted = `${yyyy}-${mm}-${dd}`;
+        onChange(formatted);
+      }
     }
   };
 
@@ -63,8 +71,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
           value={currentDate}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onValueChange={handleDateChange}
-          onDismiss={() => setShowPicker(false)}
+          onChange={handleDateChange}
         />
       )}
     </View>

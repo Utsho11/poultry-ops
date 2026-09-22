@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { reminderSchema } from '@poultry-ops/validation';
-import { ReminderModel, BatchModel } from '../models/schemas';
+import { ReminderModel, BatchModel, UserModel } from '../models/schemas';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseView } from '../views/response.view';
 
@@ -31,9 +31,21 @@ export class ReminderController {
       const { batchId, type, message, cronExpression, assignedTo, channel, active } = parseResult.data;
 
       if (batchId) {
+        if (!mongoose.Types.ObjectId.isValid(batchId)) {
+          return ResponseView.notFound(res, 'Selected batch not found');
+        }
         const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
         if (!batch) {
           return ResponseView.notFound(res, 'Selected batch not found');
+        }
+      }
+
+      let verifiedAssignedTo: any[] = [];
+      if (assignedTo && Array.isArray(assignedTo) && assignedTo.length > 0) {
+        const validUserIds = assignedTo.filter(id => mongoose.Types.ObjectId.isValid(id));
+        if (validUserIds.length > 0) {
+          const farmUsers = await UserModel.find({ _id: { $in: validUserIds }, farmId: req.farmId }).select('_id');
+          verifiedAssignedTo = farmUsers.map(u => u._id);
         }
       }
 
@@ -43,7 +55,7 @@ export class ReminderController {
         type,
         message,
         cronExpression,
-        assignedTo: assignedTo || [],
+        assignedTo: verifiedAssignedTo,
         channel: channel || ['push'],
         active: active !== undefined ? active : true,
         createdBy: req.user?.userId
@@ -75,11 +87,30 @@ export class ReminderController {
 
       const { batchId, type, message, cronExpression, assignedTo, channel, active } = parseResult.data;
 
-      if (batchId !== undefined) reminder.batchId = batchId as any;
+      if (batchId !== undefined) {
+        if (batchId) {
+          if (!mongoose.Types.ObjectId.isValid(batchId)) {
+            return ResponseView.notFound(res, 'Selected batch not found');
+          }
+          const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
+          if (!batch) {
+            return ResponseView.notFound(res, 'Selected batch not found');
+          }
+        }
+        reminder.batchId = (batchId || undefined) as any;
+      }
       if (type !== undefined) reminder.type = type;
       if (message !== undefined) reminder.message = message;
       if (cronExpression !== undefined) reminder.cronExpression = cronExpression;
-      if (assignedTo !== undefined) reminder.assignedTo = assignedTo as any;
+      if (assignedTo !== undefined) {
+        if (Array.isArray(assignedTo)) {
+          const validUserIds = assignedTo.filter(id => mongoose.Types.ObjectId.isValid(id));
+          const farmUsers = await UserModel.find({ _id: { $in: validUserIds }, farmId: req.farmId }).select('_id');
+          reminder.assignedTo = farmUsers.map(u => u._id) as any;
+        } else {
+          reminder.assignedTo = [];
+        }
+      }
       if (channel !== undefined) reminder.channel = channel;
       if (active !== undefined) reminder.active = active;
 

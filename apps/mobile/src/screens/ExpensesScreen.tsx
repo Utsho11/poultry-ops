@@ -110,7 +110,7 @@ export const ExpensesScreen: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
-  }, [token, expBatchId, healthBatchId]);
+  }, [token, activeFarm?._id, expBatchId, healthBatchId]);
 
   useEffect(() => {
     load();
@@ -818,7 +818,7 @@ export const ExpensesScreen: React.FC = () => {
                                   Edit
                                 </Text>
                               </TouchableOpacity>
-                              {canManage && (
+                              {user?.role === "owner" && (
                                 <TouchableOpacity
                                   onPress={() => handleDeleteExpense(exp._id)}
                                   style={{

@@ -188,6 +188,17 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
     foodSection,
   } = data || {};
 
+  const safeBatch = batch || {
+    name: "Flock",
+    breed: "Standard",
+    type: "layer",
+    shed: "Main Shed",
+    startDate: new Date().toISOString(),
+    initialCount: 0,
+    currentCount: 0,
+    status: "active"
+  };
+
   const latest = latestLogSection || {
     date: "N/A",
     totalEggs: 0,
@@ -219,10 +230,10 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
 
         <View style={{ flex: 1, marginHorizontal: 10 }}>
           <Text style={s.batchTitle} numberOfLines={1}>
-            {batch.name}
+            {safeBatch.name}
           </Text>
           <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-            {batch.breed}
+            {safeBatch.breed}
           </Text>
         </View>
 
@@ -277,7 +288,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                   fontSize: 16,
                 }}
               >
-                {batch.name} Dashboard
+                {safeBatch.name} Dashboard
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
                 <Calendar size={13} color={colors.secondary} style={{ marginRight: 4 }} />
@@ -288,15 +299,15 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                     fontSize: 13,
                   }}
                 >
-                  Age: {batch.formattedAge || "N/A"} (Day{" "}
-                  {batch.dayNumber || 1})
+                  Age: {(safeBatch as any).formattedAge || "N/A"} (Day{" "}
+                  {(safeBatch as any).dayNumber || 1})
                 </Text>
               </View>
               <Text
                 style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}
               >
-                Started: {new Date(batch.startDate).toLocaleDateString()}
-                {batch.lastLogDate ? ` • Last Log: ${batch.lastLogDate}` : " • No logs yet"}
+                Started: {new Date(safeBatch.startDate || Date.now()).toLocaleDateString()}
+                {safeBatch.lastLogDate ? ` • Last Log: ${safeBatch.lastLogDate}` : " • No logs yet"}
               </Text>
             </View>
             <View
@@ -304,7 +315,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
                 s.badge,
                 {
                   backgroundColor:
-                    batch.status === "active"
+                    safeBatch.status === "active"
                       ? "rgba(74, 124, 89, 0.15)"
                       : "rgba(107, 101, 92, 0.15)",
                 },
@@ -313,14 +324,14 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
               <Text
                 style={{
                   color:
-                    batch.status === "active"
+                    safeBatch.status === "active"
                       ? colors.secondary
                       : colors.textMuted,
                   fontWeight: "800",
                   fontSize: 11,
                 }}
               >
-                {batch.status.toUpperCase()}
+                {(safeBatch.status || 'ACTIVE').toUpperCase()}
               </Text>
             </View>
           </View>

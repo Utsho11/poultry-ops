@@ -14,12 +14,15 @@ export const registerFarmSchema = z.object({
   farmName: z.string().min(2, 'Firm name must be at least 2 characters'),
   ownerName: z.string().min(2, 'Owner name must be at least 2 characters'),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  phone: z.string().optional(),
+  phone: z.string().min(6, 'Phone number must be at least 6 digits').optional().or(z.literal('')),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   animalType: z.enum(['poultry', 'layer', 'broiler']).default('layer'),
   date: z.string().optional(),
   location: z.string().optional(),
   timezone: z.string().default('Asia/Dhaka')
+}).refine((data) => (data.email && data.email.trim() !== '') || (data.phone && data.phone.trim() !== ''), {
+  message: 'Either email or phone number is required to register a firm',
+  path: ['email']
 });
 
 export const createFarmSchema = z.object({
@@ -46,6 +49,8 @@ export const createBatchSchema = z.object({
   initialCount: z.coerce.number().int().positive('Initial count must be greater than 0'),
   assignedWorkerIds: z.array(z.string()).optional()
 });
+
+export const updateBatchSchema = createBatchSchema.partial();
 
 export const dailyLogSchema = z.object({
   batchId: z.string().min(1, 'Batch ID is required'),
@@ -100,6 +105,8 @@ export const customerSchema = z.object({
   address: z.string().optional()
 });
 
+export const updateCustomerSchema = customerSchema.partial();
+
 export const saleItemSchema = z.object({
   type: z.enum(['egg', 'chicken']),
   quantity: z.number().min(0, 'Quantity cannot be negative'),
@@ -108,7 +115,8 @@ export const saleItemSchema = z.object({
   birdCount: z.number().min(0).optional(),
   weightKg: z.number().min(0).optional(),
   unit: z.enum(['piece', 'tray', 'kg', 'bird']).default('piece'),
-  unitPrice: z.number().min(0, 'Unit price cannot be negative')
+  unitPrice: z.number().min(0, 'Unit price cannot be negative'),
+  subtotal: z.number().min(0).optional()
 });
 
 export const saleSchema = z.object({

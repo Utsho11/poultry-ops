@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import { apiFetch } from "../config";
+import { apiFetch, showAlert } from "../config";
 import { colors, common, STATUS_BAR_PADDING } from "../styles";
 import {
   Wheat,
@@ -30,8 +30,8 @@ export const FeedStockHistoryScreen: React.FC<any> = ({ navigation }) => {
     try {
       const data = await apiFetch("/feed-stock", {}, token, activeFarm?._id);
       setStocks(data || []);
-    } catch (e) {
-      // handled silently
+    } catch (e: any) {
+      showAlert('Error', e?.message || 'Failed to load feed stock history');
     } finally {
       setLoading(false);
       setRefreshing(false);

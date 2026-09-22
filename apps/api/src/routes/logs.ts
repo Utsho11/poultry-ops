@@ -10,7 +10,7 @@ router.use(resolveTenant);
 
 router.get('/', LogController.getLogs);
 router.post('/', LogController.createLog);
-router.put('/:id', requireRole(['owner', 'manager']), LogController.updateLog);
+router.put('/:id', requireRole(['owner', 'manager', 'worker']), LogController.updateLog);
 router.delete('/:id', requireRole(['owner', 'manager']), LogController.deleteLog);
 
 export default router;

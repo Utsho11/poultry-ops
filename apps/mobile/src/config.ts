@@ -5,14 +5,22 @@ import Constants from 'expo-constants';
 const debuggerHost = Constants.expoConfig?.hostUri;
 const localhostIp = debuggerHost ? debuggerHost.split(':')[0] : 'localhost';
 
-export const API_BASE_URL =
+const rawBaseUrl =
   process.env.EXPO_PUBLIC_API_URL ||
   (__DEV__ ? `http://${localhostIp}:4000/api` : 'https://poultrydex.vercel.app/api');
+
+export const API_BASE_URL = rawBaseUrl.replace(/\/+$/, '');
 
 let activeFarmIdMemory: string | null = null;
 
 export function setActiveFarmIdMemory(id: string | null) {
   activeFarmIdMemory = id;
+}
+
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export function registerUnauthorizedHandler(handler: () => void) {
+  onUnauthorizedCallback = handler;
 }
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}, token?: string | null, farmId?: string | null) {
@@ -25,7 +33,8 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}, toke
   const effectiveFarmId = farmId || activeFarmIdMemory;
   if (effectiveFarmId) headers['x-farm-id'] = effectiveFarmId;
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const response = await fetch(`${API_BASE_URL}${normalizedEndpoint}`, { ...options, headers });
   
   let data: any;
   const contentType = response.headers.get('content-type');
@@ -34,6 +43,13 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}, toke
   } else {
     const text = await response.text();
     throw new Error(`Server returned error (${response.status}): ${text.substring(0, 100)}`);
+  }
+
+  if (response.status === 401) {
+    if (onUnauthorizedCallback) {
+      onUnauthorizedCallback();
+    }
+    throw new Error(data.error || 'Session expired. Please log in again.');
   }
 
   if (!response.ok) throw new Error(data.error || data.message || 'Request failed');
@@ -45,15 +61,9 @@ export function showAlert(title: string, message: string, buttons?: AlertButton[
     const btnList = buttons && buttons.length > 0 ? buttons : [{ text: 'OK' }];
     Alert.alert(title, message, btnList, { cancelable: true });
   } catch (e: any) {
-    console.warn('Alert.alert TurboModule fallback caught:', e?.message || e);
+    console.warn('Alert.alert fallback caught:', e?.message || e);
     if (Platform.OS === 'android') {
       ToastAndroid.show(`${title}: ${message}`, ToastAndroid.LONG);
-    }
-    if (buttons && buttons.length > 1) {
-      const confirmBtn = buttons.find(b => b.style === 'destructive' || (b.text && b.text !== 'Cancel'));
-      if (confirmBtn && confirmBtn.onPress) {
-        confirmBtn.onPress();
-      }
     }
   }
 }

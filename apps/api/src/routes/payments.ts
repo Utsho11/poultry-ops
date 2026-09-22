@@ -8,7 +8,8 @@ const router = Router();
 router.use(authenticate);
 router.use(resolveTenant);
 
-router.get('/', PaymentController.getPayments);
+router.get('/', requireRole(['owner', 'manager']), PaymentController.getPayments);
 router.post('/', requireRole(['owner', 'manager']), PaymentController.createPayment);
+router.delete('/:id', requireRole(['owner']), PaymentController.deletePayment);
 
 export default router;

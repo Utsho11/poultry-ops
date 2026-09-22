@@ -44,13 +44,19 @@ export class ExpenseController {
 
       const { batchId, workerId, category, amount, currency, date, note, receiptUrl, feedBags, feedKg } = parseResult.data;
 
-      if (category === 'labor') {
-        if (!batchId) {
-          return ResponseView.error(res, 'Batch selection is required for labor expenses.');
+      if (batchId) {
+        if (!mongoose.Types.ObjectId.isValid(batchId)) {
+          return ResponseView.notFound(res, 'Invalid flock/batch ID.');
         }
         const batch = await BatchModel.findOne({ _id: batchId, farmId: req.farmId });
         if (!batch) {
-          return ResponseView.notFound(res, 'Selected batch not found.');
+          return ResponseView.notFound(res, 'Selected flock/batch not found in this firm.');
+        }
+      }
+
+      if (category === 'labor') {
+        if (!batchId) {
+          return ResponseView.error(res, 'Batch selection is required for labor expenses.');
         }
         const assignedWorkersCount = await BatchWorkerModel.countDocuments({ batchId, farmId: req.farmId });
         if (assignedWorkersCount === 0) {
@@ -96,6 +102,10 @@ export class ExpenseController {
   // Edit expense
   static async updateExpense(req: AuthRequest, res: Response) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Expense record not found');
+      }
+
       const parseResult = expenseSchema.partial().safeParse(req.body);
       if (!parseResult.success) {
         return ResponseView.error(res, 'Validation failed', 400, parseResult.error.format());
@@ -110,6 +120,16 @@ export class ExpenseController {
 
       const targetCategory = category !== undefined ? category : expense.category;
       const targetBatchId = batchId !== undefined ? batchId : expense.batchId;
+
+      if (targetBatchId) {
+        if (!mongoose.Types.ObjectId.isValid(String(targetBatchId))) {
+          return ResponseView.notFound(res, 'Invalid flock/batch ID.');
+        }
+        const batch = await BatchModel.findOne({ _id: targetBatchId, farmId: req.farmId });
+        if (!batch) {
+          return ResponseView.notFound(res, 'Selected flock/batch not found in this firm.');
+        }
+      }
 
       if (targetCategory === 'labor') {
         if (!targetBatchId) {
@@ -135,7 +155,12 @@ export class ExpenseController {
       if (date !== undefined) expense.date = date;
       if (note !== undefined) expense.note = note;
       if (receiptUrl !== undefined) expense.receiptUrl = receiptUrl;
-      if (feedBags !== undefined) expense.feedBags = Number(feedBags);
+      if (feedBags !== undefined) {
+        expense.feedBags = Number(feedBags);
+        if (feedKg === undefined) {
+          expense.feedKg = Number(feedBags) * 50;
+        }
+      }
       if (feedKg !== undefined) expense.feedKg = Number(feedKg);
 
       await expense.save();
@@ -148,13 +173,16 @@ export class ExpenseController {
   // Delete expense
   static async deleteExpense(req: AuthRequest, res: Response) {
     try {
-      const expense = await ExpenseModel.findOne({ _id: req.params.id, farmId: req.farmId });
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return ResponseView.notFound(res, 'Expense record not found');
+      }
+
+      const expense = await ExpenseModel.findOneAndDelete({ _id: req.params.id, farmId: req.farmId });
       if (!expense) {
         return ResponseView.notFound(res, 'Expense record not found');
       }
 
-      await ExpenseModel.deleteOne({ _id: req.params.id, farmId: req.farmId });
-      return ResponseView.success(res, { message: 'Expense record deleted successfully' });
+      return ResponseView.success(res, { message: 'Expense deleted successfully', id: req.params.id });
     } catch (error: any) {
       return ResponseView.serverError(res, error.message);
     }

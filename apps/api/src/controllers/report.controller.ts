@@ -255,16 +255,36 @@ export class ReportController {
         }
       });
 
+      const healthMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
+      if (batchId) {
+        const bObjId = toObjectId(batchId as string);
+        healthMatch.$and = [{ $or: [{ batchId: bObjId }, { batchId: String(batchId) }] }];
+      }
+      if (from || to) {
+        healthMatch.date = {};
+        if (from) healthMatch.date.$gte = from;
+        if (to) healthMatch.date.$lte = to;
+      }
+
+      const healthAgg = await HealthRecordModel.aggregate([
+        { $match: healthMatch },
+        { $group: { _id: null, totalHealthCost: { $sum: '$cost' } } }
+      ]);
+      const totalHealthCost = healthAgg[0]?.totalHealthCost || 0;
+      costByCategory.medicine += totalHealthCost;
+
       const totalOtherCost = Object.entries(costByCategory)
         .filter(([cat]) => cat !== 'feed')
         .reduce((sum, [, val]) => sum + val, 0);
 
       const totalCost = calculatedFeedExpense + totalOtherCost;
 
-      const batchMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }], status: 'active' };
+      const batchMatch: any = { $or: [{ farmId: farmObjectId }, { farmId: req.farmId }] };
       if (batchId) {
         const bObjId = toObjectId(batchId as string);
         batchMatch._id = bObjId;
+      } else {
+        batchMatch.status = 'active';
       }
 
       const batches = await BatchModel.find(batchMatch);

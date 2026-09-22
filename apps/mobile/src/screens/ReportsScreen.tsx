@@ -53,7 +53,7 @@ export const ReportsScreen: React.FC = () => {
     } catch (e: any) {
       console.warn('ReportsScreen load error:', e?.message || e);
     } finally { setLoading(false); setRefreshing(false); }
-  }, [selectedDays, selectedBatchId, token]);
+  }, [selectedDays, selectedBatchId, token, activeFarm?._id]);
 
   useEffect(() => { load(); }, [load]);
 

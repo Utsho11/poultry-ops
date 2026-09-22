@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { IAuthUser as AuthUser, AnimalType, UserRole } from '@poultry-ops/types';
-import { setActiveFarmIdMemory } from '../config';
+import { setActiveFarmIdMemory, registerUnauthorizedHandler } from '../config';
 
 export type { AuthUser };
 
@@ -37,6 +37,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveFarmIdMemory(activeFarm?._id || null);
   }, [activeFarm]);
 
+  const logout = async () => {
+    setToken(null);
+    setUser(null);
+    setActiveFarm(null);
+    await SecureStore.deleteItemAsync('poultry_token');
+    await SecureStore.deleteItemAsync('poultry_user');
+    await SecureStore.deleteItemAsync('poultry_active_farm');
+  };
+
+  useEffect(() => {
+    registerUnauthorizedHandler(() => {
+      logout();
+    });
+  }, []);
+
   useEffect(() => {
     // Restore session on app start
     const restoreSession = async () => {
@@ -48,8 +63,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(savedToken);
           const parsedUser = JSON.parse(savedUser);
           setUser(parsedUser);
-          // Always show firm list on app startup when logged in
-          setActiveFarm(null);
+          if (savedFarm) {
+            try {
+              setActiveFarm(JSON.parse(savedFarm));
+            } catch {
+              setActiveFarm(null);
+            }
+          } else {
+            setActiveFarm(null);
+          }
         }
       } catch (e) {
         // ignore
@@ -93,15 +115,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUser = async (newUser: AuthUser) => {
     setUser(newUser);
     await SecureStore.setItemAsync('poultry_user', JSON.stringify(newUser));
-  };
-
-  const logout = async () => {
-    setToken(null);
-    setUser(null);
-    setActiveFarm(null);
-    await SecureStore.deleteItemAsync('poultry_token');
-    await SecureStore.deleteItemAsync('poultry_user');
-    await SecureStore.deleteItemAsync('poultry_active_farm');
   };
 
   return (

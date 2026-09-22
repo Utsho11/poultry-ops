@@ -105,8 +105,8 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
   };
 
   const handleOpenDeleteSecurity = (id: string, batchName: string) => {
-    if (!canManage) {
-      showAlert('Unauthorized', 'Only farm Owners and Managers are authorized to delete flocks.');
+    if (user?.role !== 'owner') {
+      showAlert('Unauthorized', 'Only farm Owners are authorized to delete flocks.');
       return;
     }
     setBatchTarget({ id, name: batchName });
@@ -315,13 +315,15 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                       <Text style={s.closeText}>Discontinue Batch</Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity
-                    style={{ backgroundColor: 'rgba(244,63,94,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                    onPress={() => handleOpenDeleteSecurity(batch._id, batch.name)}
-                  >
-                    <Trash2 size={13} color={colors.rose} />
-                    <Text style={{ color: colors.rose, fontSize: 12, fontWeight: '800' }}>Delete Batch</Text>
-                  </TouchableOpacity>
+                  {user?.role === 'owner' && (
+                    <TouchableOpacity
+                      style={{ backgroundColor: 'rgba(244,63,94,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                      onPress={() => handleOpenDeleteSecurity(batch._id, batch.name)}
+                    >
+                      <Trash2 size={13} color={colors.rose} />
+                      <Text style={{ color: colors.rose, fontSize: 12, fontWeight: '800' }}>Delete Batch</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>
@@ -339,9 +341,9 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
               <ScrollView>
                 <View style={[common.row, { marginBottom: 14 }]}>
                   <View>
-                    <Text style={s.modalTitle}>{activeBatchDashboard.batch.name}</Text>
+                    <Text style={s.modalTitle}>{activeBatchDashboard.batch?.name || 'Flock Details'}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                      Breed: {activeBatchDashboard.batch.breed} • Shed: {activeBatchDashboard.batch.shed || 'Main Shed'}
+                      Breed: {activeBatchDashboard.batch?.breed || 'Standard'} • Shed: {activeBatchDashboard.batch?.shed || 'Main Shed'}
                     </Text>
                   </View>
                   <TouchableOpacity onPress={() => setDashboardModalVisible(false)}>
@@ -357,15 +359,15 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Eggs Collected:</Text>
-                    <Text style={[s.dashVal, { color: colors.secondary }]}>{formatEggCount(activeBatchDashboard.eggSection.totalEggs)}</Text>
+                    <Text style={[s.dashVal, { color: colors.secondary }]}>{formatEggCount(activeBatchDashboard.eggSection?.totalEggs ?? 0)}</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Broken Eggs:</Text>
-                    <Text style={[s.dashVal, { color: colors.rose }]}>{activeBatchDashboard.eggSection.totalBrokenEggs} eggs</Text>
+                    <Text style={[s.dashVal, { color: colors.rose }]}>{activeBatchDashboard.eggSection?.totalBrokenEggs ?? 0} eggs</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Laying Rate %:</Text>
-                    <Text style={s.dashVal}>{activeBatchDashboard.eggSection.eggLayingRate}%</Text>
+                    <Text style={s.dashVal}>{activeBatchDashboard.eggSection?.eggLayingRate ?? 0}%</Text>
                   </View>
                 </View>
 
@@ -377,15 +379,15 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Dead Birds:</Text>
-                    <Text style={[s.dashVal, { color: colors.rose }]}>{activeBatchDashboard.mortalitySection.totalDead} birds</Text>
+                    <Text style={[s.dashVal, { color: colors.rose }]}>{activeBatchDashboard.mortalitySection?.totalDead ?? 0} birds</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Mortality Rate %:</Text>
-                    <Text style={[s.dashVal, { color: colors.rose }]}>{activeBatchDashboard.mortalitySection.mortalityRate}%</Text>
+                    <Text style={[s.dashVal, { color: colors.rose }]}>{activeBatchDashboard.mortalitySection?.mortalityRate ?? 0}%</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Active / Initial Birds:</Text>
-                    <Text style={s.dashVal}>{activeBatchDashboard.mortalitySection.currentCount} / {activeBatchDashboard.mortalitySection.initialCount}</Text>
+                    <Text style={s.dashVal}>{activeBatchDashboard.mortalitySection?.currentCount ?? 0} / {activeBatchDashboard.mortalitySection?.initialCount ?? 0}</Text>
                   </View>
                 </View>
 
@@ -397,15 +399,15 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Batch Expense:</Text>
-                    <Text style={[s.dashVal, { color: colors.amber }]}>৳{activeBatchDashboard.expenseSection.totalExpenses.toLocaleString()}</Text>
+                    <Text style={[s.dashVal, { color: colors.amber }]}>৳{(activeBatchDashboard.expenseSection?.totalExpenses ?? 0).toLocaleString()}</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Cost / Bird:</Text>
-                    <Text style={s.dashVal}>৳{activeBatchDashboard.expenseSection.costPerBird}</Text>
+                    <Text style={s.dashVal}>৳{activeBatchDashboard.expenseSection?.costPerBird ?? 0}</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Cost / Egg:</Text>
-                    <Text style={s.dashVal}>৳{activeBatchDashboard.expenseSection.costPerEgg}</Text>
+                    <Text style={s.dashVal}>৳{activeBatchDashboard.expenseSection?.costPerEgg ?? 0}</Text>
                   </View>
                 </View>
 
@@ -417,11 +419,11 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Eggs Sold:</Text>
-                    <Text style={[s.dashVal, { color: colors.blue }]}>{formatEggCount(activeBatchDashboard.sellSection.totalEggsSold)}</Text>
+                    <Text style={[s.dashVal, { color: colors.blue }]}>{formatEggCount(activeBatchDashboard.sellSection?.totalEggsSold ?? 0)}</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Chickens Sold:</Text>
-                    <Text style={s.dashVal}>{activeBatchDashboard.sellSection.totalChickensSold.toLocaleString()} birds</Text>
+                    <Text style={s.dashVal}>{(activeBatchDashboard.sellSection?.totalChickensSold ?? 0).toLocaleString()} birds</Text>
                   </View>
                 </View>
 
@@ -433,12 +435,12 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Sales Revenue:</Text>
-                    <Text style={[s.dashVal, { color: colors.blue }]}>৳{activeBatchDashboard.incomeSection.totalIncome.toLocaleString()}</Text>
+                    <Text style={[s.dashVal, { color: colors.blue }]}>৳{(activeBatchDashboard.incomeSection?.totalIncome ?? 0).toLocaleString()}</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Net Batch Profit:</Text>
-                    <Text style={[s.dashVal, { color: activeBatchDashboard.incomeSection.netProfit >= 0 ? colors.secondary : colors.rose }]}>
-                      ৳{activeBatchDashboard.incomeSection.netProfit.toLocaleString()} ({activeBatchDashboard.incomeSection.profitMargin}%)
+                    <Text style={[s.dashVal, { color: (activeBatchDashboard.incomeSection?.netProfit ?? 0) >= 0 ? colors.secondary : colors.rose }]}>
+                      ৳{(activeBatchDashboard.incomeSection?.netProfit ?? 0).toLocaleString()} ({activeBatchDashboard.incomeSection?.profitMargin ?? 0}%)
                     </Text>
                   </View>
                 </View>
@@ -451,15 +453,15 @@ export const BatchesScreen: React.FC<any> = ({ navigation }) => {
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Feed Consumed:</Text>
-                    <Text style={[s.dashVal, { color: colors.secondary }]}>{activeBatchDashboard.foodSection.totalFeedKg} kg</Text>
+                    <Text style={[s.dashVal, { color: colors.secondary }]}>{activeBatchDashboard.foodSection?.totalFeedKg ?? 0} kg</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Daily Feed / Chicken:</Text>
-                    <Text style={s.dashVal}>{activeBatchDashboard.foodSection.feedPerChickenGrams} g/bird ({activeBatchDashboard.foodSection.feedPerChickenPercentage}%)</Text>
+                    <Text style={s.dashVal}>{activeBatchDashboard.foodSection?.feedPerChickenGrams ?? 0} g/bird ({activeBatchDashboard.foodSection?.feedPerChickenPercentage ?? 0}%)</Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Total Water Provided:</Text>
-                    <Text style={s.dashVal}>{activeBatchDashboard.foodSection.totalWaterLiters} L</Text>
+                    <Text style={s.dashVal}>{activeBatchDashboard.foodSection?.totalWaterLiters ?? 0} L</Text>
                   </View>
                 </View>
 

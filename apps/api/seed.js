@@ -30,6 +30,8 @@ async function seed() {
         db.collection('customers').deleteMany({ farmId: oldFarmId }),
         db.collection('feedstocks').deleteMany({ farmId: oldFarmId }),
         db.collection('healthrecords').deleteMany({ farmId: oldFarmId }),
+        db.collection('payments').deleteMany({ farmId: oldFarmId }),
+        db.collection('reminders').deleteMany({ farmId: oldFarmId }),
         db.collection('farms').deleteOne({ _id: oldFarmId })
       ]);
     }

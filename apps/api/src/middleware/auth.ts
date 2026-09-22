@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UserRole } from '@poultry-ops/types';
+import { UserModel } from '../models/schemas';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -19,7 +20,7 @@ export const generateToken = (payload: { userId: string; farmId: string; role: U
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 };
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Access token required' });
@@ -28,6 +29,13 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    
+    // Live database check: verify user exists and is active
+    const liveUser = await UserModel.findById(decoded.userId).select('isActive farmId role');
+    if (!liveUser || liveUser.isActive === false) {
+      return res.status(401).json({ error: 'User account is deactivated or no longer exists' });
+    }
+
     req.user = decoded;
     req.farmId = decoded.farmId;
     next();

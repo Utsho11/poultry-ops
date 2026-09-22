@@ -74,17 +74,19 @@ export const FirmSelectionScreen: React.FC<any> = ({ navigation }) => {
         <Text style={s.sectionTitle}>Select or Create Firm</Text>
         <Text style={s.sectionSub}>Manage your layer and poultry farms separately</Text>
 
-        {/* TOP BUTTON: Create New Firm */}
-        <TouchableOpacity style={s.createFirmBtn} onPress={() => setCreateModalVisible(true)} activeOpacity={0.85}>
-          <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
-            <Plus size={24} color="#FFFFFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.createFirmTitle}>Create New Firm</Text>
-            <Text style={s.createFirmSub}>Setup Layer Farm or Broiler/Poultry Farm</Text>
-          </View>
-          <ChevronRight size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        {/* TOP BUTTON: Create New Firm (Owner only) */}
+        {user?.role === 'owner' && (
+          <TouchableOpacity style={s.createFirmBtn} onPress={() => setCreateModalVisible(true)} activeOpacity={0.85}>
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+              <Plus size={24} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.createFirmTitle}>Create New Firm</Text>
+              <Text style={s.createFirmSub}>Setup Layer Farm or Broiler/Poultry Farm</Text>
+            </View>
+            <ChevronRight size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
 
         {/* BELOW BUTTON: All Firm List */}
         <View style={s.listHeader}>
