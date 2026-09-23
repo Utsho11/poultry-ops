@@ -1,12 +1,49 @@
 {
   "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "1837ea47-9a02-4f33-92fd-001e40408cc4"
-      }
+    "name": "PoultryDex",
+    "slug": "poultry-dex",
+    "version": "1.0.0",
+    "sdkVersion": "57.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FFFFFF",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.poultrydex.app",
+      "icon": "./assets/icon.png"
     },
     "android": {
-      "package": "com.utshoroy.poultrydex"
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.poultrydex.app"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ac879dd6-52f3-41b2-a19d-ee1befc250f7"
+      }
     }
   }
 }

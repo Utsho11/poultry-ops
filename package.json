@@ -1,21 +1,56 @@
 {
-  "name": "poultryDex",
-  "private": true,
+  "name": "poultrydex",
   "version": "1.0.0",
-  "description": "Multi-tenant Poultry Farm Management SaaS (Web + Mobile + API)",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "private": true,
+  "description": "> Modern, Multi-Tenant Mobile Application for Poultry & Layer Farm Operations (React Native & Expo)",
+  "homepage": "https://github.com/Utsho11/poultry-ops#readme",
+  "bugs": {
+    "url": "https://github.com/Utsho11/poultry-ops/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Utsho11/poultry-ops.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
   "scripts": {
-    "build:packages": "npm run build --workspace=@poultry-ops/types && npm run build --workspace=@poultry-ops/validation",
-    "build:api": "npm run build --workspace=@poultry-ops/api",
-    "build": "npm run build:packages && npm run build:api",
-    "seed:api": "npm run seed --workspace=@poultry-ops/api",
-    "dev:api": "npm run dev --workspace=@poultry-ops/api",
-    "dev": "npm run build:packages && npm run dev:api"
+    "start": "expo start",
+    "start:tunnel": "expo start --tunnel",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "@react-native-community/datetimepicker": "9.1.0",
+    "@react-native-picker/picker": "2.11.4",
+    "@react-navigation/bottom-tabs": "^7.2.0",
+    "@react-navigation/native": "^7.0.14",
+    "@react-navigation/native-stack": "^7.2.0",
+    "expo": "~57.0.12",
+    "expo-build-properties": "~57.0.10",
+    "expo-constants": "~57.0.8",
+    "expo-dev-client": "~57.0.11",
+    "expo-secure-store": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "lucide-react-native": "^1.31.0",
+    "react": "19.2.3",
+    "react-native": "0.86.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4"
   },
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "@babel/core": "^7.25.0",
+    "@types/react": "~19.2.10",
+    "babel-preset-expo": "^57.0.6",
+    "typescript": "~6.0.3"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    }
   }
 }
