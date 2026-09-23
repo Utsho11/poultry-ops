@@ -8,6 +8,11 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0f172a",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.poultrydex.app",

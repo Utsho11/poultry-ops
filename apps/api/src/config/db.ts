@@ -16,8 +16,12 @@ export const connectDB = async (): Promise<typeof mongoose> => {
     return await cachedPromise;
   }
 
-  const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/poultry_ops';
   const isServerless = Boolean(process.env.VERCEL || process.env.NODE_ENV === 'production');
+  if (isServerless && !process.env.MONGODB_URI) {
+    throw new Error('FATAL: MONGODB_URI environment variable is not configured. A cloud database connection is required in production.');
+  }
+
+  const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/poultry_ops';
 
   const connectOptions: mongoose.ConnectOptions = {
     serverSelectionTimeoutMS: 8000,

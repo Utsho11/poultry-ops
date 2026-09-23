@@ -14,7 +14,11 @@ export interface AuthRequest extends Request {
   farmId?: string;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'poultryops_super_secret_jwt_key_2026';
+const rawJwtSecret = process.env.JWT_SECRET;
+if (!rawJwtSecret && (process.env.NODE_ENV === 'production' || process.env.VERCEL)) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not configured. Refusing to run in production without a secure secret.');
+}
+const JWT_SECRET = rawJwtSecret || 'poultryops_super_secret_jwt_key_2026';
 
 export const generateToken = (payload: { userId: string; farmId: string; role: UserRole; email: string; name: string }) => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });

@@ -8,3 +8,9 @@ build/
 .DS_Store
 
 .vercel
+
+# Native build artifacts
+android/
+ios/
+.gradle/
+.kotlin/

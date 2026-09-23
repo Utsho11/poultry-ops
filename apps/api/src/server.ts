@@ -22,8 +22,30 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Middleware
-app.use(cors());
+// CORS Configuration
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+  : [
+      'https://poultrydex.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:8081',
+      'http://localhost:19006',
+    ];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow non-browser requests (e.g. mobile apps, curl, server-to-server) where origin is undefined
+      // Also allow all origins in non-production environments
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        callback(new Error('Blocked by CORS policy'));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Database connection middleware (ensures active connection for both local & Vercel serverless)
