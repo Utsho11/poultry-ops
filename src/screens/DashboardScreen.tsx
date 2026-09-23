@@ -16,6 +16,8 @@ import { colors, common } from "../styles";
 import { formatEggCount, cratesAndLooseToTotal } from "../utils/crates";
 import { DatePickerInput } from "../components/DatePickerInput";
 import { CreateBatchModal } from "../components/CreateBatchModal";
+import { DailyLogModal } from "../components/DailyLogModal";
+import { RecordSaleModal } from "../components/RecordSaleModal";
 import {
   Bird,
   Egg,
@@ -43,7 +45,7 @@ import {
   CircleDollarSign,
   User,
   Eye,
-  EyeOff
+  EyeOff,
 } from "lucide-react-native";
 
 export const DashboardScreen: React.FC<any> = ({ navigation }) => {
@@ -54,33 +56,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Quick Daily Log Modal State (Crates + Loose Eggs)
+  // Quick Daily Log Modal State
   const [quickLogModal, setQuickLogModal] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState("");
-  const [quickLogDate, setQuickLogDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-  const [crates, setCrates] = useState("0");
-  const [looseEggs, setLooseEggs] = useState("0");
-  const [brokenEggCount, setBrokenEggCount] = useState("0");
-  const [deadCount, setDeadCount] = useState("0");
-  const [feedGivenKg, setFeedGivenKg] = useState("");
-  const [waterGivenLiters, setWaterGivenLiters] = useState("");
-  const [submittingLog, setSubmittingLog] = useState(false);
 
-  // Record Sale Modal State (OWNER ONLY - Crates + Loose Eggs)
+  // Record Sale Modal State
   const [saleModalOpen, setSaleModalOpen] = useState(false);
-  const [saleItemType, setSaleItemType] = useState<"egg" | "chicken">("egg");
-  const [saleBatchId, setSaleBatchId] = useState("");
-  const [saleCrates, setSaleCrates] = useState("0");
-  const [saleLooseEggs, setSaleLooseEggs] = useState("0");
-  const [saleChickenQty, setSaleChickenQty] = useState("");
-  const [saleUnitPrice, setSaleUnitPrice] = useState("");
-  const [saleCustomer, setSaleCustomer] = useState("");
-  const [saleDate, setSaleDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-  const [submittingSale, setSubmittingSale] = useState(false);
 
   // Create Batch Modal State
   const [createBatchModal, setCreateBatchModal] = useState(false);
@@ -148,101 +129,6 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
     load();
   };
 
-  const totalLogEggs = cratesAndLooseToTotal(crates, looseEggs);
-  const totalSaleEggQty =
-    saleItemType === "egg"
-      ? cratesAndLooseToTotal(saleCrates, saleLooseEggs)
-      : Number(saleChickenQty || 0);
-
-  const handleQuickLog = async () => {
-    if (
-      !selectedBatchId ||
-      totalLogEggs <= 0 ||
-      !feedGivenKg ||
-      !waterGivenLiters
-    ) {
-      showAlert(
-        "Error",
-        "Please enter Egg count (Crates/Loose), Feed, and Water",
-      );
-      return;
-    }
-    if (!quickLogDate) {
-      showAlert("Error", "Log Date is required (YYYY-MM-DD)");
-      return;
-    }
-    setSubmittingLog(true);
-    try {
-      await apiFetch(
-        "/logs",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            batchId: selectedBatchId,
-            date: quickLogDate,
-            eggCount: totalLogEggs,
-            brokenEggCount: Number(brokenEggCount || 0),
-            deadCount: Number(deadCount || 0),
-            feedGivenKg: Number(feedGivenKg),
-            waterGivenLiters: Number(waterGivenLiters),
-          }),
-        },
-        token,
-      );
-      setQuickLogModal(false);
-      setCrates("0");
-      setLooseEggs("0");
-      setFeedGivenKg("");
-      setWaterGivenLiters("");
-      load();
-      showAlert(
-        "Success",
-        `Logged ${formatEggCount(totalLogEggs)} successfully!`,
-      );
-    } catch (err: any) {
-      showAlert("Error", err.message);
-    } finally {
-      setSubmittingLog(false);
-    }
-  };
-
-  const handleRecordSale = async () => {
-    if (totalSaleEggQty <= 0 || !saleUnitPrice) {
-      showAlert("Error", "Quantity and Unit Price are required");
-      return;
-    }
-    setSubmittingSale(true);
-    try {
-      await apiFetch(
-        "/sales",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            itemType: saleItemType,
-            batchId: saleBatchId || undefined,
-            quantity: totalSaleEggQty,
-            unitPrice: Number(saleUnitPrice),
-            date: saleDate,
-            customerName: saleCustomer || undefined,
-          }),
-        },
-        token,
-      );
-      setSaleModalOpen(false);
-      setSaleCrates("0");
-      setSaleLooseEggs("0");
-      setSaleChickenQty("");
-      setSaleUnitPrice("");
-      setSaleCustomer("");
-      load();
-      showAlert("Success", "Sale recorded successfully!");
-    } catch (err: any) {
-      showAlert("Error", err.message);
-    } finally {
-      setSubmittingSale(false);
-    }
-  };
-
 
 
   if (loading)
@@ -273,10 +159,12 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
       {/* Mobile Top Header */}
       <View style={s.topHeader}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          {isLayerFarm ? <Egg size={20} color={colors.brand} /> : <Bird size={20} color={colors.brand} />}
-          <Text style={s.brandLogo}>
-            {activeFarm?.name || "PoultryDex"}
-          </Text>
+          {isLayerFarm ? (
+            <Egg size={20} color={colors.brand} />
+          ) : (
+            <Bird size={20} color={colors.brand} />
+          )}
+          <Text style={s.brandLogo}>{activeFarm?.name || "PoultryDex"}</Text>
         </View>
         <View style={{ flexDirection: "row", gap: 6 }}>
           <TouchableOpacity
@@ -297,7 +185,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
             >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Tag size={13} color="#fff" style={{ marginRight: 4 }} />
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}>
+                <Text
+                  style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}
+                >
                   Sales
                 </Text>
               </View>
@@ -318,7 +208,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
       >
         {/* Dynamic Animal-Wise Highlights Title */}
         <Text style={[s.titleHeader, { marginTop: 8, marginBottom: 12 }]}>
-          {isLayerFarm ? "Egg Layer Production KPI Overview" : "Broiler Poultry Flock KPI Overview"}
+          {isLayerFarm
+            ? "Egg Layer Production KPI Overview"
+            : "Broiler Poultry Flock KPI Overview"}
         </Text>
 
         {isLayerFarm ? (
@@ -334,21 +226,39 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 onPress={() => setEggStockModalOpen(true)}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
                   <Text style={common.statLabel}>Current Egg Stock</Text>
                   <Search size={12} color={colors.secondary} />
                 </View>
                 <Text
                   style={[
                     common.statValue,
-                    { color: colors.secondary, fontSize: 16, fontWeight: "900" },
+                    {
+                      color: colors.secondary,
+                      fontSize: 16,
+                      fontWeight: "900",
+                    },
                   ]}
                 >
                   {(summary?.currentEggCount || 0).toLocaleString()} Eggs
                 </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                  }}
+                >
                   <Package size={12} color={colors.textMuted} />
-                  <Text style={[common.statSub, { color: colors.textMuted, fontWeight: "700" }]}>
+                  <Text
+                    style={[
+                      common.statSub,
+                      { color: colors.textMuted, fontWeight: "700" },
+                    ]}
+                  >
                     {formatEggCount(summary?.currentEggCount || 0)}
                   </Text>
                 </View>
@@ -364,7 +274,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 onPress={() => setFeedStockModalOpen(true)}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
                   <Text style={common.statLabel}>Feed Stock</Text>
                   <Search size={12} color={colors.amber} />
                 </View>
@@ -380,9 +292,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   ).toLocaleString()}{" "}
                   Bags
                 </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                  }}
+                >
                   <Wheat size={12} color={colors.textMuted} />
-                  <Text style={[common.statSub, { color: colors.textMuted, fontWeight: "700" }]}>
+                  <Text
+                    style={[
+                      common.statSub,
+                      { color: colors.textMuted, fontWeight: "700" },
+                    ]}
+                  >
                     {(
                       summary?.availableFeedStockKg ??
                       (summary?.totalFeedKg || 0)
@@ -403,7 +327,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 onPress={() => setLayerFlocksModalOpen(true)}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
                   <Text style={common.statLabel}>Active Layer Hens</Text>
                   <Search size={12} color={colors.brand} />
                 </View>
@@ -415,10 +341,27 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 >
                   {activeLayerBirds.toLocaleString()} Birds
                 </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                  }}
+                >
                   <Bird size={12} color={colors.brand} />
-                  <Text style={[common.statSub, { color: colors.textMuted, fontWeight: "700" }]}>
-                    {batches.filter((b) => b.type === "layer" && b.status === "active").length} Layer Flocks
+                  <Text
+                    style={[
+                      common.statSub,
+                      { color: colors.textMuted, fontWeight: "700" },
+                    ]}
+                  >
+                    {
+                      batches.filter(
+                        (b) => b.type === "layer" && b.status === "active",
+                      ).length
+                    }{" "}
+                    Layer Flocks
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -431,21 +374,39 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   { borderColor: colors.secondary, borderWidth: 1, flex: 1 },
                 ]}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
                   <Text style={common.statLabel}>Egg Laying Rate</Text>
                   <TrendingUp size={12} color={colors.secondary} />
                 </View>
                 <Text
                   style={[
                     common.statValue,
-                    { color: colors.secondary, fontSize: 16, fontWeight: "900" },
+                    {
+                      color: colors.secondary,
+                      fontSize: 16,
+                      fontWeight: "900",
+                    },
                   ]}
                 >
                   {summary?.eggLayingRate || 0}%
                 </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                  }}
+                >
                   <Egg size={12} color={colors.secondary} />
-                  <Text style={[common.statSub, { color: colors.textMuted, fontWeight: "700" }]}>
+                  <Text
+                    style={[
+                      common.statSub,
+                      { color: colors.textMuted, fontWeight: "700" },
+                    ]}
+                  >
                     Daily Laying Efficiency
                   </Text>
                 </View>
@@ -465,7 +426,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 onPress={() => setBroilerFlocksModalOpen(true)}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
                   <Text style={common.statLabel}>Active Poultry Birds</Text>
                   <Search size={12} color={colors.brand} />
                 </View>
@@ -477,10 +440,27 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 >
                   {activeBroilerBirds.toLocaleString()} Birds
                 </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                  }}
+                >
                   <Bird size={12} color={colors.brand} />
-                  <Text style={[common.statSub, { color: colors.textMuted, fontWeight: "700" }]}>
-                    {batches.filter((b) => b.type === "broiler" && b.status === "active").length} Poultry Flocks
+                  <Text
+                    style={[
+                      common.statSub,
+                      { color: colors.textMuted, fontWeight: "700" },
+                    ]}
+                  >
+                    {
+                      batches.filter(
+                        (b) => b.type === "broiler" && b.status === "active",
+                      ).length
+                    }{" "}
+                    Poultry Flocks
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -495,7 +475,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 onPress={() => setFeedStockModalOpen(true)}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
                   <Text style={common.statLabel}>Feed Stock</Text>
                   <Search size={12} color={colors.amber} />
                 </View>
@@ -511,9 +493,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   ).toLocaleString()}{" "}
                   Bags
                 </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                  }}
+                >
                   <Wheat size={12} color={colors.textMuted} />
-                  <Text style={[common.statSub, { color: colors.textMuted, fontWeight: "700" }]}>
+                  <Text
+                    style={[
+                      common.statSub,
+                      { color: colors.textMuted, fontWeight: "700" },
+                    ]}
+                  >
                     {(
                       summary?.availableFeedStockKg ??
                       (summary?.totalFeedKg || 0)
@@ -532,7 +526,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   { borderColor: colors.blue, borderWidth: 1, flex: 1 },
                 ]}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
                   <Text style={common.statLabel}>Total Feed Consumed</Text>
                   <Droplets size={12} color={colors.blue} />
                 </View>
@@ -544,9 +540,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 >
                   {(summary?.totalFeedKg || 0).toLocaleString()} kg
                 </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                  }}
+                >
                   <Wheat size={12} color={colors.textMuted} />
-                  <Text style={[common.statSub, { color: colors.textMuted, fontWeight: "700" }]}>
+                  <Text
+                    style={[
+                      common.statSub,
+                      { color: colors.textMuted, fontWeight: "700" },
+                    ]}
+                  >
                     Cumulative Feed Usage
                   </Text>
                 </View>
@@ -560,7 +568,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                   { borderColor: colors.rose, borderWidth: 1, flex: 1 },
                 ]}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
                   <Text style={common.statLabel}>Mortality Rate</Text>
                   <AlertCircle size={12} color={colors.rose} />
                 </View>
@@ -572,9 +582,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 >
                   {summary?.mortalityRate || 0}%
                 </Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                  }}
+                >
                   <Bird size={12} color={colors.rose} />
-                  <Text style={[common.statSub, { color: colors.textMuted, fontWeight: "700" }]}>
+                  <Text
+                    style={[
+                      common.statSub,
+                      { color: colors.textMuted, fontWeight: "700" },
+                    ]}
+                  >
                     {summary?.totalDead || 0} Total Deaths
                   </Text>
                 </View>
@@ -592,7 +614,11 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
             {canManageBatches && (
               <TouchableOpacity onPress={() => setCreateBatchModal(true)}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Plus size={14} color={colors.brand} style={{ marginRight: 4 }} />
+                  <Plus
+                    size={14}
+                    color={colors.brand}
+                    style={{ marginRight: 4 }}
+                  />
                   <Text
                     style={{
                       color: colors.brand,
@@ -687,9 +713,15 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                                 fontWeight: "800",
                               }}
                             >
-                              <Calendar size={10} color={colors.secondary} style={{ marginBottom: -2 }} /> Age:{" "}
+                              <Calendar
+                                size={10}
+                                color={colors.secondary}
+                                style={{ marginBottom: -2 }}
+                              />{" "}
+                              Age:{" "}
                               {(batch as any).formattedAge ||
-                                (batch.startDate && !isNaN(new Date(batch.startDate).getTime())
+                                (batch.startDate &&
+                                !isNaN(new Date(batch.startDate).getTime())
                                   ? `${Math.floor(Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) / 7)}W ${Math.max(0, Math.floor((new Date().getTime() - new Date(batch.startDate).getTime()) / 86400000)) % 7}D`
                                   : "N/A")}
                             </Text>
@@ -766,7 +798,13 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                         alignItems: "center",
                       }}
                     >
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
                         <BarChart3 size={14} color={colors.brand} />
                         <Text
                           style={{
@@ -784,10 +822,26 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               ))}
             </View>
           ) : (
-            <View style={[common.card, { flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: 12, flexWrap: "wrap" }]}>
-              <Text style={{ color: colors.textMuted }}>No flocks created yet. Tap "</Text>
+            <View
+              style={[
+                common.card,
+                {
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  flexWrap: "wrap",
+                },
+              ]}
+            >
+              <Text style={{ color: colors.textMuted }}>
+                No flocks created yet. Tap "
+              </Text>
               <Plus size={14} color={colors.textMuted} />
-              <Text style={{ color: colors.textMuted }}> New Batch" to add a flock!</Text>
+              <Text style={{ color: colors.textMuted }}>
+                {" "}
+                New Batch" to add a flock!
+              </Text>
             </View>
           )}
         </View>
@@ -850,9 +904,11 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
               <ScrollView>
                 <View style={[common.row, { marginBottom: 14 }]}>
                   <View>
-                    <Text style={s.modalTitle}>{batchDashData.batch?.name || 'Flock Details'}</Text>
+                    <Text style={s.modalTitle}>
+                      {batchDashData.batch?.name || "Flock Details"}
+                    </Text>
                     <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                      Breed: {batchDashData.batch?.breed || 'Standard'} • Shed:{" "}
+                      Breed: {batchDashData.batch?.breed || "Standard"} • Shed:{" "}
                       {batchDashData.batch?.shed || "Main Shed"}
                     </Text>
                   </View>
@@ -865,9 +921,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 1. EGG SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.secondary }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 8,
+                    }}
+                  >
                     <Egg size={16} color={colors.secondary} />
-                    <Text style={[s.sectionHeader, { color: colors.secondary, marginBottom: 0 }]}>
+                    <Text
+                      style={[
+                        s.sectionHeader,
+                        { color: colors.secondary, marginBottom: 0 },
+                      ]}
+                    >
                       1. Egg Yield
                     </Text>
                   </View>
@@ -893,9 +961,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 2. MORTALITY RATE SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.rose }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 8,
+                    }}
+                  >
                     <Skull size={16} color={colors.rose} />
-                    <Text style={[s.sectionHeader, { color: colors.rose, marginBottom: 0 }]}>
+                    <Text
+                      style={[
+                        s.sectionHeader,
+                        { color: colors.rose, marginBottom: 0 },
+                      ]}
+                    >
                       2. Mortality Rate
                     </Text>
                   </View>
@@ -922,9 +1002,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 3. EXPENSE SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.amber }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 8,
+                    }}
+                  >
                     <CircleDollarSign size={16} color={colors.amber} />
-                    <Text style={[s.sectionHeader, { color: colors.amber, marginBottom: 0 }]}>
+                    <Text
+                      style={[
+                        s.sectionHeader,
+                        { color: colors.amber, marginBottom: 0 },
+                      ]}
+                    >
                       3. Expenses
                     </Text>
                   </View>
@@ -932,7 +1024,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                     <Text style={s.dashLabel}>Total Batch Expense:</Text>
                     <Text style={[s.dashVal, { color: colors.amber }]}>
                       ৳
-                      {(batchDashData.expenseSection?.totalExpenses ?? 0).toLocaleString()}
+                      {(
+                        batchDashData.expenseSection?.totalExpenses ?? 0
+                      ).toLocaleString()}
                     </Text>
                   </View>
                   <View style={s.dashRow}>
@@ -951,22 +1045,38 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 4. SELL SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.blue }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 8,
+                    }}
+                  >
                     <Tag size={16} color={colors.blue} />
-                    <Text style={[s.sectionHeader, { color: colors.blue, marginBottom: 0 }]}>
+                    <Text
+                      style={[
+                        s.sectionHeader,
+                        { color: colors.blue, marginBottom: 0 },
+                      ]}
+                    >
                       4. Sales Volume
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Eggs Sold:</Text>
                     <Text style={[s.dashVal, { color: colors.blue }]}>
-                      {formatEggCount(batchDashData.sellSection?.totalEggsSold ?? 0)}
+                      {formatEggCount(
+                        batchDashData.sellSection?.totalEggsSold ?? 0,
+                      )}
                     </Text>
                   </View>
                   <View style={s.dashRow}>
                     <Text style={s.dashLabel}>Chickens Sold:</Text>
                     <Text style={s.dashVal}>
-                      {(batchDashData.sellSection?.totalChickensSold ?? 0).toLocaleString()}{" "}
+                      {(
+                        batchDashData.sellSection?.totalChickensSold ?? 0
+                      ).toLocaleString()}{" "}
                       birds
                     </Text>
                   </View>
@@ -974,9 +1084,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 5. INCOME SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.brand }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 8,
+                    }}
+                  >
                     <TrendingUp size={16} color={colors.brand} />
-                    <Text style={[s.sectionHeader, { color: colors.brand, marginBottom: 0 }]}>
+                    <Text
+                      style={[
+                        s.sectionHeader,
+                        { color: colors.brand, marginBottom: 0 },
+                      ]}
+                    >
                       5. Income & Net Profit
                     </Text>
                   </View>
@@ -1008,9 +1130,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
 
                 {/* 6. FOOD INFO SECTION */}
                 <View style={[s.dashCard, { borderColor: colors.secondary }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 8,
+                    }}
+                  >
                     <Wheat size={16} color={colors.secondary} />
-                    <Text style={[s.sectionHeader, { color: colors.secondary, marginBottom: 0 }]}>
+                    <Text
+                      style={[
+                        s.sectionHeader,
+                        { color: colors.secondary, marginBottom: 0 },
+                      ]}
+                    >
                       6. Food Info
                     </Text>
                   </View>
@@ -1047,347 +1181,21 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* QUICK LOG MODAL */}
-      <Modal visible={quickLogModal} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <View style={s.modalContainer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Zap size={18} color={colors.brand} />
-              <Text style={s.modalTitle}>Quick Daily Log</Text>
-            </View>
-            <ScrollView>
-              <Text style={common.label}>Select Flock / Batch</Text>
-              {displayedBatches.map((b: any) => (
-                <TouchableOpacity
-                  key={b._id}
-                  style={[
-                    s.batchOption,
-                    selectedBatchId === b._id && s.batchOptionSelected,
-                  ]}
-                  onPress={() => setSelectedBatchId(b._id)}
-                >
-                  <Text
-                    style={{
-                      color:
-                        selectedBatchId === b._id
-                          ? colors.brand
-                          : colors.textMain,
-                      fontWeight: "700",
-                    }}
-                  >
-                    {b.name} ({b.breed})
-                  </Text>
-                </TouchableOpacity>
-              ))}
+      {/* REUSABLE DAILY LOG MODAL */}
+      <DailyLogModal
+        visible={quickLogModal}
+        initialBatchId={selectedBatchId}
+        onClose={() => setQuickLogModal(false)}
+        onSuccess={() => load()}
+      />
 
-              <Text style={common.label}>Log Date (YYYY-MM-DD) *</Text>
-              <TextInput
-                style={common.input}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                value={quickLogDate}
-                onChangeText={setQuickLogDate}
-              />
-
-              <View style={s.eggInputBox}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                  <Egg size={14} color={colors.secondary} />
-                  <Text
-                    style={{
-                      color: colors.secondary,
-                      fontWeight: "800",
-                      fontSize: 13,
-                    }}
-                  >
-                    Eggs Collected (1 Crate = 30 Eggs)
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={common.label}>Full Crates</Text>
-                    <TextInput
-                      style={common.input}
-                      keyboardType="numeric"
-                      value={crates}
-                      onChangeText={setCrates}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={common.label}>Loose Eggs</Text>
-                    <TextInput
-                      style={common.input}
-                      keyboardType="numeric"
-                      value={looseEggs}
-                      onChangeText={setLooseEggs}
-                    />
-                  </View>
-                </View>
-                <Text
-                  style={{
-                    color: colors.secondary,
-                    fontWeight: "800",
-                    marginTop: 6,
-                    fontSize: 13,
-                  }}
-                >
-                  Total: {formatEggCount(totalLogEggs)} ({totalLogEggs} eggs)
-                </Text>
-              </View>
-
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={common.label}>Broken Eggs</Text>
-                  <TextInput
-                    style={common.input}
-                    keyboardType="numeric"
-                    value={brokenEggCount}
-                    onChangeText={setBrokenEggCount}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={common.label}>Dead Birds</Text>
-                  <TextInput
-                    style={common.input}
-                    keyboardType="numeric"
-                    value={deadCount}
-                    onChangeText={setDeadCount}
-                  />
-                </View>
-              </View>
-
-              <Text style={common.label}>Feed Given (kg)</Text>
-              <TextInput
-                style={common.input}
-                keyboardType="numeric"
-                placeholder="50"
-                placeholderTextColor={colors.textMuted}
-                value={feedGivenKg}
-                onChangeText={setFeedGivenKg}
-              />
-
-              <Text style={common.label}>Water Given (L)</Text>
-              <TextInput
-                style={common.input}
-                keyboardType="numeric"
-                placeholder="200"
-                placeholderTextColor={colors.textMuted}
-                value={waterGivenLiters}
-                onChangeText={setWaterGivenLiters}
-              />
-            </ScrollView>
-
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
-              <TouchableOpacity
-                style={s.cancelBtn}
-                onPress={() => setQuickLogModal(false)}
-              >
-                <Text style={s.btnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.submitBtn}
-                onPress={handleQuickLog}
-                disabled={submittingLog}
-              >
-                {submittingLog ? (
-                  <Text style={s.btnText}>Saving...</Text>
-                ) : (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Zap size={14} color="#fff" />
-                    <Text style={s.btnText}>Save Log</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* RECORD SALE MODAL */}
-      <Modal visible={saleModalOpen} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <View style={s.modalContainer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Tag size={18} color={colors.blue} />
-              <Text style={s.modalTitle}>Record Sale Revenue</Text>
-            </View>
-            <ScrollView>
-              <Text style={common.label}>Sale Date (YYYY-MM-DD) *</Text>
-              <TextInput
-                style={common.input}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                value={saleDate}
-                onChangeText={setSaleDate}
-              />
-
-              {isLayerFarm && (
-                <>
-                  <Text style={common.label}>Item to Sell</Text>
-                  <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
-                    <TouchableOpacity
-                      style={[
-                        s.typeBtn,
-                        saleItemType === "egg" && s.typeBtnSelectedEgg,
-                      ]}
-                      onPress={() => setSaleItemType("egg")}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Egg size={14} color={saleItemType === "egg" ? colors.secondary : colors.textMuted} />
-                        <Text
-                          style={{
-                            color:
-                              saleItemType === "egg"
-                                ? colors.secondary
-                                : colors.textMuted,
-                            fontWeight: "800",
-                          }}
-                        >
-                          Eggs
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        s.typeBtn,
-                        saleItemType === "chicken" && s.typeBtnSelectedChicken,
-                      ]}
-                      onPress={() => setSaleItemType("chicken")}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Bird size={14} color={saleItemType === "chicken" ? colors.blue : colors.textMuted} />
-                        <Text
-                          style={{
-                            color:
-                              saleItemType === "chicken"
-                                ? colors.blue
-                                : colors.textMuted,
-                            fontWeight: "800",
-                          }}
-                        >
-                          Chickens
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-
-              {saleItemType === "egg" ? (
-                <View style={s.eggInputBox}>
-                  <Text
-                    style={{
-                      color: colors.secondary,
-                      fontWeight: "800",
-                      fontSize: 13,
-                      marginBottom: 6,
-                    }}
-                  >
-                    Egg Selling Quantity (1 Crate = 30 Eggs)
-                  </Text>
-                  <View style={{ flexDirection: "row", gap: 10 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Full Crates</Text>
-                      <TextInput
-                        style={common.input}
-                        keyboardType="numeric"
-                        value={saleCrates}
-                        onChangeText={setSaleCrates}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Loose Eggs</Text>
-                      <TextInput
-                        style={common.input}
-                        keyboardType="numeric"
-                        value={saleLooseEggs}
-                        onChangeText={setSaleLooseEggs}
-                      />
-                    </View>
-                  </View>
-                  <Text
-                    style={{
-                      color: colors.secondary,
-                      fontWeight: "800",
-                      marginTop: 6,
-                      fontSize: 13,
-                    }}
-                  >
-                    Selling: {formatEggCount(totalSaleEggQty)} (
-                    {totalSaleEggQty} eggs)
-                  </Text>
-                </View>
-              ) : (
-                <View>
-                  <Text style={common.label}>Number of Chickens</Text>
-                  <TextInput
-                    style={common.input}
-                    keyboardType="numeric"
-                    placeholder="50"
-                    placeholderTextColor={colors.textMuted}
-                    value={saleChickenQty}
-                    onChangeText={setSaleChickenQty}
-                  />
-                </View>
-              )}
-
-              <Text style={common.label}>
-                {saleItemType === "egg"
-                  ? "Price per Egg (৳)"
-                  : "Price per Chicken (৳)"}
-              </Text>
-              <TextInput
-                style={common.input}
-                keyboardType="numeric"
-                placeholder="10.50"
-                placeholderTextColor={colors.textMuted}
-                value={saleUnitPrice}
-                onChangeText={setSaleUnitPrice}
-              />
-
-              {totalSaleEggQty > 0 && Number(saleUnitPrice) > 0 && (
-                <Text
-                  style={{
-                    color: colors.blue,
-                    fontWeight: "800",
-                    marginVertical: 6,
-                    fontSize: 14,
-                  }}
-                >
-                  Total Income: ৳
-                  {(totalSaleEggQty * Number(saleUnitPrice)).toLocaleString()}
-                </Text>
-              )}
-
-              <Text style={common.label}>Customer Name</Text>
-              <TextInput
-                style={common.input}
-                placeholder="Wholesale Buyer"
-                placeholderTextColor={colors.textMuted}
-                value={saleCustomer}
-                onChangeText={setSaleCustomer}
-              />
-            </ScrollView>
-
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
-              <TouchableOpacity
-                style={s.cancelBtn}
-                onPress={() => setSaleModalOpen(false)}
-              >
-                <Text style={s.btnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.submitBtn, { backgroundColor: colors.blue }]}
-                onPress={handleRecordSale}
-                disabled={submittingSale}
-              >
-                <Text style={s.btnText}>
-                  {submittingSale ? "Recording..." : "Record Revenue"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* REUSABLE RECORD SALE MODAL */}
+      <RecordSaleModal
+        visible={saleModalOpen}
+        batchId={selectedBatchId}
+        onClose={() => setSaleModalOpen(false)}
+        onSuccess={() => load()}
+      />
 
       {/* REUSABLE CREATE FLOCK / BATCH MODAL */}
       <CreateBatchModal
@@ -1408,7 +1216,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 marginBottom: 12,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
                 <Egg size={18} color={colors.secondary} />
                 <Text style={s.modalTitle}>Batch-wise Egg Stock</Text>
               </View>
@@ -1455,7 +1265,13 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                     }}
                   >
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
                         <Bird size={14} color={colors.textMain} />
                         <Text
                           style={{
@@ -1482,7 +1298,14 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                       >
                         {b.currentStock.toLocaleString()} Eggs
                       </Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 2 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 2,
+                          marginTop: 2,
+                        }}
+                      >
                         <Package size={12} color={colors.textMuted} />
                         <Text
                           style={{
@@ -1526,7 +1349,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 marginBottom: 12,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
                 <Wheat size={18} color={colors.amber} />
                 <Text style={s.modalTitle}>Categorized Feed Stock</Text>
               </View>
@@ -1566,7 +1391,13 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                     }}
                   >
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
                         <Wheat size={14} color={colors.amber} />
                         <Text
                           style={{
@@ -1634,7 +1465,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 marginBottom: 12,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
                 <Bird size={18} color={colors.brand} />
                 <Text style={s.modalTitle}>Active Layer Flocks</Text>
               </View>
@@ -1683,7 +1516,13 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                       }}
                     >
                       <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
                           <Bird size={14} color={colors.brand} />
                           <Text
                             style={{
@@ -1744,7 +1583,9 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                 marginBottom: 12,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
                 <Bird size={18} color={colors.amber} />
                 <Text style={s.modalTitle}>Active Broiler Flocks</Text>
               </View>
@@ -1793,7 +1634,13 @@ export const DashboardScreen: React.FC<any> = ({ navigation }) => {
                       }}
                     >
                       <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
                           <Bird size={14} color={colors.amber} />
                           <Text
                             style={{

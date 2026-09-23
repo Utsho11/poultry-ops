@@ -66,6 +66,10 @@ export async function apiFetch(
 
   if (!response.ok)
     throw new Error(data.error || data.message || "Request failed");
+
+  if (data && typeof data === "object" && data.success === true && "data" in data) {
+    return data.data;
+  }
   return data;
 }
 

@@ -15,6 +15,7 @@ import { apiFetch, showAlert } from "../config";
 import { colors, common, STATUS_BAR_PADDING } from "../styles";
 import { formatEggCount, cratesAndLooseToTotal } from "../utils/crates";
 import { DailyLogModal } from "../components/DailyLogModal";
+import { RecordSaleModal } from "../components/RecordSaleModal";
 import { Zap, Tag, Calendar, Egg, Wheat, Skull, TrendingUp, CircleDollarSign, Bird, Package, X, Plus, MapPin, Droplets, HardHat, Settings, ClipboardList, ArrowLeft } from "lucide-react-native";
 
 export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
@@ -32,16 +33,6 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
 
   // Record Sale Modal State for this batch
   const [saleModalOpen, setSaleModalOpen] = useState(false);
-  const [saleItemType, setSaleItemType] = useState<"egg" | "chicken">("egg");
-  const [saleCrates, setSaleCrates] = useState("0");
-  const [saleLooseEggs, setSaleLooseEggs] = useState("0");
-  const [saleChickenQty, setSaleChickenQty] = useState("");
-  const [saleUnitPrice, setSaleUnitPrice] = useState("");
-  const [saleCustomer, setSaleCustomer] = useState("");
-  const [saleDate, setSaleDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-  const [submittingSale, setSubmittingSale] = useState(false);
 
   const isOwner = user?.role === "owner";
   const canManage = user?.role === "owner" || user?.role === "manager";
@@ -72,47 +63,7 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
     loadData();
   };
 
-  const totalSaleEggQty =
-    saleItemType === "egg"
-      ? cratesAndLooseToTotal(saleCrates, saleLooseEggs)
-      : Number(saleChickenQty || 0);
 
-  const handleRecordSale = async () => {
-    if (totalSaleEggQty <= 0 || !saleUnitPrice) {
-      showAlert("Error", "Quantity and Unit Price are required");
-      return;
-    }
-    setSubmittingSale(true);
-    try {
-      await apiFetch(
-        "/sales",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            itemType: saleItemType,
-            batchId,
-            quantity: totalSaleEggQty,
-            unitPrice: Number(saleUnitPrice),
-            date: saleDate,
-            customerName: saleCustomer || undefined,
-          }),
-        },
-        token,
-      );
-      setSaleModalOpen(false);
-      setSaleCrates("0");
-      setSaleLooseEggs("0");
-      setSaleChickenQty("");
-      setSaleUnitPrice("");
-      setSaleCustomer("");
-      loadData();
-      showAlert("Success", "Sale recorded successfully!");
-    } catch (err: any) {
-      showAlert("Error", err.message);
-    } finally {
-      setSubmittingSale(false);
-    }
-  };
 
   if (loading || !data) {
     return (
@@ -928,183 +879,13 @@ export const BatchDashboardScreen: React.FC<any> = ({ route, navigation }) => {
         batches={batches}
       />
 
-      {/* RECORD SALE MODAL */}
-      <Modal visible={saleModalOpen} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <View style={s.modalContainer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <Tag size={18} color={colors.blue} />
-              <Text style={s.modalTitle}>Record Sale ({batch.name})</Text>
-            </View>
-            <ScrollView>
-              {(batch?.type === "layer" || activeFarm?.animalType === "layer") && (
-                <>
-                  <Text style={common.label}>Item to Sell</Text>
-                  <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
-                    <TouchableOpacity
-                      style={[
-                        s.typeBtn,
-                        saleItemType === "egg" && s.typeBtnSelectedEgg,
-                      ]}
-                      onPress={() => setSaleItemType("egg")}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Egg size={14} color={saleItemType === "egg" ? colors.secondary : colors.textMuted} />
-                        <Text
-                          style={{
-                            color:
-                              saleItemType === "egg"
-                                ? colors.secondary
-                                : colors.textMuted,
-                            fontWeight: "800",
-                          }}
-                        >
-                          Eggs
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        s.typeBtn,
-                        saleItemType === "chicken" && s.typeBtnSelectedChicken,
-                      ]}
-                      onPress={() => setSaleItemType("chicken")}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Bird size={14} color={saleItemType === "chicken" ? colors.blue : colors.textMuted} />
-                        <Text
-                          style={{
-                            color:
-                              saleItemType === "chicken"
-                                ? colors.blue
-                                : colors.textMuted,
-                            fontWeight: "800",
-                          }}
-                        >
-                          Chickens
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-
-              {saleItemType === "egg" ? (
-                <View style={s.eggInputBox}>
-                  <Text
-                    style={{
-                      color: colors.secondary,
-                      fontWeight: "800",
-                      fontSize: 13,
-                      marginBottom: 6,
-                    }}
-                  >
-                    Egg Selling Quantity (1 Crate = 30 Eggs)
-                  </Text>
-                  <View style={{ flexDirection: "row", gap: 10 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Full Crates</Text>
-                      <TextInput
-                        style={common.input}
-                        keyboardType="numeric"
-                        value={saleCrates}
-                        onChangeText={setSaleCrates}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={common.label}>Loose Eggs</Text>
-                      <TextInput
-                        style={common.input}
-                        keyboardType="numeric"
-                        value={saleLooseEggs}
-                        onChangeText={setSaleLooseEggs}
-                      />
-                    </View>
-                  </View>
-                  <Text
-                    style={{
-                      color: colors.secondary,
-                      fontWeight: "800",
-                      marginTop: 6,
-                      fontSize: 13,
-                    }}
-                  >
-                    Selling: {formatEggCount(totalSaleEggQty)} (
-                    {totalSaleEggQty} eggs)
-                  </Text>
-                </View>
-              ) : (
-                <View>
-                  <Text style={common.label}>Number of Chickens</Text>
-                  <TextInput
-                    style={common.input}
-                    keyboardType="numeric"
-                    placeholder="50"
-                    placeholderTextColor="#6B655C"
-                    value={saleChickenQty}
-                    onChangeText={setSaleChickenQty}
-                  />
-                </View>
-              )}
-
-              <Text style={common.label}>
-                {saleItemType === "egg"
-                  ? "Price per Egg (৳)"
-                  : "Price per Chicken (৳)"}
-              </Text>
-              <TextInput
-                style={common.input}
-                keyboardType="numeric"
-                placeholder="10.50"
-                placeholderTextColor="#6B655C"
-                value={saleUnitPrice}
-                onChangeText={setSaleUnitPrice}
-              />
-
-              {totalSaleEggQty > 0 && Number(saleUnitPrice) > 0 && (
-                <Text
-                  style={{
-                    color: colors.blue,
-                    fontWeight: "800",
-                    marginVertical: 6,
-                    fontSize: 14,
-                  }}
-                >
-                  Total Income: ৳
-                  {(totalSaleEggQty * Number(saleUnitPrice)).toLocaleString()}
-                </Text>
-              )}
-
-              <Text style={common.label}>Customer Name</Text>
-              <TextInput
-                style={common.input}
-                placeholder="Wholesale Buyer"
-                placeholderTextColor="#6B655C"
-                value={saleCustomer}
-                onChangeText={setSaleCustomer}
-              />
-            </ScrollView>
-
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
-              <TouchableOpacity
-                style={s.cancelBtn}
-                onPress={() => setSaleModalOpen(false)}
-              >
-                <Text style={s.btnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.submitBtn, { backgroundColor: colors.blue }]}
-                onPress={handleRecordSale}
-                disabled={submittingSale}
-              >
-                <Text style={s.btnText}>
-                  {submittingSale ? "Recording..." : "Record Revenue"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* REUSABLE RECORD SALE MODAL */}
+      <RecordSaleModal
+        visible={saleModalOpen}
+        batchId={batchId}
+        onClose={() => setSaleModalOpen(false)}
+        onSuccess={loadData}
+      />
 
 
     </View>

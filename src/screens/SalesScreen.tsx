@@ -8,7 +8,7 @@ import { apiFetch } from '../config';
 import { colors, common, STATUS_BAR_PADDING } from '../styles';
 import { formatEggCount } from '../utils/crates';
 import { ISale, ICustomer, IBatch, IPayment } from '../types';
-import { DatePickerInput } from '../components/DatePickerInput';
+import { RecordSaleModal } from '../components/RecordSaleModal';
 import { Tag, Plus, Phone, Egg, Bird, DollarSign, Trash2, Users, CreditCard, ShoppingBag, Calendar, ShoppingCart } from 'lucide-react-native';
 
 export const SalesScreen: React.FC<any> = ({ navigation }) => {
@@ -26,22 +26,6 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
   // Modals state
   const [newSaleModalOpen, setNewSaleModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [newCustomerModalOpen, setNewCustomerModalOpen] = useState(false);
-
-  // New Sale Form
-  const [selectedBatchId, setSelectedBatchId] = useState('');
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [itemType, setItemType] = useState<'egg' | 'chicken'>('egg');
-  const [cratesInput, setCratesInput] = useState('10');
-  const [looseEggsInput, setLooseEggsInput] = useState('0');
-  const [birdCountInput, setBirdCountInput] = useState('50');
-  const [weightKgInput, setWeightKgInput] = useState('85');
-  const [unit, setUnit] = useState<'piece' | 'tray' | 'kg' | 'bird'>('tray');
-  const [unitPrice, setUnitPrice] = useState('360');
-  const [amountPaid, setAmountPaid] = useState('0');
-  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Payment Form
   const [targetCustomer, setTargetCustomer] = useState<ICustomer | null>(null);
@@ -60,119 +44,17 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
       setCustomers(cData);
       setPayments(pData);
       setBatches(bData);
-      if (bData.length > 0 && !selectedBatchId) {
-        setSelectedBatchId(bData[0]._id);
-      }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token, activeFarm?._id, selectedBatchId]);
+  }, [token, activeFarm?._id]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const onRefresh = () => { setRefreshing(true); loadData(); };
-
-  // Calculations for new sale form
-  const crates = parseFloat(cratesInput) || 0;
-  const loose = parseFloat(looseEggsInput) || 0;
-  const birds = parseFloat(birdCountInput) || 0;
-  const weight = parseFloat(weightKgInput) || 0;
-  const price = parseFloat(unitPrice) || 0;
-
-  let totalInvoice = 0;
-  let actualQty = 0;
-
-  if (itemType === 'egg') {
-    actualQty = (crates * 30) + loose;
-    if (unit === 'tray') {
-      const totalTrays = crates + (loose / 30);
-      totalInvoice = Number((totalTrays * price).toFixed(2));
-    } else {
-      totalInvoice = Number((actualQty * price).toFixed(2));
-    }
-  } else {
-    actualQty = birds;
-    if (unit === 'kg' && weight > 0) {
-      totalInvoice = Number((weight * price).toFixed(2));
-    } else {
-      totalInvoice = Number((birds * price).toFixed(2));
-    }
-  }
-
-  const paidAmt = parseFloat(amountPaid) || 0;
-  const dueAmt = Math.max(0, Number((totalInvoice - paidAmt).toFixed(2)));
-
-  const handleCreateCustomer = async () => {
-    if (!customerName.trim() || !customerPhone.trim()) {
-      Alert.alert('Validation Error', 'Customer Name and Phone Number are required.');
-      return;
-    }
-
-    try {
-      const newCust = await apiFetch('/customers', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: customerName.trim(),
-          phone: customerPhone.trim()
-        })
-      }, token);
-
-      setCustomers(prev => [...prev, newCust]);
-      setSelectedCustomerId(newCust._id);
-      setNewCustomerModalOpen(false);
-      Alert.alert('Success', `Customer ${newCust.name} added!`);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to create customer');
-    }
-  };
-
-  const handleCreateSale = async () => {
-    if (!selectedBatchId) {
-      Alert.alert('Validation Error', 'Please select a target Flock / Batch.');
-      return;
-    }
-    if (totalInvoice <= 0) {
-      Alert.alert('Validation Error', 'Please enter valid quantities and unit price.');
-      return;
-    }
-    if (!saleDate) {
-      Alert.alert('Validation Error', 'Please enter a valid sale date (YYYY-MM-DD).');
-      return;
-    }
-
-    try {
-      await apiFetch('/sales', {
-        method: 'POST',
-        body: JSON.stringify({
-          batchId: selectedBatchId || undefined,
-          customerId: selectedCustomerId || undefined,
-          customerName: customerName || undefined,
-          customerPhone: customerPhone || undefined,
-          items: [{
-            type: itemType,
-            quantity: actualQty,
-            crates: itemType === 'egg' ? crates : undefined,
-            looseEggs: itemType === 'egg' ? loose : undefined,
-            birdCount: itemType === 'chicken' ? birds : undefined,
-            weightKg: itemType === 'chicken' ? weight : undefined,
-            unit,
-            unitPrice: price
-          }],
-          date: saleDate,
-          amountPaid: paidAmt
-        })
-      }, token);
-
-      setNewSaleModalOpen(false);
-      loadData();
-      Alert.alert('Success', 'Sale invoice recorded successfully!');
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to record sale');
-    }
-  };
 
   const handleRecordPayment = async () => {
     if (!targetCustomer) return;
@@ -390,251 +272,13 @@ export const SalesScreen: React.FC<any> = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* NEW SALE MODAL */}
-      <Modal visible={newSaleModalOpen} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <View style={s.modalContent}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-              <ShoppingCart size={18} color={colors.textMain} />
-              <Text style={[s.modalTitle, { marginBottom: 0 }]}>Record New Sale Invoice</Text>
-            </View>
-            <ScrollView>
-              {/* Sale Date Input (TOP) */}
-              <DatePickerInput
-                label="Sale Date *"
-                value={saleDate}
-                onChange={setSaleDate}
-                style={{ marginBottom: 14 }}
-              />
-
-              {/* Batch Selector (Required) */}
-              <Text style={s.inputLabel}>Select Flock / Batch *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                {batches.map(b => (
-                  <TouchableOpacity
-                    key={b._id}
-                    style={[s.custChip, selectedBatchId === b._id && s.custChipActive]}
-                    onPress={() => setSelectedBatchId(b._id)}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Bird size={14} color={selectedBatchId === b._id ? '#FFFFFF' : colors.textMain} />
-                      <Text style={[s.chipText, selectedBatchId === b._id && { color: '#FFFFFF' }]}>
-                        {b.name} ({b.breed})
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {/* Customer Selector */}
-              <Text style={s.inputLabel}>Select Customer</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
-                <TouchableOpacity
-                  style={[s.custChip, !selectedCustomerId && s.custChipActive]}
-                  onPress={() => { setSelectedCustomerId(''); setCustomerName(''); setCustomerPhone(''); }}
-                >
-                  <Text style={s.chipText}>Walk-in Customer</Text>
-                </TouchableOpacity>
-                {customers.map(c => (
-                  <TouchableOpacity
-                    key={c._id}
-                    style={[s.custChip, selectedCustomerId === c._id && s.custChipActive]}
-                    onPress={() => {
-                      setSelectedCustomerId(c._id);
-                      setCustomerName(c.name);
-                      setCustomerPhone(c.phone);
-                    }}
-                  >
-                    <Text style={s.chipText}>{c.name} ({c.phone})</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {!selectedCustomerId && (
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                  <TextInput
-                    style={[s.input, { flex: 1 }]}
-                    placeholder="Customer Name"
-                    placeholderTextColor={colors.textMuted}
-                    value={customerName}
-                    onChangeText={setCustomerName}
-                  />
-                  <TextInput
-                    style={[s.input, { flex: 1 }]}
-                    placeholder="Phone (Required)"
-                    placeholderTextColor={colors.textMuted}
-                    keyboardType="phone-pad"
-                    value={customerPhone}
-                    onChangeText={setCustomerPhone}
-                  />
-                </View>
-              )}
-
-              {/* Item Type Selector */}
-              {activeFarm?.animalType === 'layer' ? (
-                <>
-                  <Text style={s.inputLabel}>Item Category</Text>
-                  <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
-                    <TouchableOpacity
-                      style={[s.typeChip, itemType === 'egg' && s.typeChipActive]}
-                      onPress={() => { setItemType('egg'); setUnit('tray'); }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Egg size={14} color={itemType === 'egg' ? colors.secondary : colors.textMuted} />
-                        <Text style={s.chipText}>Layer Eggs</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[s.typeChip, itemType === 'chicken' && s.typeChipActive]}
-                      onPress={() => { setItemType('chicken'); setUnit('kg'); }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Bird size={14} color={itemType === 'chicken' ? colors.brand : colors.textMuted} />
-                        <Text style={s.chipText}>Poultry / Birds</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : null}
-
-              {/* DYNAMIC FORM FIELDS DEPENDING ON CATEGORY */}
-              {itemType === 'egg' ? (
-                <View style={{ gap: 10, marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.inputLabel}>Crates (30 eggs/crate)</Text>
-                      <TextInput
-                        style={s.input}
-                        keyboardType="numeric"
-                        value={cratesInput}
-                        onChangeText={setCratesInput}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.inputLabel}>Loose Eggs</Text>
-                      <TextInput
-                        style={s.input}
-                        keyboardType="numeric"
-                        value={looseEggsInput}
-                        onChangeText={setLooseEggsInput}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.inputLabel}>Pricing Unit</Text>
-                      <TouchableOpacity
-                        style={[s.input, { justifyContent: 'center' }]}
-                        onPress={() => setUnit(unit === 'tray' ? 'piece' : 'tray')}
-                      >
-                        <Text style={{ fontWeight: '700', color: colors.textMain }}>
-                          {unit === 'tray' ? 'Per Crate ৳' : 'Per Piece ৳'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.inputLabel}>Unit Price ৳</Text>
-                      <TextInput
-                        style={s.input}
-                        keyboardType="numeric"
-                        value={unitPrice}
-                        onChangeText={setUnitPrice}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={{ backgroundColor: 'rgba(74, 124, 89, 0.12)', padding: 8, borderRadius: 6 }}>
-                    <Text style={{ color: colors.secondary, fontWeight: '800', fontSize: 11 }}>
-                      Total Eggs: {actualQty} eggs ({crates} Crates + {loose} Loose)
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <View style={{ gap: 10, marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.inputLabel}>Bird Count (Birds)</Text>
-                      <TextInput
-                        style={s.input}
-                        keyboardType="numeric"
-                        value={birdCountInput}
-                        onChangeText={setBirdCountInput}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.inputLabel}>Total Weight (kg)</Text>
-                      <TextInput
-                        style={s.input}
-                        keyboardType="numeric"
-                        value={weightKgInput}
-                        onChangeText={setWeightKgInput}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.inputLabel}>Pricing Unit</Text>
-                      <TouchableOpacity
-                        style={[s.input, { justifyContent: 'center' }]}
-                        onPress={() => setUnit(unit === 'kg' ? 'bird' : 'kg')}
-                      >
-                        <Text style={{ fontWeight: '700', color: colors.textMain }}>
-                          {unit === 'kg' ? 'Per kg ৳' : 'Per Bird ৳'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.inputLabel}>Unit Price ৳</Text>
-                      <TextInput
-                        style={s.input}
-                        keyboardType="numeric"
-                        value={unitPrice}
-                        onChangeText={setUnitPrice}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={{ backgroundColor: 'rgba(61, 107, 140, 0.12)', padding: 8, borderRadius: 6 }}>
-                    <Text style={{ color: colors.blue, fontWeight: '800', fontSize: 11 }}>
-                      Total Poultry: {birds} birds ({weight} kg)
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Money Breakdown */}
-              <View style={{ backgroundColor: colors.surfaceElevated, padding: 12, borderRadius: 8, marginBottom: 14 }}>
-                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textMain }}>
-                  Total Invoice: ৳{totalInvoice.toLocaleString()}
-                </Text>
-
-                <Text style={[s.inputLabel, { marginTop: 8 }]}>Amount Paid Now ৳</Text>
-                <TextInput
-                  style={s.input}
-                  keyboardType="numeric"
-                  value={amountPaid}
-                  onChangeText={setAmountPaid}
-                />
-
-                <Text style={{ fontSize: 13, fontWeight: '800', color: dueAmt > 0 ? colors.rose : colors.secondary, marginTop: 6 }}>
-                  Remaining Due: ৳{dueAmt.toLocaleString()}
-                </Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
-                <TouchableOpacity style={s.cancelBtn} onPress={() => setNewSaleModalOpen(false)}>
-                  <Text style={s.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={s.submitBtn} onPress={handleCreateSale}>
-                  <Text style={s.submitText}>Save Sale</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      {/* REUSABLE RECORD SALE MODAL */}
+      <RecordSaleModal
+        visible={newSaleModalOpen}
+        onClose={() => setNewSaleModalOpen(false)}
+        onSuccess={loadData}
+        batches={batches}
+      />
 
       {/* PAYMENT SETTLEMENT MODAL */}
       {paymentModalOpen && targetCustomer && (
