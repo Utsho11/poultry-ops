@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { View, Text, StatusBar, ActivityIndicator } from "react-native";
+import { View, Text, StatusBar, ActivityIndicator, Image } from "react-native";
 
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { DrawerProvider } from "./src/context/DrawerContext";
@@ -114,15 +114,39 @@ function AppNavigator() {
       <View
         style={{
           flex: 1,
-          backgroundColor: colors.bg,
+          backgroundColor: "#FFFFFF",
           justifyContent: "center",
           alignItems: "center",
+          paddingHorizontal: 24,
         }}
       >
-        <ActivityIndicator size="large" color={colors.brand} />
-        <Text style={{ color: colors.textMuted, marginTop: 12, fontWeight: "600" }}>
-          Loading PoultryDex...
+        <Image
+          source={require("./assets/icon.png")}
+          style={{ width: 104, height: 104, marginBottom: 18 }}
+          resizeMode="contain"
+        />
+        <Text
+          style={{
+            fontSize: 28,
+            fontWeight: "900",
+            color: "#0F172A",
+            letterSpacing: -0.5,
+          }}
+        >
+          Poultry<Text style={{ color: colors.brand }}>Dex</Text>
         </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: colors.textMuted,
+            marginTop: 4,
+            marginBottom: 28,
+            fontWeight: "600",
+          }}
+        >
+          Farm & Firm Management System
+        </Text>
+        <ActivityIndicator size="small" color={colors.brand} />
       </View>
     );
   }

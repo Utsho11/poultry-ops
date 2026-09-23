@@ -76,7 +76,11 @@ export const LoginScreen: React.FC = () => {
     <ScrollView style={s.screen} contentContainerStyle={s.content}>
       {/* Logo */}
       <View style={s.logoBox}>
-        <Image source={require('../../assets/icon.png')} style={{ width: 84, height: 84, borderRadius: 20, marginBottom: 12 }} resizeMode="contain" />
+        <Image
+          source={require('../../assets/icon.png')}
+          style={{ width: 92, height: 92, marginBottom: 12 }}
+          resizeMode="contain"
+        />
         <Text style={s.appName}>PoultryDex</Text>
         <Text style={s.tagline}>Farm & Firm Management System</Text>
       </View>

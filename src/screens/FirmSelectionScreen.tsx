@@ -58,7 +58,7 @@ export const FirmSelectionScreen: React.FC<any> = ({ navigation }) => {
         {/* User Info & Logout Header */}
         <View style={s.topBar}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Image source={require('../../assets/icon.png')} style={{ width: 44, height: 44, borderRadius: 12 }} />
+            <Image source={require('../../assets/icon.png')} style={{ width: 44, height: 44 }} resizeMode="contain" />
             <View>
               <Text style={s.welcomeText}>Welcome back,</Text>
               <Text style={s.userName}>{user?.name || 'Farm Owner'}</Text>
