@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Image,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { useDrawer } from "../context/DrawerContext";
@@ -214,7 +215,14 @@ export const DrawerContent: React.FC<DrawerContentProps> = ({ navigation, onClos
 
         {/* Quick Stats / Info Footer inside drawer */}
         <View style={s.drawerInfoBox}>
-          <Text style={s.drawerInfoTitle}>PoultryDex</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <Image
+              source={require("../../assets/icon.png")}
+              style={{ width: 24, height: 24 }}
+              resizeMode="contain"
+            />
+            <Text style={s.drawerInfoTitle}>PoultryDex</Text>
+          </View>
           <Text style={s.drawerInfoSub}>
             Smart Poultry & Farm Operations Management
           </Text>
